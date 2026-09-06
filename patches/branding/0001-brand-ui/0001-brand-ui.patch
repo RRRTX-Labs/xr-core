@@ -1,0 +1,37 @@
+--- a/chrome/app/chromium_strings.grd
++++ b/chrome/app/chromium_strings.grd
+@@ -294,10 +294,10 @@
+         </then>
+         <else>
+           <message name="IDS_PRODUCT_NAME" desc="The Chrome application name" translateable="false">
+-            Chromium
++            XR Browser
+           </message>
+           <message name="IDS_SHORT_PRODUCT_NAME" desc="The Chrome application short name." translateable="false">
+-            Chromium
++            XR Browser
+           </message>
+         </else>
+       </if>
+--- a/chrome/app/theme/chromium/BRANDING
++++ b/chrome/app/theme/chromium/BRANDING
+@@ -1,10 +1,10 @@
+-COMPANY_FULLNAME=The Chromium Authors
+-COMPANY_SHORTNAME=The Chromium Authors
+-PRODUCT_FULLNAME=Chromium
+-PRODUCT_SHORTNAME=Chromium
+-PRODUCT_INSTALLER_FULLNAME=Chromium Installer
+-PRODUCT_INSTALLER_SHORTNAME=Chromium Installer
+-COPYRIGHT=Copyright @LASTCHANGE_YEAR@ The Chromium Authors. All rights reserved.
+-MAC_BUNDLE_ID=org.chromium.Chromium
+-MAC_CREATOR_CODE=Cr24
++COMPANY_FULLNAME=RRRTX Labs
++COMPANY_SHORTNAME=RRRTX Labs
++PRODUCT_FULLNAME=XR Browser
++PRODUCT_SHORTNAME=XR Browser
++PRODUCT_INSTALLER_FULLNAME=XR Browser Installer
++PRODUCT_INSTALLER_SHORTNAME=XR Browser Installer
++COPYRIGHT=Copyright @LASTCHANGE_YEAR@ RRRTX Labs. All rights reserved.
++MAC_BUNDLE_ID=org.rrrtx.xrbrowser
++MAC_CREATOR_CODE=XRBR
+ MAC_TEAM_ID=

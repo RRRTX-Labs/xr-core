@@ -1,0 +1,28 @@
+# patches/manifest.yaml — patch-manifest format v1 (P2-T3).
+#
+# The budget ledger for XR's upstream modifications (Plan §1.2). The applicator
+# (xr-browser/buildsys/patching/apply.py) reads this from src/xr/patches/.
+# Contract: xr-browser/docs/contracts/patch-manifest-v1.md.
+# Caps are plan law (also encoded in buildsys/patching/categories.py); they are
+# repeated here for self-description and cross-checked by `xr-patch lint`.
+
+schema_version: 1
+total_cap: 150
+categories:
+  branding: { cap: null }       # "unlimited-ish (cheap)" — still counted in total
+  hook_points: { cap: 45 }
+  blink_seams: { cap: 25 }
+  content_seams: { cap: 30 }
+  network_seams: { cap: 20 }
+  ui: { cap: 35 }
+  extension_chokepoint: { cap: 2 }
+allowed_roots:
+  - "chrome/app/"
+patches:
+  - id: "0001-brand-ui"
+    owner: "@xr/platform"
+    category: branding
+    files:
+      - chrome/app/theme/chromium/BRANDING
+      - chrome/app/chromium_strings.grd
+    dir: branding/0001-brand-ui   # relative to this manifest's directory (patches/)
