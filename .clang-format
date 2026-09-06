@@ -1,0 +1,6 @@
+# Chromium-style base for the future //xr C++ tree.
+# NOTE: final argument set is reviewed in P2 (XR-P2-T5 toolchain task);
+# this P1 file only establishes the base style so governance files exist.
+BasedOnStyle: Chromium
+IndentWidth: 2
+ColumnLimit: 100

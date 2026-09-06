@@ -1,0 +1,6 @@
+# Chromium overlay mount + build outputs are never committed here (P2+).
+# This repo is the //xr tree; build artifacts live in the Chromium checkout.
+out/
+*.pyc
+__pycache__/
+.DS_Store
