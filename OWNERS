@@ -1,0 +1,42 @@
+# OWNERS — xr-core (Chromium-style format)
+#
+# Format reference: chromium/src top-level OWNERS (file:// entries, per-file
+# overrides like "per-file .clang-format=..."). S0 paths require dual
+# senior review incl. Security (Plan §7.2, L13).
+#
+# PLACEHOLDER owners (named humans pending — human-gated, see
+# xr-browser/evidence/P1/human-gates.md HG-7). rr rtx.example addresses
+# are RFC 2606 example-domain placeholders, not live mailboxes.
+#
+# Source of truth for the S0 *path set* is
+# xr-browser/docs/process/s0-paths.yaml (owners_sync.py keeps CODEOWNERS in
+# sync with it; this OWNERS file carries the same path set for the
+# Chromium-style review model used once builds exist).
+
+//
+  platform-lead@rrrtx.example
+  security-lead@rrrtx.example
+
+//policy
+  platform-lead@rrrtx.example
+  security-lead@rrrtx.example
+
+//identity
+  platform-lead@rrrtx.example
+  security-lead@rrrtx.example
+
+//vault
+  platform-lead@rrrtx.example
+  security-lead@rrrtx.example
+
+//net
+  platform-lead@rrrtx.example
+  security-lead@rrrtx.example
+
+//extensions
+  platform-lead@rrrtx.example
+  security-lead@rrrtx.example
+
+//mojom
+  platform-lead@rrrtx.example
+  security-lead@rrrtx.example
