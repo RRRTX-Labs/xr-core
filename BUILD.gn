@@ -1,0 +1,35 @@
+# Copyright 2026 RRRTX Labs
+# Use of this source code is governed by the MPL-2.0 license that can be
+# found in the LICENSE file.
+
+# BUILD.gn — xr-core root build file.
+#
+# xr-core is mounted into the Chromium checkout at `src/xr` by the meta-repo's
+# `./scripts/build sync` (gclient `custom_deps` — see meta: build/sync.py and
+# this repo's scripts/mount.md). Because of that mount point, everything here
+# is addressed from Chromium as `//xr/...`, and the aggregator target that CI
+# and the farm compile is `//xr:xr_all`
+# (meta: ci/nightly-rebase-build.yml, `./scripts/build compile`).
+#
+# P2 scope (closed by P4-T0.2, debt D-B): the root buildable group exists so
+# the mount is buildable on day one. It is intentionally dependency-free
+# TODAY: at this commit xr-core carries upstream patches (patches/) and the
+# identity-seam spike kit (spike/), neither of which is compiled into the
+# browser. `ninja //xr:xr_all` therefore succeeds by building nothing, which
+# is the honest result — not a placeholder for work that has not landed.
+#
+# Subdir hooks (comment-only on purpose; uncomment when the phase that owns
+# the code lands and adds the matching BUILD.gn):
+#   deps += [ "patches" ]   # never compiled — patch payloads consumed by the
+#                           # meta-repo's xr-patch applicator at sync time.
+#   deps += [ "spike" ]     # P4 spike kit: compiled ONLY on a farm branch by
+#                           # engineers running the identity-seam probes; it
+#                           # is deliberately NOT part of xr_all, because a
+#                           # spike must never ship in a product build.
+
+group("xr_all") {
+  # Aggregator for every compiled //xr target. Populated by the phases that
+  # land compiled code (P5+); empty today, and that is accurate rather than
+  # aspirational.
+  deps = []
+}
