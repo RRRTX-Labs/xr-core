@@ -145,7 +145,7 @@ int main() {
   root.emplace("verdicts", JsonValue(std::move(verdicts)));
   JsonValue::Object env;
   env.emplace("compiler", JsonValue(std::string("g++ 14.2.0 (recorded in build log)")));
-  env.emplace("flags", JsonValue(std::string("-std=c++20 -O2 -Wall -Wextra -Werror")));
+  env.emplace("flags", JsonValue(std::string("-std=c++20 -O2 -Wall -Wextra -Werror -D_FORTIFY_SOURCE=2")));  // must mirror the tests Makefile
   root.emplace("environment", JsonValue(std::move(env)));
   std::printf("%s\n", JsonValue(std::move(root)).Canonical().c_str());
   return 0;

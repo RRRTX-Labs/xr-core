@@ -2,7 +2,7 @@
 #
 # Std-only: g++ (C++20) + make. Zero external dependencies (phase
 # DEPENDENCY RULES). Flags are PINNED here and recorded in evidence logs:
-#   CXXFLAGS = -std=c++20 -O2 -Wall -Wextra -Werror
+#   CXXFLAGS = -std=c++20 -O2 -Wall -Wextra -Werror -D_FORTIFY_SOURCE=2
 # No LTO, no fast-math, no profile tricks: budgets are measured honestly.
 #
 # Targets:
@@ -15,7 +15,11 @@
 # sibling checkouts as in CI and the dev sandbox.
 
 CXX      ?= g++
-CXXFLAGS := -std=c++20 -O2 -Wall -Wextra -Werror
+# -D_FORTIFY_SOURCE=2 mirrors the hardened ubuntu-24.04 CI runners (their
+# gcc enables fortify implicitly at -O2): a discarded fopen/fwrite result is
+# -Werror=unused-result on CI. Build the same way locally so this failure
+# class cannot pass here and fail there (it did once: run 34167592053).
+CXXFLAGS := -std=c++20 -O2 -Wall -Wextra -Werror -D_FORTIFY_SOURCE=2
 INCLUDES := -I../..
 BUILD    ?= build
 

@@ -84,7 +84,6 @@ int main() {
   // ---- load + validate v1, forward-migrate to v2 ----
   {
     std::string path = TmpFile("v1");
-    XR_EXPECT(std::fopen(path.c_str(), "wb") != nullptr || true);
     std::FILE* f = std::fopen(path.c_str(), "wb");
     XR_EXPECT(f != nullptr);
     std::fwrite(kV1, 1, std::strlen(kV1), f);
