@@ -1,0 +1,79 @@
+# Copyright 2026 RRRTX Labs
+# Use of this source code is governed by the MPL-2.0 license that can be
+# found in the LICENSE file.
+
+# BUILD.gn — //xr/policy: THE policy resolver (Plan §4 P6, L3: "one policy
+# resolver; unknown/absent policy ⇒ deny, never guess").
+#
+# Import law (Plan §7.2): //xr/policy is S0 and may import //xr/common and
+# //xr/mojom (as provider) only. The core below is deliberately STD-ONLY
+# C++20 — no Chromium headers — which is what makes it compilable and
+# exhaustively testable off-tree (g++/make: policy/tests/Makefile) with
+# byte-parity against the frozen Python fake on every golden vector.
+#
+# Farm-gated (HG-29): the mojom-binding half. service_mojom.h carries the
+# XR_HAVE_MOJOM_BINDINGS guard; the GN target that defines it is commented
+# out below until the bindings exist at the farm, so this file stays
+# `gn format` clean and xr_all stays buildable everywhere else.
+
+source_set("policy_core") {
+  sources = [
+    "core/cache.cc",
+    "core/cache.h",
+    "core/effective_policy.cc",
+    "core/effective_policy.h",
+    "core/events.cc",
+    "core/events.h",
+    "core/json.cc",
+    "core/json.h",
+    "core/json_parse.cc",
+    "core/resolve.cc",
+    "core/resolve.h",
+    "core/resolve_io.cc",
+    "core/service.cc",
+    "core/service.h",
+    "core/sha256.cc",
+    "core/sha256.h",
+    "core/snapshot.cc",
+    "core/snapshot.h",
+    "core/store.cc",
+    "core/store.h",
+  ]
+  public_deps = []
+  # NOTE: no deps. std-only by design (see header comment). Enterprise
+  # source is grouped separately because it shells out to minisign.
+}
+
+source_set("policy_enterprise") {
+  sources = [
+    "enterprise/managed_source.cc",
+    "enterprise/managed_source.h",
+  ]
+  deps = [ ":policy_core" ]
+}
+
+# Host binary (dev/diagnostics; the stdio façade xrctl drives). On-tree this
+# is a fine standalone target; in-tree consumers link policy_core directly.
+source_set("policy_host_lib") {
+  sources = [ "host/policy_host.cc" ]
+  deps = [ ":policy_core" ]
+}
+
+# --- Farm-gated (HG-29): uncomment when xr.mojom bindings exist. ----------
+# source_set("policy_service_mojom") {
+#   sources = [ "core/service_mojom.cc" ]
+#   defines = [ "XR_HAVE_MOJOM_BINDINGS" ]
+#   deps = [
+#     ":policy_core",
+#     "//xr/mojom",  # bindings for xr.mojom.PolicyResolver
+#   ]
+# }
+# -------------------------------------------------------------------------
+
+group("policy_all") {
+  deps = [
+    ":policy_core",
+    ":policy_enterprise",
+    ":policy_host_lib",
+  ]
+}

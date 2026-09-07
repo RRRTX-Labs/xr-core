@@ -29,7 +29,8 @@
 
 group("xr_all") {
   # Aggregator for every compiled //xr target. Populated by the phases that
-  # land compiled code (P5+); empty today, and that is accurate rather than
-  # aspirational.
-  deps = []
+  # land compiled code (P5+); P6 adds the policy resolver group (std-only
+  # C++20 core; the mojom-binding half stays farm-gated — see
+  # policy/BUILD.gn and policy/core/service_mojom.h, HG-29).
+  deps = [ "//xr/policy:policy_all" ]
 }
