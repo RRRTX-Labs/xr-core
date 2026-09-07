@@ -14,7 +14,7 @@
   chromium_strings.grd is regenerated per train — the hunk context is the
   IDS_PRODUCT_NAME / IDS_SHORT_PRODUCT_NAME `<else>` branch. If the grd is
   restructured (e.g. the chrome-for-testing `<if>` block moves), regenerate the
-  patch from the pinned file via `buildsys/branding/gen_version.py`-style
+  patch from the pinned file via `build/branding/gen_version.py`-style
   scripted rewrite, never by hand.
 
 ## Why this patch exists

@@ -1,9 +1,9 @@
 # patches/manifest.yaml — patch-manifest format v1 (P2-T3).
 #
 # The budget ledger for XR's upstream modifications (Plan §1.2). The applicator
-# (xr-browser/buildsys/patching/apply.py) reads this from src/xr/patches/.
+# (xr-browser/build/patching/apply.py) reads this from src/xr/patches/.
 # Contract: xr-browser/docs/contracts/patch-manifest-v1.md.
-# Caps are plan law (also encoded in buildsys/patching/categories.py); they are
+# Caps are plan law (also encoded in build/patching/categories.py); they are
 # repeated here for self-description and cross-checked by `xr-patch lint`.
 
 schema_version: 1
