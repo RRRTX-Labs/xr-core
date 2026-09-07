@@ -1,0 +1,70 @@
+// Copyright 2026 RRRTX Labs
+// Use of this source code is governed by the MPL-2.0 license that can be
+// found in the LICENSE file.
+//
+// Contract: xr.mojom shared types (§1.11 freeze, §2.10 reserved surface).
+// Version: kContractVersion below (freeze unit; wire additions use
+//          [MinVersion=N] per an approved RFC — see docs/contracts/INDEX.md).
+// Migration note: xr-browser/docs/contracts/xr-schema-v1.md (forward-only).
+// Style: mojom conventions per research-log-P5 R2 (upstream mojo_base/token).
+//
+// Shared, typed vocabulary imported by every XR contract. There are NO
+// stringly-typed identifiers or error codes in the public surface: every id
+// is a struct, every error is an enum (SECURITY: typed-errors-only lint).
+
+module xr.mojom;
+
+const int32 kContractVersion = 1;
+
+// Opaque identity handle. Corresponds to the `xr:<uuid>` partition domain the
+// IdentityManager mints (ADR-0042 "Contracts out" (a): validated UUIDv4).
+struct IdentityId {
+  string value;  // canonical "xr:<uuidv4>"; validated at the boundary.
+};
+
+// A site/origin key in the resolver's domain. Not a raw URL: the tuple the
+// partitioning boundary actually keys on (scheme + registrable domain).
+struct OriginKey {
+  string scheme;
+  string registrable_domain;
+};
+
+// Trust ladder (§ trust context). Standard < Shield < Fortress; higher tiers
+// are strictly more restrictive. The resolver treats an absent context as
+// Standard (documented default; never "guess").
+enum TrustContext {
+  kStandard = 0,
+  kShield = 1,
+  kFortress = 2,
+};
+
+// The class of a resolver request. Drives which policy facets are consulted.
+enum RequestClass {
+  kNavigation = 0,
+  kSubresource = 1,
+  kScript = 2,
+  kPermission = 3,
+  kStorage = 4,
+  kNetwork = 5,
+};
+
+// Contract version stamped onto resolved objects so a consumer can detect a
+// resolver produced by an older/newer frozen contract (§ PolicyVersion).
+struct PolicyVersion {
+  int32 contract_version;  // == kContractVersion of the producing resolver.
+};
+
+// Typed error space shared across interfaces. NO interface returns a string
+// error message + int code pair; results are unions over a concrete value and
+// one of these enums (SECURITY lint: banned patterns).
+enum ErrorCode {
+  kOk = 0,
+  kUnknownIdentity = 1,
+  kUnknownOrigin = 2,
+  kUnknownRequestClass = 3,
+  kMalformedInput = 4,
+  kFailClosed = 5,      // safety default engaged (RouteManager loss, etc.).
+  kNotPermitted = 6,
+  kVersionMismatch = 7,
+  kUnavailable = 8,     // subsystem not yet implemented (reserved iface).
+};

@@ -1,0 +1,54 @@
+// Copyright 2026 RRRTX Labs
+// Use of this source code is governed by the MPL-2.0 license that can be
+// found in the LICENSE file.
+//
+// Contract: xr.mojom.Shield (+ BlockEvent) (§1.11, §1.5 event tuple).
+// Version: kContractVersion (xr_types.mojom). Migration note:
+//          xr-browser/docs/contracts/xr-schema-v1.md.
+// Fixtures: xr-core/fakes/fixtures/shield-v1.json.
+// Fake: xr-core/fakes/shield.py.
+
+module xr.mojom;
+
+import "xr_types.mojom";
+
+enum BlockAction {
+  kBlocked = 0,
+  kAllowed = 1,      // observed-but-allowed (accountability row).
+  kRedirected = 2,
+  kUpgraded = 3,     // HTTP -> HTTPS upgrade.
+};
+
+// §1.5 event tuple: ts, identity, tab, origin, target, rule, list_provenance,
+// action, request_class. Fully typed (no free-text bag).
+struct BlockEvent {
+  int64 ts_millis;
+  IdentityId identity;
+  int64 tab_id;
+  OriginKey origin;
+  string target;           // the resource URL that was acted on.
+  string rule;             // the matching filter rule text (provenance below).
+  string list_provenance;  // which list/bundle the rule came from.
+  BlockAction action;
+  RequestClass request_class;
+};
+
+union StatusResult {
+  ShieldStatus status;
+  ErrorCode error;
+};
+
+struct ShieldStatus {
+  bool enabled;
+  uint32 blocked_count;
+};
+
+interface Shield {
+  // Report the shield status for an (identity, origin). budget: single object.
+  Status(IdentityId identity, OriginKey origin) => (StatusResult result);
+
+  // Stream recent block events for the panel/observatory.
+  // budget: 64 KB chunk (Observatory) — max_events caps the batch.
+  RecentEvents(IdentityId identity, uint32 max_events)
+      => (array<BlockEvent> events);
+};

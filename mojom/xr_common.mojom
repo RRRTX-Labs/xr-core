@@ -1,0 +1,18 @@
+// Copyright 2026 RRRTX Labs
+// Use of this source code is governed by the MPL-2.0 license that can be
+// found in the LICENSE file.
+//
+// Contract: xr.mojom shared cross-interface enums that are not identity/policy
+//           vocabulary (which live in xr_types.mojom). Kept small on purpose.
+// Version: kContractVersion (xr_types.mojom). Migration note:
+//          xr-browser/docs/contracts/xr-schema-v1.md.
+
+module xr.mojom;
+
+import "xr_types.mojom";
+
+// Generic acknowledgement returned by fire-and-forget style methods that still
+// want a typed outcome. Deny-safe default is kFailClosed (never silent ok).
+struct Ack {
+  ErrorCode code;
+};

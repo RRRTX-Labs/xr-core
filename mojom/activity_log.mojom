@@ -1,0 +1,49 @@
+// Copyright 2026 RRRTX Labs
+// Use of this source code is governed by the MPL-2.0 license that can be
+// found in the LICENSE file.
+//
+// Contract: xr.mojom.ActivityLog (§1.11; §2.10 reserved — every subsystem's
+//           accountability rows). Version: kContractVersion (xr_types.mojom).
+// Migration note: xr-browser/docs/contracts/xr-schema-v1.md.
+// Fixtures: xr-core/fakes/fixtures/activity-log-v1.json.
+// Fake: xr-core/fakes/activity_log.py.
+//
+// Bounded-ring semantics (L17): the log is a fixed-capacity ring; Append past
+// capacity evicts the oldest row. Export format is the canonical sorted-key
+// JSON row (documented in xr-schema-v1.md), never a binary dump.
+
+module xr.mojom;
+
+import "xr_types.mojom";
+
+enum ActivityKind {
+  kPolicy = 0,
+  kBlock = 1,
+  kPermission = 2,
+  kIdentity = 3,
+  kRoute = 4,
+  kVault = 5,
+  kGuard = 6,
+  kDownload = 7,
+};
+
+struct ActivityRow {
+  int64 ts_millis;
+  ActivityKind kind;
+  IdentityId identity;
+  string summary;    // human-readable, localizable; not an error code.
+};
+
+union QueryResult {
+  array<ActivityRow> rows;
+  ErrorCode error;
+};
+
+interface ActivityLog {
+  // Append one accountability row (bounded ring). budget: single object.
+  Append(ActivityRow row) => (ErrorCode result);
+
+  // Query recent rows, newest first. budget: 64 KB chunk; max_rows caps it.
+  Query(IdentityId? identity, ActivityKind? kind, uint32 max_rows)
+      => (QueryResult result);
+};

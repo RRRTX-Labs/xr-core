@@ -1,0 +1,65 @@
+// Copyright 2026 RRRTX Labs
+// Use of this source code is governed by the MPL-2.0 license that can be
+// found in the LICENSE file.
+//
+// Contract: xr.mojom.GuardLedger (§1.11; §2.10 reserved — update-diff/egress
+//           in P34). T0 ruling (1): the Guard/GuardLedger consult funnels
+//           through the ONE upstream extension-dispatch chokepoint (§12.5).
+//           There is a single Dispatch consult; no per-file fan-out.
+// Version: kContractVersion (xr_types.mojom). Migration note:
+//          xr-browser/docs/contracts/xr-schema-v1.md.
+// Fixtures: xr-core/fakes/fixtures/guard-v1.json.
+// Fake: xr-core/fakes/guard.py.
+//
+// SECURITY: no exec-ish surface. The verdict is a typed enum, never a string
+// or a callback that runs extension code.
+
+module xr.mojom;
+
+import "xr_types.mojom";
+
+enum GuardVerdict {
+  kDeny = 0,    // deny-safe default.
+  kAllow = 1,
+  kPrompt = 2,
+};
+
+struct DispatchRequest {
+  IdentityId identity;
+  string extension_id;
+  string api_call;         // the dispatched extension API name (typed string
+                           // datum, not an error code — allowed).
+  RequestClass request_class;
+};
+
+// §2.10 GuardLedger covers update-diff/egress. These are accountability rows,
+// typed, appended through the single chokepoint.
+struct UpdateDiffRow {
+  string extension_id;
+  string from_version;
+  string to_version;
+  int64 ts_millis;
+};
+
+struct EgressRow {
+  string extension_id;
+  string destination;
+  int64 bytes;
+  int64 ts_millis;
+};
+
+union DispatchResult {
+  GuardVerdict verdict;
+  ErrorCode error;
+};
+
+interface GuardLedger {
+  // The single chokepoint consult (T0 ruling 1). budget: single object.
+  Dispatch(DispatchRequest request) => (DispatchResult result);
+
+  // §2.10 update-diff hook. budget: 64 KB chunk; max_rows caps the batch.
+  RecentUpdateDiffs(uint32 max_rows) => (array<UpdateDiffRow> rows);
+
+  // §2.10 egress hook. budget: 64 KB chunk; max_rows caps the batch.
+  RecentEgress(IdentityId identity, uint32 max_rows) => (array<EgressRow> rows);
+};

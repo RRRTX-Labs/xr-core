@@ -1,0 +1,70 @@
+// Copyright 2026 RRRTX Labs
+// Use of this source code is governed by the MPL-2.0 license that can be
+// found in the LICENSE file.
+//
+// Contract: xr.mojom.VaultService (§1.11; §2.10 reserved — autofill mediation
+//           for P27 before vaultd exists).
+// Version: kContractVersion (xr_types.mojom). Migration note:
+//          xr-browser/docs/contracts/xr-schema-v1.md.
+// Fixtures: xr-core/fakes/fixtures/vault-v1.json.
+// Fake: xr-core/fakes/vault.py.
+//
+// SECURITY — ABSENCE IS THE CONTRACT: there is deliberately NO GetDatabase,
+// NO ExportKeys, NO GetFiles, NO Dump surface. The vault mediates autofill;
+// it never hands out the store. mojom_lint enforces the banned-method list,
+// so this contract cannot regress without a failing gate.
+
+module xr.mojom;
+
+import "xr_types.mojom";
+
+enum VaultState {
+  kLocked = 0,   // deny-safe default.
+  kUnlocked = 1,
+};
+
+struct VaultField {
+  string name;
+  string value;  // returned only for a single explicitly-requested field.
+};
+
+struct VaultItemRef {
+  string item_id;
+  string label;
+};
+
+union UnlockResult {
+  VaultState state;
+  ErrorCode error;
+};
+
+union FieldResult {
+  VaultField field;
+  ErrorCode error;
+};
+
+union ItemsResult {
+  array<VaultItemRef> items;
+  ErrorCode error;
+};
+
+union TotpResult {
+  string code;   // time-based code computed inside the vault, never the seed.
+  ErrorCode error;
+};
+
+interface VaultService {
+  Unlock(string hint) => (UnlockResult result);
+  Lock() => ();
+
+  // List item references for one origin (no secret values). budget: single obj.
+  ListForOrigin(OriginKey origin) => (ItemsResult result);
+
+  // Return exactly ONE field of ONE item. No bulk export path exists.
+  GetField(string item_id, string field_name) => (FieldResult result);
+
+  PutItem(OriginKey origin, array<VaultField> fields) => (ItemsResult result);
+
+  // Compute a TOTP code; the seed never leaves the vault.
+  Totp(string item_id) => (TotpResult result);
+};

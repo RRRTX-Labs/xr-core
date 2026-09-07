@@ -1,0 +1,35 @@
+# Copyright 2026 RRRTX Labs
+# Use of this source code is governed by the MPL-2.0 license that can be
+# found in the LICENSE file.
+
+# BUILD.gn — xr.mojom contract surface (P5 freeze, §1.11).
+#
+# The `mojom` template generates C++/JS bindings from the .mojom sources. That
+# generation requires the pinned Chromium checkout + the mojom toolchain, which
+# are FARM-ONLY at this phase (HG-9/HG-27). On this sandbox no bindings are
+# compiled; `mojom_lint.py` performs the structural checks CI can run offline.
+# This target is addressed from Chromium as `//xr/mojom` once mounted.
+#
+# When the farm lands the bindings (P6 first CI), this file is uncommented into
+# `//xr:xr_all` via the xr-core root BUILD.gn subdir hook.
+
+import("//mojo/public/tools/bindings/mojom.gni")
+
+mojom("mojom") {
+  sources = [
+    "activity_log.mojom",
+    "downloads.mojom",
+    "guard.mojom",
+    "identity.mojom",
+    "policy_resolver.mojom",
+    "route_manager.mojom",
+    "shield.mojom",
+    "vault.mojom",
+    "xr_common.mojom",
+    "xr_types.mojom",
+  ]
+
+  # Contract surface only depends on itself; no external mojom deps at freeze.
+  # §7.2 import law: //xr/mojom is a leaf that others import, not the reverse.
+  public_deps = []
+}

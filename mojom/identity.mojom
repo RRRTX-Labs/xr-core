@@ -1,0 +1,76 @@
+// Copyright 2026 RRRTX Labs
+// Use of this source code is governed by the MPL-2.0 license that can be
+// found in the LICENSE file.
+//
+// Contract: xr.mojom.IdentityManager (§1.11 "IdentityManager").
+//   File `identity.mojom` carries the §1.11-named interface (research R3).
+// Version: kContractVersion (xr_types.mojom). Migration note:
+//          xr-browser/docs/contracts/xr-schema-v1.md.
+// Fixtures: xr-core/fakes/fixtures/identity-v1.json.
+// Fake: xr-core/fakes/identity.py.
+//
+// PROVISIONING TIMING (P4 finding, ADR-0042 risk section, "Contracts out"):
+//   The partition is fixed at tab/SiteInstance creation
+//   (SiteInstance::CreateForFixedStoragePartition + config.partition_domain).
+//   Therefore identity MUST be attached BEFORE the first SiteInstance
+//   association: Create returns an IdentityId whose partition_domain is bound
+//   at tab creation; an identity CANNOT be attached to an existing tab without
+//   a destructive reload (MoveTab encodes this ordering dependency). The
+//   fixture identity-v1.json demonstrates the ordering: attach-after-nav rows
+//   are rejected. Bind failure is FAIL-CLOSED (§8.3) — the spike patch is
+//   fail-open; the contract is not.
+
+module xr.mojom;
+
+import "xr_types.mojom";
+
+enum IdentityState {
+  kActive = 0,
+  kHibernated = 1,
+  kDestroyed = 2,
+};
+
+enum Grade {
+  kStandard = 0,
+  kFortress = 1,   // promoted profile (partition hardening, §35).
+};
+
+struct IdentityInfo {
+  IdentityId id;
+  IdentityState state;
+  Grade grade;
+  bool in_memory;  // ephemeral ⇒ true.
+};
+
+union IdentityResult {
+  IdentityInfo info;
+  ErrorCode error;
+};
+
+union PurgeResult {
+  // Zero-residual verification hook (§1.4 lifecycle): the impl must prove no
+  // partition data remains after Destroy. The fake asserts the skeleton-only
+  // tolerance from the T0 ruling (2): zero persistent DATA writes.
+  bool zero_residual_verified;
+  ErrorCode error;
+};
+
+interface IdentityManager {
+  // Mint a new identity; partition_domain is bound now (pre-navigation).
+  // budget: single object.
+  Create(Grade grade, bool ephemeral) => (IdentityResult result);
+
+  Activate(IdentityId id) => (IdentityResult result);
+  Hibernate(IdentityId id) => (IdentityResult result);
+
+  // Promote a Standard identity to a Fortress profile (§35). New partition.
+  PromoteToFortressProfile(IdentityId id) => (IdentityResult result);
+
+  // Destroy + scope purge + zero-residual verification (§1.4).
+  Destroy(IdentityId id) => (PurgeResult result);
+
+  // Move a tab between identities. Because the partition is fixed at creation,
+  // this is a destructive-reload operation (documented ordering dependency).
+  MoveTab(IdentityId from, IdentityId to, int64 tab_id)
+      => (IdentityResult result);
+};

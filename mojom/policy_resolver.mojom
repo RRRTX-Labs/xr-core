@@ -1,0 +1,125 @@
+// Copyright 2026 RRRTX Labs
+// Use of this source code is governed by the MPL-2.0 license that can be
+// found in the LICENSE file.
+//
+// Contract: xr.mojom.PolicyResolver (§1.11 "PolicyResolver — pure f with
+//           determinism tests"; §2.10 EffectivePolicy total-from-day-one).
+// Version: kContractVersion (xr_types.mojom). Migration note:
+//          xr-browser/docs/contracts/effective-policy-v1.md.
+// Fixtures: xr-browser/docs/contracts/vectors/policy-resolver-v1.json.
+// Fake: xr-core/fakes/policy_resolver.py.
+//
+// DETERMINISM / PURITY (contract law, not documentation):
+//   Resolve is a TOTAL, PURE function. Same input tuple ⇒ byte-identical
+//   EffectivePolicy, always. No clock, no RNG, no environment, no I/O.
+//   Unknown identity / unknown origin / unknown request class / malformed
+//   input ⇒ a fully-denying EffectivePolicy (deny-default), never an error
+//   that a caller could treat as "allow". This is enforced by the golden
+//   vectors (byte-stable) and the env-isolation test.
+
+module xr.mojom;
+
+import "xr_types.mojom";
+
+// The resolved, effective policy for one (identity, origin, context, class).
+// Schema of record: effective-policy-v1.schema.json. Every field has a
+// deny-safe default; there is no "unset ⇒ allow" state.
+struct EffectivePolicy {
+  PolicyVersion version;
+
+  // §2.10 reserved fields (present from day one; resolver total over them):
+  BlockingPolicy blocking;
+  CosmeticPolicy cosmetic;
+  PermissionPolicy permissions;
+  EgressPolicy egress;
+  FingerprintPolicy fingerprint;     // reserved-surface field (§2.10).
+  StorageScopePolicy storage_scope;  // reserved-surface field (§2.10).
+  VaultScopePolicy vault_scope;
+  ProcessPolicy process_policy;
+  bool letterbox;                    // reserved-surface field (§2.10).
+};
+
+struct BlockingPolicy {
+  bool block_network_ads;
+  bool block_trackers;
+  bool upgrade_to_https;
+};
+
+struct CosmeticPolicy {
+  bool hide_cosmetic;
+  bool block_scriptlets;
+};
+
+struct PermissionPolicy {
+  PermissionState geolocation;
+  PermissionState camera;
+  PermissionState microphone;
+  PermissionState notifications;
+};
+
+enum PermissionState {
+  kDeny = 0,   // deny-default (first value == safe default).
+  kAsk = 1,
+  kAllow = 2,
+};
+
+struct EgressPolicy {
+  bool block_third_party;
+  RouteClass route;
+};
+
+enum RouteClass {
+  kDirect = 0,
+  kProxy = 1,
+  kWireguard = 2,
+  kTor = 3,
+};
+
+struct FingerprintPolicy {
+  FingerprintMode mode;
+};
+
+enum FingerprintMode {
+  kOff = 0,        // no reduction (Standard tier baseline).
+  kReduce = 1,
+  kStrict = 2,     // Fortress.
+};
+
+struct StorageScopePolicy {
+  StorageScope scope;
+  bool in_memory;  // ephemeral identity ⇒ true (ADR-0042 (d)).
+};
+
+enum StorageScope {
+  kEphemeral = 0,  // deny-default: nothing persisted unless promoted.
+  kIdentityScoped = 1,
+  kFortressPartition = 2,
+};
+
+struct VaultScopePolicy {
+  bool autofill_allowed;
+  bool export_allowed;  // ALWAYS false in v1 (vault has no export surface).
+};
+
+struct ProcessPolicy {
+  bool site_isolated;
+  bool dedicated_process;
+};
+
+// Pure resolution. Result is a union: an EffectivePolicy or a typed error.
+// NOTE the resolver is total — the fake/impl converts every ErrorCode input
+// condition into a denying EffectivePolicy; the union's error arm exists only
+// for VersionMismatch surfaced to the caller (still deny-safe).
+union ResolveResult {
+  EffectivePolicy policy;
+  ErrorCode error;
+};
+
+interface PolicyResolver {
+  // Pure, total, deterministic. trust_context is optional (absent ⇒ Standard).
+  // budget: single object, < 4 KB; not batched/streamed.
+  Resolve(IdentityId identity,
+          OriginKey origin,
+          TrustContext? trust_context,
+          RequestClass request_class) => (ResolveResult result);
+};

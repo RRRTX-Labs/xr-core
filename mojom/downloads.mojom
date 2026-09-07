@@ -1,0 +1,50 @@
+// Copyright 2026 RRRTX Labs
+// Use of this source code is governed by the MPL-2.0 license that can be
+// found in the LICENSE file.
+//
+// Contract: xr.mojom.DownloadSafety (§1.11; §2.10 reserved — covers
+//           xr-inspect). Version: kContractVersion (xr_types.mojom).
+// Migration note: xr-browser/docs/contracts/xr-schema-v1.md.
+// Fixtures: xr-core/fakes/fixtures/downloads-v1.json.
+// Fake: xr-core/fakes/downloads.py.
+//
+// SECURITY: Scan returns a typed verdict; there is no "run the file" surface.
+// The direct-media affordance (§2.6) is a boolean flag on the verdict, not an
+// executable action.
+
+module xr.mojom;
+
+import "xr_types.mojom";
+
+enum ScanVerdict {
+  kUnknown = 0,       // deny-safe default: treat as unsafe until scanned.
+  kSafe = 1,
+  kQuarantined = 2,
+  kDangerous = 3,
+};
+
+enum QuarantineState {
+  kHeld = 0,          // default: held until an explicit user release.
+  kReleased = 1,
+  kDeleted = 2,
+};
+
+struct DownloadVerdict {
+  ScanVerdict verdict;
+  QuarantineState quarantine;
+  bool direct_media_affordance;  // §2.6 direct-media flag.
+};
+
+union ScanResult {
+  DownloadVerdict verdict;
+  ErrorCode error;
+};
+
+interface DownloadSafety {
+  // Scan a download by content hash + declared type. budget: single object.
+  Scan(string content_sha256, string mime_type, IdentityId identity)
+      => (ScanResult result);
+
+  // Re-query the current verdict/quarantine state for a known download.
+  Verdict(string download_id) => (ScanResult result);
+};

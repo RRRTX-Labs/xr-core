@@ -1,0 +1,48 @@
+// Copyright 2026 RRRTX Labs
+// Use of this source code is governed by the MPL-2.0 license that can be
+// found in the LICENSE file.
+//
+// Contract: xr.mojom.RouteManager (§1.11; §2.10 reserved — covers proxy/WG/Tor
+//           before those engines exist).
+// Version: kContractVersion (xr_types.mojom). Migration note:
+//          xr-browser/docs/contracts/xr-schema-v1.md.
+// Fixtures: xr-browser/docs/contracts/vectors/route-manager-v1.json.
+// Fake: xr-core/fakes/route_manager.py.
+//
+// LAW L6 — FAIL CLOSED: LoseAllFailClosed models route loss. On loss, all
+// pending AND future requests error (kFailClosed) until recovery; recovery is
+// gated behind an explicit user acknowledgement (user_ack). The absent/valid
+// state is representable; there is no silent fall-through to Direct. A golden
+// vector (route-manager-v1.json) pins this behavior.
+
+module xr.mojom;
+
+import "xr_types.mojom";
+
+enum RouteState {
+  kUnbound = 0,     // deny-safe default.
+  kBound = 1,
+  kFailClosed = 2,  // all traffic errors until recovery + user_ack.
+};
+
+struct RouteStatus {
+  RouteState state;
+  RouteClass route;
+  bool user_ack_required;  // true after a loss; recovery blocked until acked.
+};
+
+union RouteResult {
+  RouteStatus status;
+  ErrorCode error;
+};
+
+interface RouteManager {
+  // Bind an identity's egress to a route class. budget: single object.
+  Bind(IdentityId identity, RouteClass route) => (RouteResult result);
+  Unbind(IdentityId identity) => (RouteResult result);
+  Status(IdentityId identity) => (RouteResult result);
+
+  // L6: lose all routes; everything fails closed. Recovery requires a
+  // subsequent Bind that carries the user acknowledgement.
+  LoseAllFailClosed() => (RouteResult result);
+};
