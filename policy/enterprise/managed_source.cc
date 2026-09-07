@@ -30,7 +30,8 @@ bool ReadFileToString(const std::string& path, std::string* out) {
 // Runs `minisign -Vm <doc> -x <sig> -p <pub>`; paths containing shell
 // metacharacters are rejected up front (fail closed to skip). Tool
 // availability is checked EXPLICITLY (a missing binary yields shell 127,
-// which must never be conflated with a bad signature).
+// which must never be conflated with a bad signature). Output is silenced:
+// the host process's stdout is the JSON protocol, not minisign chatter.
 int RunMinisignVerify(const std::string& doc, const std::string& sig, const std::string& pub) {
   for (const std::string* s : {&doc, &sig, &pub}) {
     for (char c : *s) {
@@ -41,7 +42,8 @@ int RunMinisignVerify(const std::string& doc, const std::string& sig, const std:
     }
   }
   if (std::system("command -v minisign >/dev/null 2>&1") != 0) return 127;  // tool absent
-  std::string cmd = "minisign -Vm '" + doc + "' -x '" + sig + "' -p '" + pub + "' 2>/dev/null";
+  std::string cmd = "minisign -Vm '" + doc + "' -x '" + sig + "' -p '" + pub +
+                    "' >/dev/null 2>&1";
   return std::system(cmd.c_str());
 }
 
@@ -141,7 +143,7 @@ ManagedResult LoadManagedPolicy(const std::string& doc_path, const std::string& 
   }
 
   // Signature gate: signed-or-ignored, fail closed on any doubt.
-  const std::string sig_path = doc_path + ".minisign";
+  const std::string sig_path = doc_path + ".minisig";  // minisign detached-sig convention
   std::string sig;
   if (!ReadFileToString(sig_path, &sig)) {
     r.status = ManagedStatus::kIgnoredUnsigned;

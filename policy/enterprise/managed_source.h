@@ -44,7 +44,7 @@ struct ManagedResult {
 };
 
 // Loads `doc_path` (JSON envelope) verifying the detached signature at
-// `doc_path + ".minisign"` against `pubkey_path` when the minisign tool is
+// `doc_path + ".minisig"` (minisign convention) against `pubkey_path` when the minisign tool is
 // available. Pure I/O + subprocess; no enforcement decisions happen here.
 ManagedResult LoadManagedPolicy(const std::string& doc_path, const std::string& pubpath);
 

@@ -38,7 +38,7 @@ CORE_SRCS := \
 
 CORE_OBJS := $(patsubst %.cc,$(BUILD)/%.o,$(notdir $(CORE_SRCS)))
 
-TESTS := test_vectors test_resolve test_purity test_cache test_snapshot test_store test_events test_enterprise
+TESTS := test_vectors test_resolve test_purity test_cache test_snapshot test_store test_events test_enterprise test_json test_service
 
 .PHONY: build test bench clean
 

@@ -37,7 +37,7 @@ cache, snapshot-distribution, event, and enterprise seams around it.
 | `core/events.{h,cc}` | policy-change events: concrete deltas, undo affordance, no scores, no auto-reload |
 | `core/service.{h,cc}` | service: store loading + merging, cache, snapshot sequencing, dump |
 | `core/service_mojom.h` | farm-gated (HG-29) mojom adapter — `XR_HAVE_MOJOM_BINDINGS` |
-| `enterprise/managed_source.{h,cc}` | file-based managed policy: signed-or-ignored (minisign scaffold) |
+| `enterprise/managed_source.{h,cc}` | file-based managed policy: signed-or-ignored (minisign; detached `.minisig` convention; verified ⇒ enforced, anything else ⇒ IGNORED + ledger row) |
 | `host/policy_host.cc` | stdio JSON façade (fake-protocol-compatible) |
 | `tests/`, `bench/` | C++ test binaries + microbenchmark (`make test`, `make bench`) |
 

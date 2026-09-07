@@ -199,6 +199,26 @@ int main() {
        "\"trust\":\"kShield\",\"created_at\":1,\"expires_at\":0,\"session_id\":\"\","
        "\"remaining_uses\":0,\"granted_by\":\"in_flow\"}]}}",
        StoreError::kInvalidEntry},
+      {"once-without-remaining-uses",
+       "{\"schema\":\"xr-exceptions\",\"schema_version\":2,\"created_at\":0,"
+       "\"data\":{\"exceptions\":[{\"id\":\"e\",\"domain\":\"a.com\",\"scope\":\"once\","
+       "\"trust\":\"kShield\",\"created_at\":1,\"expires_at\":0,\"session_id\":\"\","
+       "\"remaining_uses\":0,\"granted_by\":\"in_flow\"}]}}",
+       StoreError::kInvalidEntry},
+      {"session-with-empty-session-id",
+       "{\"schema\":\"xr-exceptions\",\"schema_version\":2,\"created_at\":0,"
+       "\"data\":{\"exceptions\":[{\"id\":\"e\",\"domain\":\"a.com\",\"scope\":\"session\","
+       "\"trust\":\"kShield\",\"created_at\":1,\"expires_at\":0,\"session_id\":\"\","
+       "\"remaining_uses\":0,\"granted_by\":\"in_flow\"}]}}",
+       StoreError::kInvalidEntry},
+      {"identity-list-bad-storage",
+       "{\"schema\":\"xr-identity-list\",\"schema_version\":1,\"created_at\":0,"
+       "\"data\":{\"identities\":[{\"value\":\"xr:abc\",\"storage\":\"somewhere-else\"}]}}",
+       StoreError::kInvalidEntry},
+      {"identity-list-bad-kind",
+       "{\"schema\":\"xr-identity-list\",\"schema_version\":1,\"created_at\":0,"
+       "\"data\":{\"identities\":[{\"value\":\"xr:abc\",\"kind\":\"ultra\"}]}}",
+       StoreError::kInvalidEntry},
     };
     for (const auto& c : cases) {
       std::string path = TmpFile("corrupt");

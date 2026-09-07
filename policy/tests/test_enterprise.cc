@@ -102,7 +102,7 @@ int main() {
   {
     std::string doc = Tmp("signed.json");
     Write(doc, kGoodDoc);
-    Write(doc + ".minisign", "fake signature bytes\n");
+    Write(doc + ".minisig", "fake signature bytes\n");  // minisign detached-sig convention
     auto r = LoadManagedPolicy(doc, pub);
     XR_EXPECT(!r.enforced);
     if (MinisignPresent()) {
