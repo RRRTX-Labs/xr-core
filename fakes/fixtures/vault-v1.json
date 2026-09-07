@@ -1,0 +1,1 @@
+{"contract":"vault","contract_version":1,"cases":[{"name":"seed-never-exported","method":"GetField","args":{"item_id":"it-1","field_name":"totp_seed"},"expect_error":"kNotPermitted"}]}

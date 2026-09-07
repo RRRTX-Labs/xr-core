@@ -18,6 +18,8 @@ module xr.mojom;
 
 import "xr_types.mojom";
 
+const int32 kContractVersion = 1;  // per-file freeze stamp (see xr_types).
+
 enum VaultState {
   kLocked = 0,   // deny-safe default.
   kUnlocked = 1,
@@ -63,6 +65,7 @@ interface VaultService {
   // Return exactly ONE field of ONE item. No bulk export path exists.
   GetField(string item_id, string field_name) => (FieldResult result);
 
+  // budget: single item put; array<VaultField> is one item's fields, not a batch.
   PutItem(OriginKey origin, array<VaultField> fields) => (ItemsResult result);
 
   // Compute a TOTP code; the seed never leaves the vault.

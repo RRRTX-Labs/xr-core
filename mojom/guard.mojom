@@ -18,6 +18,8 @@ module xr.mojom;
 
 import "xr_types.mojom";
 
+const int32 kContractVersion = 1;  // per-file freeze stamp (see xr_types).
+
 enum GuardVerdict {
   kDeny = 0,    // deny-safe default.
   kAllow = 1,

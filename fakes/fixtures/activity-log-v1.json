@@ -1,0 +1,1 @@
+{"contract":"activity_log","contract_version":1,"cases":[{"name":"append-query","method":"Query","args":{"max_rows":3}}]}

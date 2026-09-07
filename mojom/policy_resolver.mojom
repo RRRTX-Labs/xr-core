@@ -21,6 +21,8 @@ module xr.mojom;
 
 import "xr_types.mojom";
 
+const int32 kContractVersion = 1;  // per-file freeze stamp (see xr_types).
+
 // The resolved, effective policy for one (identity, origin, context, class).
 // Schema of record: effective-policy-v1.schema.json. Every field has a
 // deny-safe default; there is no "unset ⇒ allow" state.

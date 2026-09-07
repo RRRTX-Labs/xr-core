@@ -11,6 +11,8 @@ module xr.mojom;
 
 import "xr_types.mojom";
 
+const int32 kContractVersion = 1;  // per-file freeze stamp (see xr_types).
+
 // Generic acknowledgement returned by fire-and-forget style methods that still
 // want a typed outcome. Deny-safe default is kFailClosed (never silent ok).
 struct Ack {

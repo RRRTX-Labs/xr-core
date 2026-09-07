@@ -1,0 +1,1 @@
+{"contract":"identity","contract_version":1,"cases":[{"name":"create-standard","method":"Create","args":{"grade":"kStandard"}},{"name":"move-after-nav-rejected","method":"MoveTab","args":{"to":"x","after_nav":true},"expect_error":"kNotPermitted"}]}

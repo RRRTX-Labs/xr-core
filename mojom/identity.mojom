@@ -24,6 +24,8 @@ module xr.mojom;
 
 import "xr_types.mojom";
 
+const int32 kContractVersion = 1;  // per-file freeze stamp (see xr_types).
+
 enum IdentityState {
   kActive = 0,
   kHibernated = 1,

@@ -12,6 +12,8 @@ module xr.mojom;
 
 import "xr_types.mojom";
 
+const int32 kContractVersion = 1;  // per-file freeze stamp (see xr_types).
+
 enum BlockAction {
   kBlocked = 0,
   kAllowed = 1,      // observed-but-allowed (accountability row).

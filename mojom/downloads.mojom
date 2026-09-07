@@ -16,6 +16,8 @@ module xr.mojom;
 
 import "xr_types.mojom";
 
+const int32 kContractVersion = 1;  // per-file freeze stamp (see xr_types).
+
 enum ScanVerdict {
   kUnknown = 0,       // deny-safe default: treat as unsafe until scanned.
   kSafe = 1,
