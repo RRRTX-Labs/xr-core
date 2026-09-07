@@ -1,0 +1,65 @@
+# Copyright 2026 RRRTX Labs
+# Use of this source code is governed by the MPL-2.0 license that can be
+# found in the LICENSE file.
+#
+# SPIKE KIT (P4). Compiled ONLY on a farm branch by an engineer running the
+# identity-seam probes. It is deliberately NOT reachable from //xr:xr_all and
+# must never be part of a product build — a spike is a measurement instrument,
+# not a feature.
+
+import("//build/buildflag_header.gni")
+
+buildflag_header("xr_spike_flags") {
+  header = "xr_spike_flags.h"
+  flags = [
+    # Gate every spike code path behind this. Default false: the product build
+    # must not contain spike code even by accident.
+    "ENABLE_XR_SPIKE=false",
+  ]
+}
+
+source_set("identity_seam") {
+  # Test-only: the kit exists to be exercised by browsertests.
+  testonly = true
+
+  sources = [
+    "xr_identity.cc",
+    "xr_identity.h",
+    "xr_seam_override.cc",
+    "xr_seam_override.h",
+  ]
+
+  public_deps = [
+    ":xr_spike_flags",
+    "//base",
+    "//content/public/browser",
+    "//url",
+  ]
+
+  deps = [
+    "//chrome/browser/profiles:profile",
+  ]
+}
+
+source_set("probes") {
+  testonly = true
+
+  sources = [
+    "probes/ephemeral_zero_write_browsertest.cc",
+    "probes/fortress_profile_coexist_browsertest.cc",
+    "probes/isolation_matrix_browsertest.cc",
+    "probes/network_context_browsertest.cc",
+    "probes/process_sharing_browsertest.cc",
+  ]
+
+  deps = [
+    ":identity_seam",
+    "//base",
+    "//chrome/test:test_support",
+    "//content/public/browser",
+    "//content/test:test_support",
+    "//net:test_support",
+    "//testing/gtest",
+    "//url",
+  ]
+}
