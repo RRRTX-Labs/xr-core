@@ -1,0 +1,73 @@
+{
+  "contract": "isolation-card-disclosure-strings",
+  "contract_version": 1,
+  "locale": "en-US",
+  "legal": "PENDING-HG-1",
+  "note": "Disclosure strings are MEASURED FACTS derived from P4's measured shared-state table (xr-browser/docs/spike-identity/measured-shared-state.md), not promises (L5). Each string has an `evidence` sibling pointing at the measured row + citable file:line at the pin. Localizable: additional locales add sibling keys under `strings`. Vocab-lint clean (no banned claims).",
+  "strings": {
+    "identity_isolates_storage": {
+      "text": "Each identity keeps its own cookies, cache, and site storage in a separate partition.",
+      "evidence": {
+        "rows": ["S-13", "S-14", "S-09"],
+        "source": "docs/spike-identity/measured-shared-state.md",
+        "citation": "services/network/public/mojom/network_context.mojom:242,282@d04cdb24"
+      }
+    },
+    "identity_isolates_network_context": {
+      "text": "Each identity gets its own network context, so proxy and connection settings can differ per identity.",
+      "evidence": {
+        "rows": ["S-10", "S-11"],
+        "source": "docs/spike-identity/measured-shared-state.md",
+        "citation": "content/browser/storage_partition_impl.cc:3506@d04cdb24"
+      }
+    },
+    "identity_isolates_renderer": {
+      "text": "Pages from different identities never share the same renderer process.",
+      "evidence": {
+        "rows": ["S-08", "S-09"],
+        "source": "docs/spike-identity/measured-shared-state.md",
+        "citation": "content/browser/renderer_host/render_process_host_impl.cc:4952@d04cdb24"
+      }
+    },
+    "ephemeral_writes_nothing": {
+      "text": "An ephemeral identity keeps its data in memory only; it has no on-disk path, so it writes no site data to disk.",
+      "evidence": {
+        "rows": ["S-18", "S-19"],
+        "source": "docs/spike-identity/measured-shared-state.md",
+        "citation": "content/browser/storage_partition_impl.cc:3380@d04cdb24"
+      }
+    },
+    "dns_is_shared": {
+      "text": "Domain name lookups are handled by one resolver shared across the whole browser, so which sites you visit can be correlated across identities at the DNS layer.",
+      "evidence": {
+        "rows": ["S-16", "S-17"],
+        "source": "docs/spike-identity/measured-shared-state.md",
+        "citation": "services/network/network_context.cc:2234@d04cdb24"
+      }
+    },
+    "permissions_are_profile_shared": {
+      "text": "Site permission choices are stored per site for the whole profile, so granting a permission to a site in one identity can be visible to that site in another identity.",
+      "evidence": {
+        "rows": ["P-1"],
+        "source": "docs/spike-identity/measured-shared-state.md",
+        "citation": "docs/spike-identity/measured-shared-state.md#profile-shared-surfaces"
+      }
+    },
+    "history_and_credentials_are_profile_shared": {
+      "text": "History, bookmarks, and saved passwords are stored once per profile and are not separated by identity.",
+      "evidence": {
+        "rows": ["P-2", "P-3"],
+        "source": "docs/spike-identity/measured-shared-state.md",
+        "citation": "docs/spike-identity/measured-shared-state.md#profile-shared-surfaces"
+      }
+    },
+    "runtime_pending": {
+      "text": "These descriptions come from reading the browser engine's source at a fixed version; they have not yet been confirmed by running the browser.",
+      "evidence": {
+        "rows": ["ALL"],
+        "source": "docs/spike-identity/measured-shared-state.md",
+        "citation": "PENDING-FARM (HG-21 runtime confirmation)"
+      }
+    }
+  }
+}
