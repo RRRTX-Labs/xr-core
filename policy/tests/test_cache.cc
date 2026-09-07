@@ -139,6 +139,32 @@ int main() {
     auto s = c.GetStats();
     XR_EXPECT(s.size <= 4);
     XR_EXPECT(s.evictions >= 6);
+    // Capacity is honored POSITIVELY (not merely "not exceeded"): the newest
+    // 4 entries coexist and are all retrievable; older ones were FIFO-evicted.
+    // (Guards the capacity-clamp constructor: a degenerate capacity-1 cache
+    // passes the <=/>= assertions above, so coexistence must be pinned.)
+    XR_EXPECT(s.size == 4);
+    for (int i = 6; i < 10; ++i) {
+      PolicyCacheKey k{"id", "site" + std::to_string(i), "kStandard"};
+      XR_EXPECT(c.Get(k, "id").hit);
+    }
+    for (int i = 0; i < 6; ++i) {
+      PolicyCacheKey k{"id", "site" + std::to_string(i), "kStandard"};
+      XR_EXPECT(!c.Get(k, "id").hit);
+    }
+  }
+
+  // ---- zero-capacity clamp: PolicyCache(0) means "smallest useful" (1), ----
+  // ---- never an unbounded or broken store                              ----
+  {
+    PolicyCache c(0);
+    PolicyCacheKey a{"id", "a.com", "kStandard"}, b{"id", "b.com", "kStandard"};
+    c.Put(a, MakePolicy(false));
+    XR_EXPECT(c.Get(a, "id").hit);
+    c.Put(b, MakePolicy(false));  // evicts a: capacity clamped to exactly 1
+    XR_EXPECT(!c.Get(a, "id").hit);
+    XR_EXPECT(c.Get(b, "id").hit);
+    XR_EXPECT(c.GetStats().size == 1);
   }
 
   return xrtest::Report("test_cache");
