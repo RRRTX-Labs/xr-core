@@ -24,6 +24,13 @@ ROOT_ROSTER := $(ROOT)/commands/core/roster_v1.json
 XR_BROWSER_ROOT ?= ../../../xr-browser
 ENV := XR_BROWSER_ROOT=$(XR_BROWSER_ROOT) XR_COMMANDS_HOST=./$(BUILD)/commands_host
 
+# A bare `make` must build the real targets (commands_host + tests + bench),
+# not the first incidental rule (protocol.o). The C++-vs-Python parity test in
+# xr-browser (tools/tests/test_p7_commands_tools.py) invokes `make` with no
+# target and expects $(BUILD)/commands_host; on a clean clone (CI) there is no
+# pre-built binary, so the default goal must produce it (XR-P7-CI).
+.DEFAULT_GOAL := build
+
 CORE_OBJS := \
   $(BUILD)/commands/core/json.o \
   $(BUILD)/commands/core/json_parse.o \
