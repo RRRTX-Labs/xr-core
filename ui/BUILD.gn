@@ -1,0 +1,25 @@
+# Copyright 2026 RRRTX Labs
+# Use of this source code is governed by the MPL-2.0 license that can be
+# found in the LICENSE file.
+
+# //xr/ui: the command-registry WebUI sources (P7). Lit + strict TypeScript,
+# thin views (all logic via the command host protocol).
+#
+# FARM INTEGRATION PLACEHOLDER (Plan §4 P7: "ui/BUILD.gn placeholder noting
+# farm-integration (grit) — no fake integration now"). The real on-tree build
+# wires these sources through the Chromium WebUI grit/bundled-resources pipeline
+# (content/browser/webui resources) — that is the P16 glue, farm-gated (HG-31).
+# There is deliberately NO fake grit/resources target here: a hand-rolled
+# .grd/.mojom would be a fake integration the plan explicitly refuses.
+#
+# Off-tree, the UI is built by the reproducible toolchain (ui/toolchain,
+# esbuild) and validated by `tsc --strict` + the CSP/a11y/RTL lints (see
+# xr-browser docs/webui-toolchain.md). That toolchain is the "stable for other
+# tracks" P7 deliverable; P8/P13 add WebUI through it.
+
+# (Intentionally empty target list — see the farm-integration note above. The
+# group exists so //xr/ui is a valid dep target once the P16 grit target lands.)
+group("ui_sources_placeholder") {
+  # No sources yet: the sources are TypeScript built off-tree by the toolchain.
+  # When the P16 farm grit target lands, it replaces this placeholder.
+}

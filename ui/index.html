@@ -1,0 +1,22 @@
+<!doctype html>
+<!-- Copyright 2026 RRRTX Labs — MPL-2.0. See LICENSE.
+     The command-registry WebUI shell. CSP-strict: the ONLY script tag is the
+     external, integrity-pinned bundle (script-src 'self'); there is NO inline
+     script, no eval, no inline event handlers (checked by
+     ui/toolchain/check-bundle.js + xr-browser tools/csp_lint.py). -->
+<html lang="en" dir="auto">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>XR Browser — Command Registry</title>
+    <link rel="stylesheet" href="tokens.css" />
+  </head>
+  <body>
+    <div id="xr-root">
+      <xr-palette></xr-palette>
+      <xr-shortcut-editor></xr-shortcut-editor>
+      <xr-help-index></xr-help-index>
+    </div>
+    <script type="module" src="bundle.js"></script>
+  </body>
+</html>

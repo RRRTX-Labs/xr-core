@@ -18,6 +18,12 @@ categories:
   extension_chokepoint: { cap: 2 }
 allowed_roots:
   - "chrome/app/"
+  # P7 (Stage 1): the chrome/browser/ui command seam is the plan's first real
+  # UI-hook consumer ("chrome/browser/ui/**: toolbar view, app-menu model
+  # builder, tabstrip color path"). The §12.7 never-list (content/**, blink/**)
+  # is enforced independently by build/webui/patch_roundtrip.py's never-list
+  # check, not by relaxing it here.
+  - "chrome/browser/ui/"
 patches:
   - id: "0001-brand-ui"
     owner: "@xr/platform"
@@ -26,3 +32,21 @@ patches:
       - chrome/app/theme/chromium/BRANDING
       - chrome/app/chromium_strings.grd
     dir: branding/0001-brand-ui   # relative to this manifest's directory (patches/)
+  # P7 (Stage 1): the chrome/browser/ui command seam (first real UI-hook
+  # consumer). category ui (cap 35). 9 files (4 upstream + 5 XR-owned payload),
+  # within the plan's <=12-file budget. Round-trip-proven at the pin by
+  # xr-browser build/webui/patch_roundtrip.py.
+  - id: "0100-ui-skeleton"
+    owner: "@xr/platform"
+    category: ui
+    files:
+      - chrome/browser/ui/views/BUILD.gn
+      - chrome/browser/ui/views/toolbar/app_menu.cc
+      - chrome/browser/ui/views/toolbar/toolbar_view.cc
+      - chrome/browser/ui/views/frame/browser_frame_view.cc
+      - chrome/browser/ui/xr/BUILD.gn
+      - chrome/browser/ui/xr/xr_command_bridge.h
+      - chrome/browser/ui/xr/xr_command_bridge.cc
+      - chrome/browser/ui/xr/xr_identity_color_bar.h
+      - chrome/browser/ui/xr/xr_identity_color_bar.cc
+    dir: ui-skeleton/0100-ui-skeleton

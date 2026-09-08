@@ -1,0 +1,67 @@
+# Copyright 2026 RRRTX Labs
+# Use of this source code is governed by the MPL-2.0 license that can be
+# found in the LICENSE file.
+
+# BUILD.gn — //xr/commands: the command registry + host (Plan §4 P7, §10
+# "any feature that cannot express itself as a command does not ship").
+#
+# Import law (Plan §7.2): //xr/commands is UI-adjacent, NOT S0 — it sits OUTSIDE
+# the S0 boundary by the §7.2 list (see the commit body / research log for why).
+# It may import //xr/policy (the one-brain) as a READ-ONLY availability source:
+# the availability predicate contract reads the pinned P6 snapshot; the UI never
+# calls Resolve() live (TOCTOU rule inherited).
+#
+# The core below is deliberately STD-ONLY C++20 (like //xr/policy) so it
+# compiles + benchmarks + mutates off-tree (g++/make: commands/tests/Makefile)
+# with BYTE-PARITY against the frozen Python reference fake (fakes/commands.py)
+# over the whole command-host protocol. No Chromium headers in the core.
+#
+# The one security edge (commands/core/dispatch.{h,cc}) is file-annotated S1
+# (see its header Intent) and is in the mode_lint exemption review.
+
+source_set("commands_core") {
+  sources = [
+    "core/availability.cc",
+    "core/availability.h",
+    "core/descriptor.cc",
+    "core/descriptor.h",
+    "core/dispatch.cc",
+    "core/dispatch.h",
+    "core/json.cc",
+    "core/json.h",
+    "core/json_parse.cc",
+    "core/matcher.cc",
+    "core/matcher.h",
+    "core/policy_state.cc",
+    "core/policy_state.h",
+    "core/registry.cc",
+    "core/registry.h",
+    "core/shortcuts.cc",
+    "core/shortcuts.h",
+    "core/sha256.cc",
+    "core/sha256.h",
+  ]
+  public_deps = []
+  # NOTE: no Chromium deps. std-only by design (see header comment). The
+  # availability contract READS a pinned P6 snapshot (data in, verdict out);
+  # the mojom channel to policy_host is P16 glue, not the core.
+}
+
+# The stdio JSON façade (command-host-protocol v1). Driven by `xrctl commands`
+# (--backend cpp) and the parity harness. Speaks the same protocol as
+# fakes/commands.py.
+source_set("commands_host_lib") {
+  sources = [
+    "host/commands_host.cc",
+    "host/protocol.cc",
+    "host/protocol.h",
+  ]
+  deps = [ ":commands_core" ]
+}
+
+group("commands_all") {
+  deps = [
+    ":commands_core",
+    ":commands_host_lib",
+  ]
+}

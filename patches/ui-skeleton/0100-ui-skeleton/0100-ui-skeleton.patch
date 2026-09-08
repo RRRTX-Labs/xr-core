@@ -1,0 +1,303 @@
+diff --git a/chrome/browser/ui/views/BUILD.gn b/chrome/browser/ui/views/BUILD.gn
+index 5b07e8f..9c0c6a5 100644
+--- a/chrome/browser/ui/views/BUILD.gn
++++ b/chrome/browser/ui/views/BUILD.gn
+@@ -33,6 +33,7 @@ component("views") {
+     "//chrome/app:command_ids",
+     "//chrome/app:generated_resources",
+     "//chrome/browser/ui:layout_constants",
++    "//chrome/browser/ui/xr",
+     "//components/keep_alive_registry",
+     "//components/lens",
+     "//components/lens:buildflags",
+diff --git a/chrome/browser/ui/views/frame/browser_frame_view.cc b/chrome/browser/ui/views/frame/browser_frame_view.cc
+index 840b7a2..85f66bf 100644
+--- a/chrome/browser/ui/views/frame/browser_frame_view.cc
++++ b/chrome/browser/ui/views/frame/browser_frame_view.cc
+@@ -3,6 +3,7 @@
+ // found in the LICENSE file.
+ 
+ #include "chrome/browser/ui/views/frame/browser_frame_view.h"
++#include "chrome/browser/ui/xr/xr_identity_color_bar.h"
+ 
+ #include <string_view>
+ 
+@@ -160,6 +161,7 @@ void BrowserFrameView::OnBrowserViewInitViewsComplete() {
+ void BrowserFrameView::OnFullscreenStateChanged() {}
+ 
+ void BrowserFrameView::OnTabStripStateChanged() {
++  xr::XrIdentityColorBar::OnTabStripStateChanged(xr::XrIdentityColorBar::PinnedActiveIdentity(), xr::XrIdentityColorBar::PinnedTrustTier());
+   InvalidateLayout();
+ }
+ 
+diff --git a/chrome/browser/ui/views/toolbar/app_menu.cc b/chrome/browser/ui/views/toolbar/app_menu.cc
+index b54aa03..db31809 100644
+--- a/chrome/browser/ui/views/toolbar/app_menu.cc
++++ b/chrome/browser/ui/views/toolbar/app_menu.cc
+@@ -3,6 +3,7 @@
+ // found in the LICENSE file.
+ 
+ #include "chrome/browser/ui/views/toolbar/app_menu.h"
++#include "chrome/browser/ui/xr/xr_command_bridge.h"
+ 
+ #include <stdint.h>
+ 
+@@ -1345,6 +1346,7 @@ bool AppMenu::IsCommandEnabled(int command_id) const {
+ }
+ 
+ void AppMenu::ExecuteCommand(int command_id, int mouse_event_flags) {
++  xr::XrCommandBridge::OnAppMenuCommand(command_id, "menu");
+   if (command_id == IDC_CREATE_NEW_TAB_GROUP ||
+       IsTabGroupsCommand(command_id)) {
+     if (command_id != IDC_CREATE_NEW_TAB_GROUP) {
+diff --git a/chrome/browser/ui/views/toolbar/toolbar_view.cc b/chrome/browser/ui/views/toolbar/toolbar_view.cc
+index 03aedd9..f6069bb 100644
+--- a/chrome/browser/ui/views/toolbar/toolbar_view.cc
++++ b/chrome/browser/ui/views/toolbar/toolbar_view.cc
+@@ -3,6 +3,7 @@
+ // found in the LICENSE file.
+ 
+ #include "chrome/browser/ui/views/toolbar/toolbar_view.h"
++#include "chrome/browser/ui/xr/xr_command_bridge.h"
+ 
+ #include <algorithm>
+ #include <memory>
+@@ -304,6 +305,7 @@ ToolbarView::~ToolbarView() {
+ }
+ 
+ void ToolbarView::Init() {
++  xr::XrCommandBridge::RegisterToolbarSlots();
+ #if defined(USE_AURA)
+   // Avoid generating too many occlusion tracking calculation events before this
+   // function returns. The occlusion status will be computed only once once this
+diff --git a/chrome/browser/ui/xr/BUILD.gn b/chrome/browser/ui/xr/BUILD.gn
+new file mode 100644
+index 0000000..afbbca7
+--- /dev/null
++++ b/chrome/browser/ui/xr/BUILD.gn
+@@ -0,0 +1,18 @@
++# Copyright 2026 RRRTX Labs
++# Use of this source code is governed by the MPL-2.0 license that can be
++# found in the LICENSE file.
++
++# //chrome/browser/ui/xr: the P7 chrome/browser/ui command seam. Thin data path
++# only (see xr_command_bridge.h). No deps beyond std + the UI base the callers
++# already link; the mojom channel to commands_host is P16 glue (HG-31).
++source_set("xr_command_bridge") {
++  sources = [
++    "xr_command_bridge.cc",
++    "xr_command_bridge.h",
++    "xr_identity_color_bar.cc",
++    "xr_identity_color_bar.h",
++  ]
++  deps = [
++    "//ui/base",
++  ]
++}
+diff --git a/chrome/browser/ui/xr/xr_command_bridge.cc b/chrome/browser/ui/xr/xr_command_bridge.cc
+new file mode 100644
+index 0000000..d2ee980
+--- /dev/null
++++ b/chrome/browser/ui/xr/xr_command_bridge.cc
+@@ -0,0 +1,41 @@
++// Copyright 2026 RRRTX Labs
++// Use of this source code is governed by the MPL-2.0 license that can be
++// found in the LICENSE file.
++
++#include "chrome/browser/ui/xr/xr_command_bridge.h"
++
++#include <string>
++
++namespace xr {
++namespace {
++
++// L16-clean: local counter only (no network, no telemetry). A non-zero
++// count proves the seam fired during a session; the real dispatch result is
++// served by commands_host via the P16 mojom glue.
++int g_menu_dispatches = 0;
++bool g_toolbar_slots_registered = false;
++
++}  // namespace
++
++std::string XrCommandBridge::OnAppMenuCommand(int command_id,
++                                              const std::string& source) {
++  (void)command_id;
++  // This is a chrome:// UI call site (the app menu), NOT a renderer callback:
++  // a page-originated invocation cannot reach it. The source tag passed in is
++  // "menu" (a user surface in the host's allowlist). The host's cross-process
++  // origin check is defense in depth on top of that structural fact.
++  if (!source.empty()) {
++    ++g_menu_dispatches;
++  }
++  // P16 glue: forward (command, source, confirmed) to commands_host over the
++  // mojom channel and return its canonical {"ok":...} result. Until then: no-op.
++  return std::string();
++}
++
++void XrCommandBridge::RegisterToolbarSlots() {
++  // Idempotent data registration of the three chrome identity/trust slots:
++  // identity pill, trust dial, shield chip. Layout realization is P16/farm.
++  g_toolbar_slots_registered = true;
++}
++
++}  // namespace xr
+diff --git a/chrome/browser/ui/xr/xr_command_bridge.h b/chrome/browser/ui/xr/xr_command_bridge.h
+new file mode 100644
+index 0000000..d22acc0
+--- /dev/null
++++ b/chrome/browser/ui/xr/xr_command_bridge.h
+@@ -0,0 +1,36 @@
++// Copyright 2026 RRRTX Labs
++// Use of this source code is governed by the MPL-2.0 license that can be
++// found in the LICENSE file.
++//
++// Intent: S1 — the chrome/browser/ui command bridge: the ONLY seam between the
++// upstream chrome:// UI (app menu, toolbar slots, tab-strip) and the XR command
++// registry (P7). Palette/menu/dispatch logic lives in commands_host (C++);
++// this bridge is a THIN DATA PATH. It forwards user-initiated (non-page)
++// invocations carrying the `menu` / `ui-chrome` source tag and serves the
++// generated menu-model data. No business logic, no page-originated path
++// (dispatch is host-enforced — see xr-core/commands/core/dispatch.cc).
++//
++// P7 scope: the hook + data path is registered here; the full chrome://
++// integration (mojom channel to commands_host) is P16 glue (HG-31). Until then
++// the methods are no-op-safe and L16-clean (local counters only).
++#pragma once
++
++#include <string>
++
++namespace xr {
++
++class XrCommandBridge {
++ public:
++  // Called from AppMenu::ExecuteCommand (the `menu` source). Forwards the
++  // command to the command host with the given source tag. The host enforces
++  // the source allowlist, id whitelist and confirmation gate; the bridge only
++  // relays the host's typed result. Returns the canonical JSON result line
++  // (empty when the registry flag is off -> stock chrome).
++  static std::string OnAppMenuCommand(int command_id, const std::string& source);
++
++  // Called from ToolbarView::Init. Registers the toolbar slot metadata
++  // (identity pill / trust dial / shield chip) as data; layout is P16.
++  static void RegisterToolbarSlots();
++};
++
++}  // namespace xr
+diff --git a/chrome/browser/ui/xr/xr_identity_color_bar.cc b/chrome/browser/ui/xr/xr_identity_color_bar.cc
+new file mode 100644
+index 0000000..e71ab12
+--- /dev/null
++++ b/chrome/browser/ui/xr/xr_identity_color_bar.cc
+@@ -0,0 +1,57 @@
++// Copyright 2026 RRRTX Labs
++// Use of this source code is governed by the MPL-2.0 license that can be
++// found in the LICENSE file.
++
++#include "chrome/browser/ui/xr/xr_identity_color_bar.h"
++
++#include <string>
++
++namespace xr {
++namespace {
++
++IdentityColorBarState g_state;
++
++// Deterministic, data-only tint by trust tier (the Identity/website-tint path,
++// layout-agnostic). Not a resolver decision — it only maps a trusted input
++// (the pinned snapshot's tier) to a color; the TIER itself comes from P6.
++constexpr unsigned int kTierArgb[3] = {
++    0x2E7D32FF,  // kStandard  (green)
++    0x1565C0FF,  // kShield    (blue)
++    0x6A1B9AFF,  // kFortress  (violet)
++};
++
++}  // namespace
++
++void XrIdentityColorBar::OnTabStripStateChanged(const std::string& active_identity,
++                                                const std::string& trust_tier) {
++  g_state = IdentityColorBarState();
++  if (active_identity.empty()) {
++    return;  // no active Identity -> bar hidden (argb stays 0)
++  }
++  // Identity vocabulary (L21): label says Identity, never "container".
++  g_state.label = active_identity;
++  g_state.trust_tier = trust_tier;
++  if (trust_tier == "kStandard") {
++    g_state.argb = kTierArgb[0];
++  } else if (trust_tier == "kShield") {
++    g_state.argb = kTierArgb[1];
++  } else if (trust_tier == "kFortress") {
++    g_state.argb = kTierArgb[2];
++  }
++}
++
++const IdentityColorBarState& XrIdentityColorBar::LastState() {
++  return g_state;
++}
++
++std::string XrIdentityColorBar::PinnedActiveIdentity() {
++  // P16 glue feeds the pinned P6 snapshot's active identity. Until then: none.
++  return std::string();
++}
++
++std::string XrIdentityColorBar::PinnedTrustTier() {
++  // P16 glue feeds the pinned P6 snapshot's trust tier. Until then: none.
++  return std::string();
++}
++
++}  // namespace xr
+diff --git a/chrome/browser/ui/xr/xr_identity_color_bar.h b/chrome/browser/ui/xr/xr_identity_color_bar.h
+new file mode 100644
+index 0000000..ed5e865
+--- /dev/null
++++ b/chrome/browser/ui/xr/xr_identity_color_bar.h
+@@ -0,0 +1,49 @@
++// Copyright 2026 RRRTX Labs
++// Use of this source code is governed by the MPL-2.0 license that can be
++// found in the LICENSE file.
++//
++// Intent: S1 — the identity color-bar DATA path (vocabulary law L21: this is
++// the Identity system's first visual surface; the word "container" resolves to
++// Identity and is never used in strings). Per §10 the color bar is the
++// per-Identity/website-tint path — data only here, layout-agnostic. The tabstrip
++// tint hook (P4/P6 prior art: Brave's container-tint approach) consumes the
++// color produced by ResolveColor; the actual paint is P16/farm (HG-31).
++//
++// No page-originated input: the color is derived from the PINNED P6 snapshot
++// (identity + trust tier), never from the renderer.
++#pragma once
++
++#include <string>
++
++namespace xr {
++
++// Resolves the Identity color-bar state for a site from the pinned snapshot.
++// Deterministic: (active identity, trust tier) -> color + label. Pure data.
++struct IdentityColorBarState {
++  // 0xRRGGBBAA, or 0x00000000 when no Identity is active (bar hidden).
++  unsigned int argb = 0;
++  // The Identity pill label (Identity vocabulary, never "container").
++  std::string label;
++  // The trust tier that tints the bar (kStandard|kShield|kFortress).
++  std::string trust_tier;
++};
++
++class XrIdentityColorBar {
++ public:
++  // Called from BrowserFrameView::OnTabStripStateChanged. Recomputes the
++  // color-bar state for the active tab from the pinned snapshot (data path;
++  // paint is P16).
++  static void OnTabStripStateChanged(const std::string& active_identity,
++                                     const std::string& trust_tier);
++
++  // The most recently computed state (for the P16 paint glue to read).
++  static const IdentityColorBarState& LastState();
++
++  // The active Identity / trust tier from the PINNED P6 snapshot (the only
++  // input the color is derived from — never page-originated). P7 returns
++  // empty (the snapshot channel is P16 glue); the data path is registered now.
++  static std::string PinnedActiveIdentity();
++  static std::string PinnedTrustTier();
++};
++
++}  // namespace xr

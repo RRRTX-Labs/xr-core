@@ -1,0 +1,19 @@
+{
+  "name": "xr-browser-webui-toolchain",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Reproducible WebUI toolchain for the command-registry UI (P7). Build-time ONLY; runtime zero network. Exactly three packages (lit, esbuild, typescript) — any other npm package is a P7 stop-condition.",
+  "scripts": {
+    "build": "node build.mjs",
+    "check": "node check-bundle.js",
+    "tsc": "tsc -p .."
+  },
+  "dependencies": {
+    "lit": "3.3.3"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "typescript": "5.9.3"
+  }
+}

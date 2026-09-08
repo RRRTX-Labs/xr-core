@@ -1,0 +1,226 @@
+{
+  "schema": "xr-commands-registry",
+  "schema_version": 1,
+  "commands": [
+    {
+      "descriptor": {
+        "id": "tab.new",
+        "title": "New Tab",
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "surface": "command-palette",
+        "handler": "action.tab.new"
+      },
+      "registry": {"keywords": ["new", "tab", "open"], "group": "Tabs", "scope": "global", "predicate_id": "always"}
+    },
+    {
+      "descriptor": {
+        "id": "window.new",
+        "title": "New Window",
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "surface": "command-palette",
+        "handler": "action.window.new"
+      },
+      "registry": {"keywords": ["new", "window"], "group": "Windows", "scope": "global", "predicate_id": "always"}
+    },
+    {
+      "descriptor": {
+        "id": "window.new-identity",
+        "title": "New Window in Identity",
+        "attention_tier": "tier1",
+        "danger_class": "safe",
+        "surface": "tools-menu",
+        "handler": "action.window.new-identity"
+      },
+      "registry": {"keywords": ["window", "identity", "new"], "group": "Identity", "scope": "window", "predicate_id": "identity.active"}
+    },
+    {
+      "descriptor": {
+        "id": "identity.new",
+        "title": "New Identity",
+        "attention_tier": "tier1",
+        "danger_class": "safe",
+        "surface": "tools-menu",
+        "handler": "action.identity.create"
+      },
+      "registry": {"keywords": ["identity", "new", "profile", "persona"], "group": "Identity", "scope": "global", "predicate_id": "always"}
+    },
+    {
+      "descriptor": {
+        "id": "identity.switcher",
+        "title": "Open Identity Switcher",
+        "attention_tier": "tier1",
+        "danger_class": "safe",
+        "surface": "tools-menu",
+        "handler": "action.identity.switcher"
+      },
+      "registry": {"keywords": ["identity", "switcher", "switch", "pill"], "group": "Identity", "scope": "window", "predicate_id": "always"}
+    },
+    {
+      "descriptor": {
+        "id": "disposable.new",
+        "title": "New Disposable Session",
+        "attention_tier": "tier1",
+        "danger_class": "safe",
+        "surface": "command-palette",
+        "handler": "action.disposable.new"
+      },
+      "registry": {"keywords": ["disposable", "ephemeral", "temporary", "new"], "group": "Identity", "scope": "global", "predicate_id": "always"}
+    },
+    {
+      "descriptor": {
+        "id": "tor.open",
+        "title": "Tor Session",
+        "attention_tier": "tier2",
+        "danger_class": "caution",
+        "surface": "command-palette",
+        "handler": "action.tor.open"
+      },
+      "registry": {"keywords": ["tor", "onion", "new"], "group": "Identity", "scope": "global", "predicate_id": "tor.engine-ready"}
+    },
+    {
+      "descriptor": {
+        "id": "panel.open",
+        "title": "Open XR Panel",
+        "attention_tier": "tier1",
+        "danger_class": "safe",
+        "surface": "tools-menu",
+        "handler": "action.panel.open"
+      },
+      "registry": {"keywords": ["panel", "open", "xr"], "group": "Panel", "scope": "global", "predicate_id": "always"}
+    },
+    {
+      "descriptor": {
+        "id": "dial.set-standard",
+        "title": "Trust: Standard",
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "surface": "command-palette",
+        "handler": "action.dial.standard"
+      },
+      "registry": {"keywords": ["trust", "standard", "dial"], "group": "Trust", "scope": "site", "predicate_id": "policy.trust-dial-writable"}
+    },
+    {
+      "descriptor": {
+        "id": "dial.set-shield",
+        "title": "Trust: Shield",
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "surface": "command-palette",
+        "handler": "action.dial.shield"
+      },
+      "registry": {"keywords": ["trust", "shield", "dial"], "group": "Trust", "scope": "site", "predicate_id": "policy.trust-dial-writable"}
+    },
+    {
+      "descriptor": {
+        "id": "dial.set-fortress",
+        "title": "Trust: Fortress",
+        "attention_tier": "tier2",
+        "danger_class": "destructive",
+        "surface": "command-palette",
+        "handler": "action.dial.fortress"
+      },
+      "registry": {"keywords": ["trust", "fortress", "dial"], "group": "Trust", "scope": "site", "predicate_id": "policy.trust-dial-writable"}
+    },
+    {
+      "descriptor": {
+        "id": "dial.reset",
+        "title": "Reset Trust Dial",
+        "attention_tier": "tier2",
+        "danger_class": "caution",
+        "surface": "command-palette",
+        "handler": "action.dial.reset"
+      },
+      "registry": {"keywords": ["trust", "reset", "dial"], "group": "Trust", "scope": "site", "predicate_id": "policy.trust-dial-writable"}
+    },
+    {
+      "descriptor": {
+        "id": "shield.toggle",
+        "title": "Toggle Shields (stub)",
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "surface": "command-palette",
+        "handler": "action.shield.toggle-stub"
+      },
+      "registry": {"keywords": ["shields", "toggle", "block"], "group": "Trust", "scope": "site", "predicate_id": "always"}
+    },
+    {
+      "descriptor": {
+        "id": "settings.network",
+        "title": "Settings: Network",
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "surface": "tools-menu",
+        "handler": "action.settings.network"
+      },
+      "registry": {"keywords": ["settings", "network", "dns", "proxy"], "group": "Settings", "scope": "global", "predicate_id": "always"}
+    },
+    {
+      "descriptor": {
+        "id": "settings.privacy",
+        "title": "Settings: Privacy",
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "surface": "tools-menu",
+        "handler": "action.settings.privacy"
+      },
+      "registry": {"keywords": ["settings", "privacy", "tracking", "fingerprint"], "group": "Settings", "scope": "global", "predicate_id": "always"}
+    },
+    {
+      "descriptor": {
+        "id": "settings.identity",
+        "title": "Settings: Identities",
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "surface": "tools-menu",
+        "handler": "action.settings.identity"
+      },
+      "registry": {"keywords": ["settings", "identity", "manage"], "group": "Settings", "scope": "global", "predicate_id": "always"}
+    },
+    {
+      "descriptor": {
+        "id": "help.index",
+        "title": "Open Help Index",
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "surface": "command-palette",
+        "handler": "action.help.index"
+      },
+      "registry": {"keywords": ["help", "index", "docs"], "group": "Help", "scope": "global", "predicate_id": "always"}
+    },
+    {
+      "descriptor": {
+        "id": "help.cheatsheet",
+        "title": "Open Printable Cheatsheet",
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "surface": "command-palette",
+        "handler": "action.help.cheatsheet"
+      },
+      "registry": {"keywords": ["help", "cheatsheet", "shortcuts", "print"], "group": "Help", "scope": "global", "predicate_id": "always"}
+    },
+    {
+      "descriptor": {
+        "id": "history.clear-identity",
+        "title": "Clear Identity History",
+        "attention_tier": "tier1",
+        "danger_class": "destructive",
+        "surface": "tools-menu",
+        "handler": "action.history.clear-identity"
+      },
+      "registry": {"keywords": ["history", "clear", "identity", "erase"], "group": "Identity", "scope": "identity", "predicate_id": "always"}
+    },
+    {
+      "descriptor": {
+        "id": "tab.close-all",
+        "title": "Close All Tabs",
+        "attention_tier": "tier1",
+        "danger_class": "destructive",
+        "surface": "overflow-menu",
+        "handler": "action.tab.close-all"
+      },
+      "registry": {"keywords": ["close", "tabs", "all"], "group": "Tabs", "scope": "window", "predicate_id": "always"}
+    }
+  ]
+}

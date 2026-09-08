@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "baseUrl": ".",
+    "paths": {
+      "lit": ["toolchain/node_modules/lit"],
+      "lit/*": ["toolchain/node_modules/lit/*"]
+    },
+    "types": []
+  },
+  "include": [
+    "shell.ts",
+    "palette/*.ts",
+    "shortcut-editor/*.ts",
+    "help-index/*.ts"
+  ]
+}

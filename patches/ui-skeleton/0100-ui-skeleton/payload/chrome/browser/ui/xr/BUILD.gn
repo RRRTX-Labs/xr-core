@@ -1,0 +1,18 @@
+# Copyright 2026 RRRTX Labs
+# Use of this source code is governed by the MPL-2.0 license that can be
+# found in the LICENSE file.
+
+# //chrome/browser/ui/xr: the P7 chrome/browser/ui command seam. Thin data path
+# only (see xr_command_bridge.h). No deps beyond std + the UI base the callers
+# already link; the mojom channel to commands_host is P16 glue (HG-31).
+source_set("xr_command_bridge") {
+  sources = [
+    "xr_command_bridge.cc",
+    "xr_command_bridge.h",
+    "xr_identity_color_bar.cc",
+    "xr_identity_color_bar.h",
+  ]
+  deps = [
+    "//ui/base",
+  ]
+}

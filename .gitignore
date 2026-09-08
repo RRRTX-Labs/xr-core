@@ -5,3 +5,9 @@ out/
 __pycache__/
 .DS_Store
 policy/tests/build/
+commands/tests/build/
+commands/tests/shortcuts-test-dir/
+ui/toolchain/node_modules/
+ui/toolchain/dist/
+ui/toolchain/.repro_a/
+ui/toolchain/.repro_b/

@@ -1,0 +1,80 @@
+/* Copyright 2026 RRRTX Labs
+ * Use of this source code is governed by the MPL-2.0 license that can be
+ * found in the LICENSE file.
+ *
+ * Design tokens (Plan §10). RTL-logical ONLY (no physical left/right — see
+ * xr-browser tools/rtl_lint.py). The identity/trust color vocabulary is here:
+ * Identity (never "container"), the trust-dial tiers, and the shield chip.
+ * Views reference these custom properties; they never hard-code colors.
+ */
+
+:root {
+  /* Identity color-bar tiers (the §1.4/§10 identity/trust vocabulary). */
+  --xr-trust-standard: #2e7d32;
+  --xr-trust-shield: #1565c0;
+  --xr-trust-fortress: #6a1b9a;
+
+  /* Neutral surface + text (theme-agnostic; the chrome theme maps these). */
+  --xr-surface: #f3f4f6;
+  --xr-surface-raised: #ffffff;
+  --xr-text: #1f2328;
+  --xr-text-dim: #57606a;
+  --xr-border: #d0d7de;
+  --xr-accent: #0969da;
+
+  /* Danger classes (§10) — the palette renders the class, not a red herring. */
+  --xr-danger-safe: var(--xr-text-dim);
+  --xr-danger-caution: #9a6700;
+  --xr-danger-destructive: #cf222e;
+
+  /* Spacing + geometry (logical, flip-safe). */
+  --xr-space-1: 4px;
+  --xr-space-2: 8px;
+  --xr-space-3: 12px;
+  --xr-radius: 6px;
+
+  /* Focus: keyboard users MUST see where focus is (a11y_lint). Logical inset
+     so the ring is direction-agnostic. */
+  --xr-focus-ring: 2px solid var(--xr-accent);
+}
+
+/* Focus-visible ring on every interactive control (logical, no physical L/R). */
+xr-palette input:focus-visible,
+xr-palette [role="option"]:focus-visible,
+xr-shortcut-editor button:focus-visible,
+xr-help-index a:focus-visible,
+:xr-focusable:focus-visible {
+  outline: var(--xr-focus-ring);
+  outline-offset: 2px;
+}
+
+.xr-row {
+  display: flex;
+  align-items: center;
+  gap: var(--xr-space-2);
+  padding-inline: var(--xr-space-2);
+  padding-block: var(--xr-space-1);
+  border-inline-start: 3px solid transparent;
+  border-radius: var(--xr-radius);
+}
+
+.xr-row[data-danger="caution"] { border-inline-start-color: var(--xr-danger-caution); }
+.xr-row[data-danger="destructive"] { border-inline-start-color: var(--xr-danger-destructive); }
+
+/* Empty-state live region (a11y: aria-live in the view; styled here). */
+.xr-empty {
+  padding: var(--xr-space-3);
+  color: var(--xr-text-dim);
+  text-align: start; /* logical — never "left" */
+}
+
+/* The identity pill / trust dial / shield chip slots (data-driven; P16 paints). */
+.xr-identity-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--xr-space-1);
+  padding-inline: var(--xr-space-2);
+  border-radius: 999px;
+  background: var(--xr-surface-raised);
+  border: 1px solid var(--xr-border);
+}
