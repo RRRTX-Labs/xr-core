@@ -8,7 +8,7 @@
 // a placeholder command (e.g. the Tor session, disabled via its availability
 // predicate) renders as `disabled` WITH its reason, never a "coming soon"
 // surface. No business logic, no network, no `any`.
-import { html, LitElement, nothing } from 'lit';
+import { html, LitElement, nothing, type PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import type { XrStringMap } from '../i18n.js';
 import { text } from '../i18n.js';
@@ -28,6 +28,8 @@ export interface HelpItem {
 export class XrHelpIndex extends LitElement {
   @property({ type: Array }) commands: HelpItem[] = [];
   @property({ type: Object }) strings: XrStringMap = {};
+  /** Deep-link target (xr://help/<command-id>, P8-T7); '' = index root. */
+  @property({ type: String }) anchor = '';
 
   private get _groups(): Map<string, HelpItem[]> {
     const m = new Map<string, HelpItem[]>();
@@ -37,6 +39,24 @@ export class XrHelpIndex extends LitElement {
       m.set(c.group, g);
     }
     return m;
+  }
+
+  private _hasAnchorRow(): boolean {
+    return this.commands.some((c) => c.id === this.anchor);
+  }
+
+  private _scrollToAnchor(): void {
+    if (!this.anchor || this.commands.length === 0) return;
+    const el = this.renderRoot.querySelector(
+      `#xr-help-${CSS.escape(this.anchor)}`);
+    if (el) el.scrollIntoView({block: 'center'});
+  }
+
+  protected override updated(changed: PropertyValues): void {
+    if (changed.has('anchor') || changed.has('commands')) {
+      // let the new rows hit the DOM, then scroll to the target row
+      setTimeout(() => this._scrollToAnchor(), 0);
+    }
   }
 
   protected override render() {
@@ -56,7 +76,8 @@ export class XrHelpIndex extends LitElement {
             </thead>
             <tbody>
               ${items.map((c) => html`
-                <tr class="xr-row" data-danger=${c.danger_class}
+                <tr id="xr-help-${c.id}" class="xr-row"
+                    data-danger=${c.danger_class}
                     ?disabled=${!c.available}>
                   <td class="xr-help-title">${c.title}
                     <code class="xr-help-id">${c.id}</code></td>
@@ -74,7 +95,10 @@ export class XrHelpIndex extends LitElement {
       ${this.commands.length === 0
         ? html`<div class="xr-empty" role="status" aria-live="polite">
             ${text(this.strings, 'help.empty')}</div>`
-        : nothing}
+        : this.anchor && !this._hasAnchorRow()
+          ? html`<div class="xr-empty" role="status" aria-live="polite">
+              ${text(this.strings, 'help.no-entry', {ID: this.anchor})}</div>`
+          : nothing}
     `;
   }
 }

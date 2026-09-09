@@ -262,4 +262,8 @@
     No commands (registry flag off).
   </message>
 
+<message name="IDS_XR_HELP_NO_ENTRY" desc="Shown when a xr://help deep link targets a command id the registry does not contain; {ID} is the requested id — the index stays visible and honest" xr-id="help.no-entry">
+    No help entry for “<ph name="ID">{ID}<ex>settings.network</ex></ph>”.
+  </message>
+
 </grit-part>
