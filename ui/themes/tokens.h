@@ -55,8 +55,8 @@ inline constexpr uint32_t kAccentHover = 0xFF0550AE;
 // accent-soft: #ddf4ff (accent tint fills (hints))
 inline constexpr uint32_t kAccentSoft = 0xFFDDF4FF;
 
-// danger-caution: #9a6700 (caution (warning) text/border — §10 danger classes)
-inline constexpr uint32_t kDangerCaution = 0xFF9A6700;
+// danger-caution: #8a5f00 (caution (warning) text/border — §10 danger classes)
+inline constexpr uint32_t kDangerCaution = 0xFF8A5F00;
 
 // danger-caution-bg: #fff8c5 (caution tint fill)
 inline constexpr uint32_t kDangerCautionBg = 0xFFFFF8C5;

@@ -1,0 +1,13 @@
+{
+  "bench": "themes apply (40 tokens x 6-case corpus: accept x4, refuse x2)",
+  "result": "MET",
+  "budget_us": 100000,
+  "avg_custom_import_us": 40.9,
+  "avg_builtin_apply_us": 19.6,
+  "worst_single_us": 155.2,
+  "cases": 6,
+  "iterations": 400,
+  "seed": 20260909,
+  "machine": "sandbox (host cpu as reported by uname -m)",
+  "bad": 0
+}
