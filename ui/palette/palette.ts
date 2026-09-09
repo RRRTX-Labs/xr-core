@@ -14,6 +14,8 @@
 // changes on arrow keys — the input keeps focus (the APG pattern).
 import { html, LitElement, nothing, type PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
+import type { XrStringMap } from '../i18n.js';
+import { text } from '../i18n.js';
 
 /** A ranked command as returned by the host `query` method. */
 export interface PaletteResult {
@@ -36,6 +38,9 @@ export interface InvokeRequest {
 export class XrPalette extends LitElement {
   /** Ranked results from the host (empty array when the flag is off). */
   @property({ type: Array }) results: PaletteResult[] = [];
+
+  /** Message-id string map (P8-T5); falls back to the raw id when absent. */
+  @property({ type: Object }) strings: XrStringMap = {};
 
   /** True when the host reports the registry flag is off (stock chrome). */
   @property({ type: Boolean }) flagOff: boolean = false;
@@ -104,14 +109,14 @@ export class XrPalette extends LitElement {
     if (this.flagOff) {
       // Stock chrome (flag off): the view renders NOTHING (Plan rollback row).
       return html`<span class="xr-empty" aria-live="polite">
-        Command registry is off (stock chrome).
+        ${text(this.strings, 'palette.registry-off')}
       </span>`;
     }
     const items = this._visible;
     const listId = 'xr-palette-listbox';
     const activeId = this._active >= 0 ? `xr-palette-opt-${this._active}` : '';
     return html`
-      <label class="xr-palette-label" for="xr-palette-input">Command</label>
+      <label class="xr-palette-label" for="xr-palette-input">${text(this.strings, 'palette.command-label')}</label>
       <input
         id="xr-palette-input"
         class="xr-palette-input"
@@ -126,7 +131,7 @@ export class XrPalette extends LitElement {
         autocomplete="off"
         @input=${this._onInput}
         @keydown=${this._onKeydown} />
-      <ul id=${listId} role="listbox" class="xr-palette-list" aria-label="Commands">
+      <ul id=${listId} role="listbox" class="xr-palette-list" aria-label=${text(this.strings, 'palette.commands-aria')}>
         ${items.map((r, i) => html`
           <li
             id=${`xr-palette-opt-${i}`}
@@ -142,9 +147,11 @@ export class XrPalette extends LitElement {
           </li>
         `)}
       </ul>
-      ${items.length === 0 ? html`<div class="xr-empty" role="status" aria-live="polite">
-        No commands match “${this._query}”.
-      </div>` : nothing}
+      ${items.length === 0
+        ? html`<div class="xr-empty" role="status" aria-live="polite">
+            ${text(this.strings, 'palette.empty', {QUERY: this._query})}
+          </div>`
+        : nothing}
     `;
   }
 }

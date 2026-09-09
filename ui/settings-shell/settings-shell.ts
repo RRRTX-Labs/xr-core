@@ -14,6 +14,7 @@ import { html, LitElement, nothing } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import './settings-search.js';
 import './settings-section.js';
+import { text } from '../i18n.js';
 
 export { XrSettingsSearch } from './settings-search.js';
 export { XrSettingsSection } from './settings-section.js';
@@ -89,7 +90,7 @@ export class XrSettingsShell extends LitElement {
   protected override render() {
     if (this.flagOff) {
       return html`<div class="xr-empty" role="status" aria-live="polite">
-        Settings are off (xr_settings_v0=false).
+        ${text(this.strings, 'settings.flag-off')}
       </div>`;
     }
     const jumped = this._jumpTarget;
@@ -103,7 +104,8 @@ export class XrSettingsShell extends LitElement {
           @jump=${this._onJump}></xr-settings-search>
         ${jumped
           ? html`<div class="xr-empty" role="status" aria-live="polite">
-              Jumped to ${jumped.key} (${jumped.anchor}).</div>`
+              ${text(this.strings, 'settings.jumped-to',
+                {KEY: jumped.key, ANCHOR: jumped.anchor})}</div>`
           : nothing}
         ${this._sectionList.length === 0 && this.searchResults.length === 0
           ? html`<div class="xr-empty" role="status" aria-live="polite">
@@ -124,7 +126,7 @@ export class XrSettingsShell extends LitElement {
   }
 
   private _text(id: string): string {
-    return this.strings[id] ?? id;
+    return text(this.strings, id);
   }
 }
 

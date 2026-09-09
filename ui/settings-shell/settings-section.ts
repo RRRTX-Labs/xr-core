@@ -8,6 +8,7 @@
 // snapshot), no write path in v0 (policy-owned rows render their source and
 // are never toggleable here). Deep link anchors are emitted as jump events.
 import { html, LitElement, nothing } from 'lit';
+import { text } from '../i18n.js';
 import { customElement, property } from 'lit/decorators.js';
 import type { SettingsSectionData, XrStringMap } from './settings-shell.js';
 
@@ -61,8 +62,8 @@ export class XrSettingsSection extends LitElement {
         </h2>
         ${!s.available && s.unavailable_reason
           ? html`<p class="xr-unavailable" role="note">
-              ${this.strings['settings.section-unavailable'] ??
-              'section unavailable'} — ${s.unavailable_reason}</p>`
+              ${text(this.strings, 'settings.section-unavailable')} —
+              ${s.unavailable_reason}</p>`
           : nothing}
         <ul class="xr-setting-list">
           ${this.rows.map((r) => this._row(r))}
@@ -85,10 +86,12 @@ export class XrSettingsSection extends LitElement {
       <code class="xr-setting-value">${JSON.stringify(r.value)}</code>
       <span class="xr-setting-meta">${r.source}</span>
       ${r.preempted
-        ? html`<span class="xr-setting-badge" role="note">preempted</span>`
+        ? html`<span class="xr-setting-badge" role="note">
+            ${text(this.strings, 'settings.badge.preempted')}</span>`
         : nothing}
       ${!r.writable
-        ? html`<span class="xr-setting-badge" role="note">read-only in v0</span>`
+        ? html`<span class="xr-setting-badge" role="note">
+            ${text(this.strings, 'settings.badge.readonly-v0')}</span>`
         : nothing}
     </li>`;
   }

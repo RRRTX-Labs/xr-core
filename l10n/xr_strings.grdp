@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  xr_strings.grdp — the XR user-visible string source (P8-T5).
+
+  GRIT part file (same shape as Chromium browser_strings.grdp): a sequence of
+  <message> elements. Message NAME follows the mechanical mapping used by
+  every consumer:  xr-id  ->  IDS_XR_ + UPPER_SNAKE  (dots become
+  underscores).  grdp_check.py validates: well-formed XML; unique names;
+  every message carries a desc; <ph> placeholders are declared with an
+  UPPER_SNAKE name and their {TOKEN} program text occurs exactly once per
+  message; no <excluded> abuse; text is vocab-clean; RTL-safe bidi handling.
+
+  The settings schema (settings_schema_v1.json) references title_id/desc_id
+  values; every referenced id exists HERE (grdp_check ids-from-schema mode). The
+  isolation-card strings are NOT duplicated here (see grdp_check's
+  isolation-card cross-check: the card is the legal-gated source of its own
+  measured facts).
+
+  Themes contribute no static UI labels in v0 (theme names + audit reasons
+  are data, not chrome strings — recorded in research-log-P8).
+-->
+<grit-part>
+<message name="IDS_XR_SETTINGS_HEADING" desc="Heading of the settings page" xr-id="settings.heading">
+    Settings
+  </message>
+  
+<message name="IDS_XR_SETTINGS_SEARCH_LABEL" desc="Accessible label for the settings search field" xr-id="settings.search-label">
+    Search settings
+  </message>
+  
+<message name="IDS_XR_SETTINGS_SEARCH_RESULTS" desc="Accessible label for the settings search results list" xr-id="settings.search-results">
+    Search results
+  </message>
+  
+<message name="IDS_XR_SETTINGS_NO_RESULTS" desc="Shown when a settings search matches nothing" xr-id="settings.no-results">
+    No settings match this query.
+  </message>
+  
+<message name="IDS_XR_SETTINGS_RESULTS_COUNT" desc="Noun following the result count, e.g. '3 results'" xr-id="settings.results-count">
+    results
+  </message>
+  
+<message name="IDS_XR_SETTINGS_NO_SECTIONS" desc="Shown when the settings host reports zero available sections" xr-id="settings.no-sections">
+    No settings sections are available.
+  </message>
+  
+<message name="IDS_XR_SETTINGS_HOST_UNAVAILABLE" desc="Shown when no settings host data has been provided to the view" xr-id="settings.host-unavailable">
+    Settings data is unavailable.
+  </message>
+  
+<message name="IDS_XR_SETTINGS_SECTION_UNAVAILABLE" desc="Prefix for a section shown as unavailable, followed by the reason" xr-id="settings.section-unavailable">
+    section unavailable
+  </message>
+  
+<message name="IDS_XR_SETTINGS_FLAG_OFF" desc="Rollback note shown when the xr_settings_v0 flag is off" xr-id="settings.flag-off">
+    Settings are off (xr_settings_v0=false).
+  </message>
+  
+<message name="IDS_XR_SETTINGS_JUMPED_TO" desc="Status announcement after a jump to a setting anchor; KEY and ANCHOR are the target key and xr:// anchor" xr-id="settings.jumped-to">
+    Jumped to <ph name="KEY">{KEY}<ex>network.adblock</ex></ph> (<ph name="ANCHOR">{ANCHOR}<ex>xr://settings/network/adblock</ex></ph>).
+  </message>
+  
+<message name="IDS_XR_SETTINGS_BADGE_PREEMPTED" desc="Badge on a setting row whose value is controlled by policy" xr-id="settings.badge.preempted">
+    preempted
+  </message>
+  
+<message name="IDS_XR_SETTINGS_BADGE_READONLY_V0" desc="Badge on a setting row that is not user-writable in v0" xr-id="settings.badge.readonly-v0">
+    read-only in v0
+  </message>
+
+  
+  
+<message name="IDS_XR_SETTINGS_SECTION_NETWORK" desc="Title of the Network settings section" xr-id="settings.section.network">
+    Network
+  </message>
+  
+<message name="IDS_XR_SETTINGS_SECTION_PRIVACY" desc="Title of the Privacy settings section" xr-id="settings.section.privacy">
+    Privacy
+  </message>
+  
+<message name="IDS_XR_SETTINGS_SECTION_IDENTITY" desc="Title of the Identity settings section" xr-id="settings.section.identity">
+    Identity
+  </message>
+
+  
+  
+<message name="IDS_XR_SETTINGS_NETWORK_ADBLOCK_TITLE" desc="Title of the ad-blocking setting" xr-id="settings.network.adblock.title">
+    Ad blocking
+  </message>
+  
+<message name="IDS_XR_SETTINGS_NETWORK_ADBLOCK_DESC" desc="Description of the ad-blocking setting" xr-id="settings.network.adblock.desc">
+    Whether ads are blocked. Surfaced from policy in v0; not user-writable.
+  </message>
+  
+<message name="IDS_XR_SETTINGS_NETWORK_TRACKER_BLOCK_TITLE" desc="Title of the tracker-blocking setting" xr-id="settings.network.tracker-block.title">
+    Tracker blocking
+  </message>
+  
+<message name="IDS_XR_SETTINGS_NETWORK_TRACKER_BLOCK_DESC" desc="Description of the tracker-blocking setting" xr-id="settings.network.tracker-block.desc">
+    Whether cross-site trackers are blocked. Surfaced from policy in v0.
+  </message>
+  
+<message name="IDS_XR_SETTINGS_NETWORK_HTTPS_UPGRADE_TITLE" desc="Title of the HTTPS-upgrade setting" xr-id="settings.network.https-upgrade.title">
+    HTTPS upgrade
+  </message>
+  
+<message name="IDS_XR_SETTINGS_NETWORK_HTTPS_UPGRADE_DESC" desc="Description of the HTTPS-upgrade setting" xr-id="settings.network.https-upgrade.desc">
+    Whether plain-HTTP requests upgrade to HTTPS.
+  </message>
+  
+<message name="IDS_XR_SETTINGS_NETWORK_ROUTE_TITLE" desc="Title of the routing setting" xr-id="settings.network.route.title">
+    Routing
+  </message>
+  
+<message name="IDS_XR_SETTINGS_NETWORK_ROUTE_DESC" desc="Description of the routing setting" xr-id="settings.network.route.desc">
+    How traffic is routed, including proxy settings. Surfaced from policy in v0.
+  </message>
+  
+<message name="IDS_XR_SETTINGS_PRIVACY_NOTIFICATIONS_TITLE" desc="Title of the notifications setting" xr-id="settings.privacy.notifications.title">
+    Notifications
+  </message>
+  
+<message name="IDS_XR_SETTINGS_PRIVACY_NOTIFICATIONS_DESC" desc="Description of the notifications setting" xr-id="settings.privacy.notifications.desc">
+    Whether sites may ask to send notifications.
+  </message>
+  
+<message name="IDS_XR_SETTINGS_PRIVACY_STORAGE_IN_MEMORY_TITLE" desc="Title of the in-memory storage setting" xr-id="settings.privacy.storage-in-memory.title">
+    In-memory storage
+  </message>
+  
+<message name="IDS_XR_SETTINGS_PRIVACY_STORAGE_IN_MEMORY_DESC" desc="Description of the in-memory storage setting" xr-id="settings.privacy.storage-in-memory.desc">
+    Whether this identity keeps its site data in memory only, with no on-disk path.
+  </message>
+  
+<message name="IDS_XR_SETTINGS_PRIVACY_LETTERBOX_TITLE" desc="Title of the letterboxing setting" xr-id="settings.privacy.letterbox.title">
+    Letterboxing
+  </message>
+  
+<message name="IDS_XR_SETTINGS_PRIVACY_LETTERBOX_DESC" desc="Description of the letterboxing setting" xr-id="settings.privacy.letterbox.desc">
+    Whether the window is letterboxed to resist screen-size fingerprinting.
+  </message>
+  
+<message name="IDS_XR_SETTINGS_PRIVACY_VAULT_EXPORT_TITLE" desc="Title of the vault-export setting" xr-id="settings.privacy.vault-export.title">
+    Vault export
+  </message>
+  
+<message name="IDS_XR_SETTINGS_PRIVACY_VAULT_EXPORT_DESC" desc="Description of the vault-export setting" xr-id="settings.privacy.vault-export.desc">
+    Whether exporting the identity vault is allowed. Surfaced from policy in v0.
+  </message>
+  
+<message name="IDS_XR_SETTINGS_IDENTITY_KIND_TITLE" desc="Title of the identity-kind setting" xr-id="settings.identity.kind.title">
+    Identity kind
+  </message>
+  
+<message name="IDS_XR_SETTINGS_IDENTITY_KIND_DESC" desc="Description of the identity-kind setting" xr-id="settings.identity.kind.desc">
+    The identity type, ephemeral or durable.
+  </message>
+  
+<message name="IDS_XR_SETTINGS_IDENTITY_STORAGE_TITLE" desc="Title of the identity-storage setting" xr-id="settings.identity.storage.title">
+    Storage
+  </message>
+  
+<message name="IDS_XR_SETTINGS_IDENTITY_STORAGE_DESC" desc="Description of the identity-storage setting" xr-id="settings.identity.storage.desc">
+    Where this identity's site data lives.
+  </message>
+  
+<message name="IDS_XR_SETTINGS_IDENTITY_DEFAULT_GRADE_TITLE" desc="Title of the default-grade setting" xr-id="settings.identity.default_grade.title">
+    Default grade
+  </message>
+  
+<message name="IDS_XR_SETTINGS_IDENTITY_DEFAULT_GRADE_DESC" desc="Description of the default-grade setting" xr-id="settings.identity.default_grade.desc">
+    The default protection grade applied to new sites for this identity.
+  </message>
+
+  
+  
+<message name="IDS_XR_PALETTE_COMMAND_LABEL" desc="Label of the command palette input" xr-id="palette.command-label">
+    Command
+  </message>
+  
+<message name="IDS_XR_PALETTE_COMMANDS_ARIA" desc="Accessible label of the command palette result list" xr-id="palette.commands-aria">
+    Commands
+  </message>
+  
+<message name="IDS_XR_PALETTE_REGISTRY_OFF" desc="Shown when the command registry is disabled in this build; states plainly that stock Chrome UI remains" xr-id="palette.registry-off">
+    Command registry is off (stock chrome).
+  </message>
+  
+<message name="IDS_XR_PALETTE_EMPTY" desc="Shown when the palette query matched no commands; {QUERY} is the typed query text" xr-id="palette.empty">
+    No commands match “<ph name="QUERY">{QUERY}<ex>settings</ex></ph>”.
+  </message>
+
+  
+  
+<message name="IDS_XR_SHORTCUTS_TITLE" desc="Heading of the shortcut editor" xr-id="shortcuts.title">
+    Shortcuts
+  </message>
+  
+<message name="IDS_XR_SHORTCUTS_CURRENT_ARIA" desc="Accessible label of the current-shortcuts list" xr-id="shortcuts.current-aria">
+    Current shortcuts
+  </message>
+  
+<message name="IDS_XR_SHORTCUTS_EMPTY" desc="Shown when no shortcuts are bound yet" xr-id="shortcuts.empty">
+    No shortcuts bound yet.
+  </message>
+  
+<message name="IDS_XR_SHORTCUTS_CANNOT_BIND" desc="Prefix announcing that a shortcut could not be bound, followed by the reason" xr-id="shortcuts.cannot-bind">
+    Cannot bind:
+  </message>
+  
+<message name="IDS_XR_SHORTCUTS_CONFLICT_DUPLICATE" desc="Shortcut conflict with another command; ACCELERATOR and COMMAND are filled in" xr-id="shortcuts.conflict-duplicate">
+    “<ph name="ACCELERATOR">{ACCELERATOR}<ex>Ctrl+K</ex></ph>” is already bound to <ph name="COMMAND">{COMMAND}<ex>page.jump</ex></ph>. Choose a different accelerator or unbind it first.
+  </message>
+  
+<message name="IDS_XR_SHORTCUTS_CONFLICT_BROWSER" desc="Shortcut denied because the browser reserves the accelerator" xr-id="shortcuts.conflict-browser">
+    “<ph name="ACCELERATOR">{ACCELERATOR}<ex>Alt+F4</ex></ph>” is reserved by the browser (denied by default).
+  </message>
+  
+<message name="IDS_XR_SHORTCUTS_CONFLICT_SYSTEM" desc="Shortcut denied because the operating system reserves the accelerator" xr-id="shortcuts.conflict-system">
+    “<ph name="ACCELERATOR">{ACCELERATOR}<ex>Ctrl+Alt+Del</ex></ph>” is reserved by the OS (denied by default).
+  </message>
+  
+<message name="IDS_XR_SHORTCUTS_ANOTHER_COMMAND" desc="Fallback subject when a duplicate binding has no named conflicting command" xr-id="shortcuts.another-command">
+    another command
+  </message>
+
+  
+  
+<message name="IDS_XR_HELP_TITLE" desc="Heading of the command help index" xr-id="help.title">
+    Help — Command Index
+  </message>
+  
+<message name="IDS_XR_HELP_INTRO" desc="Introductory sentence of the help index" xr-id="help.intro">
+    Every command, every group. Disabled commands are shown with the reason — nothing here is a “coming soon” placeholder.
+  </message>
+  
+<message name="IDS_XR_HELP_COL_COMMAND" desc="Help table column header for the command name" xr-id="help.col-command">
+    Command
+  </message>
+  
+<message name="IDS_XR_HELP_COL_TIER" desc="Help table column header for the attention tier" xr-id="help.col-tier">
+    Tier
+  </message>
+  
+<message name="IDS_XR_HELP_COL_CLASS" desc="Help table column header for the danger class" xr-id="help.col-class">
+    Class
+  </message>
+  
+<message name="IDS_XR_HELP_COL_STATUS" desc="Help table column header for the availability status" xr-id="help.col-status">
+    Status
+  </message>
+  
+<message name="IDS_XR_HELP_STATUS_ENABLED" desc="Status cell for an enabled command" xr-id="help.status-enabled">
+    enabled
+  </message>
+  
+<message name="IDS_XR_HELP_STATUS_DISABLED" desc="Status cell prefix for a disabled command, followed by its reason" xr-id="help.status-disabled">
+    disabled — <ph name="REASON">{REASON}<ex>policy</ex></ph>
+  </message>
+  
+<message name="IDS_XR_HELP_EMPTY" desc="Shown when the registry reports no commands" xr-id="help.empty">
+    No commands (registry flag off).
+  </message>
+
+</grit-part>

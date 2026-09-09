@@ -10,6 +10,8 @@
 // surface. No business logic, no network, no `any`.
 import { html, LitElement, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import type { XrStringMap } from '../i18n.js';
+import { text } from '../i18n.js';
 
 /** A roster command as rendered in the help index (menu-model item shape). */
 export interface HelpItem {
@@ -25,6 +27,7 @@ export interface HelpItem {
 @customElement('xr-help-index')
 export class XrHelpIndex extends LitElement {
   @property({ type: Array }) commands: HelpItem[] = [];
+  @property({ type: Object }) strings: XrStringMap = {};
 
   private get _groups(): Map<string, HelpItem[]> {
     const m = new Map<string, HelpItem[]>();
@@ -39,15 +42,17 @@ export class XrHelpIndex extends LitElement {
   protected override render() {
     const groups = this._groups;
     return html`
-      <h2>Help — Command Index</h2>
-      <p class="xr-help-intro">Every command, every group. Disabled commands are
-        shown with the reason — nothing here is a "coming soon" placeholder.</p>
+      <h2>${text(this.strings, 'help.title')}</h2>
+      <p class="xr-help-intro">${text(this.strings, 'help.intro')}</p>
       ${[...groups.entries()].map(([group, items]) => html`
         <section class="xr-help-group">
           <h3>${group}</h3>
           <table class="xr-cheatsheet">
             <thead>
-              <tr><th>Command</th><th>Tier</th><th>Class</th><th>Status</th></tr>
+              <tr><th>${text(this.strings, 'help.col-command')}</th>
+                <th>${text(this.strings, 'help.col-tier')}</th>
+                <th>${text(this.strings, 'help.col-class')}</th>
+                <th>${text(this.strings, 'help.col-status')}</th></tr>
             </thead>
             <tbody>
               ${items.map((c) => html`
@@ -58,16 +63,17 @@ export class XrHelpIndex extends LitElement {
                   <td>${c.tier}</td>
                   <td>${c.danger_class}</td>
                   <td>${c.available
-                    ? 'enabled'
+                    ? text(this.strings, 'help.status-enabled')
                     : html`<span class="xr-help-disabled" role="note">
-                        disabled — ${c.reason}</span>`}</td>
+                        ${text(this.strings, 'help.status-disabled',
+                          {REASON: c.reason})}</span>`}</td>
                 </tr>`)}
             </tbody>
           </table>
         </section>`)}
       ${this.commands.length === 0
         ? html`<div class="xr-empty" role="status" aria-live="polite">
-            No commands (registry flag off).</div>`
+            ${text(this.strings, 'help.empty')}</div>`
         : nothing}
     `;
   }

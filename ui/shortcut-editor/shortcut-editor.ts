@@ -11,6 +11,8 @@
 // no `any`.
 import { html, LitElement, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import type { XrStringMap } from '../i18n.js';
+import { text } from '../i18n.js';
 
 /** A committed binding (host `bindings-list` row). */
 export interface Binding {
@@ -31,30 +33,40 @@ export interface ConflictPayload {
 export class XrShortcutEditor extends LitElement {
   @property({ type: Array }) bindings: Binding[] = [];
   @property({ type: Object }) conflict: ConflictPayload | null = null;
+  @property({ type: Object }) strings: XrStringMap = {};
 
   private _conflictText(): string {
     const c = this.conflict;
     if (!c) return '';
+    const t = (id: string, params?: Record<string, string>) =>
+      text(this.strings, id, params);
     switch (c.conflict) {
       case 'duplicate':
-        return `“${c.accelerator}” is already bound to ` +
-          `${c.conflicting_command ?? 'another command'}. Choose a different ` +
-          `accelerator or unbind it first.`;
+        return t('shortcuts.conflict-duplicate', {
+          ACCELERATOR: c.accelerator,
+          COMMAND:
+            c.conflicting_command ??
+            t('shortcuts.another-command'),
+        });
       case 'browser-reserved':
-        return `“${c.accelerator}” is reserved by the browser (denied by ` +
-          `default).`;
+        return t('shortcuts.conflict-browser', {
+          ACCELERATOR: c.accelerator,
+        });
       case 'system-reserved':
-        return `“${c.accelerator}” is reserved by the OS (denied by default).`;
+        return t('shortcuts.conflict-system', {
+          ACCELERATOR: c.accelerator,
+        });
     }
   }
 
   protected override render() {
     return html`
-      <h2>Shortcuts</h2>
-      <ul class="xr-bindings" aria-label="Current shortcuts">
+      <h2>${text(this.strings, 'shortcuts.title')}</h2>
+      <ul class="xr-bindings"
+          aria-label=${text(this.strings, 'shortcuts.current-aria')}>
         ${this.bindings.length === 0
           ? html`<li class="xr-empty" role="status" aria-live="polite">
-              No shortcuts bound yet.</li>`
+              ${text(this.strings, 'shortcuts.empty')}</li>`
           : this.bindings.map((b) => html`
               <li class="xr-row">
                 <code class="xr-acc">${b.accelerator}</code>
@@ -64,7 +76,8 @@ export class XrShortcutEditor extends LitElement {
       ${this.conflict
         ? html`<div class="xr-conflict" role="alert" aria-live="assertive"
                  data-conflict=${this.conflict.conflict}>
-            <strong>Cannot bind:</strong> ${this._conflictText()}
+            <strong>${text(this.strings, 'shortcuts.cannot-bind')}</strong>
+            ${this._conflictText()}
           </div>`
         : nothing}
     `;
