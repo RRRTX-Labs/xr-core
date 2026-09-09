@@ -1,0 +1,356 @@
+{
+  "schema": "xr-settings-schema",
+  "schema_version": 1,
+  "note": "P8 v0 schema (Stage 1 skeleton). Consumes docs/contracts/settings-schema-v1.md WITHOUT redefinition: every row carries key/type/default/attention_tier/scope. Labels are message IDs into l10n/xr_strings.grdp (never inline copy). Policy-overlapping rows are surfaced-by-policy-only in v0: the host displays the pinned P6 policy state it is given and refuses writes with a typed reason (enterprise preemption semantics, P6-T7) — settings never decides policy (mode_lint L3). Search aliases are data (search-only, never copy).",
+  "anchor_root": "xr://settings",
+  "sections": [
+    {
+      "id": "network",
+      "order": 1,
+      "title_id": "settings.section.network",
+      "availability": "always",
+      "subsections": [],
+      "settings": [
+        "network.adblock",
+        "network.tracker-block",
+        "network.https-upgrade",
+        "network.route"
+      ]
+    },
+    {
+      "id": "privacy",
+      "order": 2,
+      "title_id": "settings.section.privacy",
+      "availability": "always",
+      "subsections": [],
+      "settings": [
+        "privacy.notifications",
+        "privacy.storage-in-memory",
+        "privacy.letterbox",
+        "privacy.vault-export"
+      ]
+    },
+    {
+      "id": "identity",
+      "order": 3,
+      "title_id": "settings.section.identity",
+      "availability": "identity.active",
+      "subsections": [],
+      "settings": [
+        "identity.kind",
+        "identity.storage",
+        "identity.default_grade"
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "key": "network.adblock",
+      "type": "bool",
+      "default": true,
+      "attention_tier": "tier2",
+      "scope": "global",
+      "section": "network",
+      "title_id": "settings.network.adblock.title",
+      "desc_id": "settings.network.adblock.desc",
+      "security_relevant": true,
+      "aliases": [
+        "ads",
+        "ad blocker",
+        "ad blocking",
+        "block ads",
+        "advertisements",
+        "shields",
+        "shield",
+        "إعلانات"
+      ],
+      "policy": {
+        "kind": "resolver",
+        "field": "blocking.block_network_ads"
+      }
+    },
+    {
+      "key": "network.tracker-block",
+      "type": "bool",
+      "default": true,
+      "attention_tier": "tier2",
+      "scope": "global",
+      "section": "network",
+      "title_id": "settings.network.tracker-block.title",
+      "desc_id": "settings.network.tracker-block.desc",
+      "security_relevant": true,
+      "aliases": [
+        "trackers",
+        "tracking",
+        "block trackers",
+        "anti tracking",
+        "cross-site tracking",
+        "تتبع"
+      ],
+      "policy": {
+        "kind": "resolver",
+        "field": "blocking.block_trackers"
+      }
+    },
+    {
+      "key": "network.https-upgrade",
+      "type": "bool",
+      "default": true,
+      "attention_tier": "tier2",
+      "scope": "global",
+      "section": "network",
+      "title_id": "settings.network.https-upgrade.title",
+      "desc_id": "settings.network.https-upgrade.desc",
+      "security_relevant": true,
+      "aliases": [
+        "https",
+        "secure connection",
+        "upgrade http",
+        "encryption",
+        "force https",
+        "tls",
+        "تشفير",
+        "اتصال آمن"
+      ],
+      "policy": {
+        "kind": "resolver",
+        "field": "blocking.upgrade_to_https"
+      }
+    },
+    {
+      "key": "network.route",
+      "type": "enum",
+      "default": "kDirect",
+      "attention_tier": "tier2",
+      "scope": "global",
+      "section": "network",
+      "title_id": "settings.network.route.title",
+      "desc_id": "settings.network.route.desc",
+      "security_relevant": true,
+      "aliases": [
+        "route",
+        "connection route",
+        "proxy",
+        "direct connection",
+        "egress",
+        "network route"
+      ],
+      "policy": {
+        "kind": "resolver",
+        "field": "egress.route"
+      }
+    },
+    {
+      "key": "privacy.notifications",
+      "type": "enum",
+      "default": "kAsk",
+      "attention_tier": "tier2",
+      "scope": "global",
+      "section": "privacy",
+      "title_id": "settings.privacy.notifications.title",
+      "desc_id": "settings.privacy.notifications.desc",
+      "security_relevant": true,
+      "aliases": [
+        "notification",
+        "notifications",
+        "notify",
+        "alerts",
+        "push",
+        "site permissions",
+        "إشعارات",
+        "تنبيهات"
+      ],
+      "policy": {
+        "kind": "resolver",
+        "field": "permissions.notifications"
+      }
+    },
+    {
+      "key": "privacy.storage-in-memory",
+      "type": "bool",
+      "default": false,
+      "attention_tier": "tier2",
+      "scope": "global",
+      "section": "privacy",
+      "title_id": "settings.privacy.storage-in-memory.title",
+      "desc_id": "settings.privacy.storage-in-memory.desc",
+      "security_relevant": true,
+      "aliases": [
+        "storage",
+        "in memory",
+        "in-memory",
+        "session storage",
+        "persistent storage",
+        "disk",
+        "ephemeral storage"
+      ],
+      "policy": {
+        "kind": "resolver",
+        "field": "storage_scope.in_memory"
+      }
+    },
+    {
+      "key": "privacy.letterbox",
+      "type": "bool",
+      "default": false,
+      "attention_tier": "tier2",
+      "scope": "global",
+      "section": "privacy",
+      "title_id": "settings.privacy.letterbox.title",
+      "desc_id": "settings.privacy.letterbox.desc",
+      "security_relevant": true,
+      "aliases": [
+        "letterbox",
+        "letterboxing",
+        "window size",
+        "viewport size",
+        "screen fingerprint",
+        "resolution"
+      ],
+      "policy": {
+        "kind": "resolver",
+        "field": "letterbox"
+      }
+    },
+    {
+      "key": "privacy.vault-export",
+      "type": "bool",
+      "default": false,
+      "attention_tier": "tier2",
+      "scope": "global",
+      "section": "privacy",
+      "title_id": "settings.privacy.vault-export.title",
+      "desc_id": "settings.privacy.vault-export.desc",
+      "security_relevant": true,
+      "aliases": [
+        "vault",
+        "export",
+        "data export",
+        "download my data",
+        "takeout",
+        "تصدير"
+      ],
+      "policy": {
+        "kind": "resolver",
+        "field": "vault_scope.export_allowed"
+      }
+    },
+    {
+      "key": "identity.kind",
+      "type": "enum",
+      "default": "standard",
+      "attention_tier": "tier2",
+      "scope": "per-identity",
+      "section": "identity",
+      "title_id": "settings.identity.kind.title",
+      "desc_id": "settings.identity.kind.desc",
+      "security_relevant": true,
+      "aliases": [
+        "kind",
+        "identity kind",
+        "fortress",
+        "standard identity",
+        "container",
+        "containers",
+        "workspace kind",
+        "هوية",
+        "نوع الهوية",
+        "حاوية",
+        "container identity",
+        "identity container"
+      ],
+      "policy": {
+        "kind": "identity-list",
+        "field": "kind"
+      }
+    },
+    {
+      "key": "identity.storage",
+      "type": "enum",
+      "default": "persistent",
+      "attention_tier": "tier2",
+      "scope": "per-identity",
+      "section": "identity",
+      "title_id": "settings.identity.storage.title",
+      "desc_id": "settings.identity.storage.desc",
+      "security_relevant": true,
+      "aliases": [
+        "storage",
+        "identity storage",
+        "persistent",
+        "in-memory identities",
+        "ephemeral",
+        "disposable",
+        "container storage",
+        "مؤقت",
+        "تخزين الهوية"
+      ],
+      "policy": {
+        "kind": "identity-list",
+        "field": "storage"
+      }
+    },
+    {
+      "key": "identity.default_grade",
+      "type": "enum",
+      "default": "kStandard",
+      "attention_tier": "tier2",
+      "scope": "per-identity",
+      "section": "identity",
+      "title_id": "settings.identity.default_grade.title",
+      "desc_id": "settings.identity.default_grade.desc",
+      "security_relevant": true,
+      "aliases": [
+        "default grade",
+        "default trust",
+        "trust level",
+        "grade",
+        "new identities",
+        "container default",
+        "درجة الثقة",
+        "الدرجة الافتراضية"
+      ],
+      "policy": {
+        "kind": "identity-list",
+        "field": "grade"
+      }
+    }
+  ],
+  "enum_options": {
+    "network.route": [
+      "kDirect"
+    ],
+    "privacy.notifications": [
+      "kAsk",
+      "kDeny",
+      "kAllow"
+    ],
+    "identity.kind": [
+      "standard",
+      "fortress"
+    ],
+    "identity.storage": [
+      "persistent",
+      "in_memory"
+    ],
+    "identity.default_grade": [
+      "kStandard",
+      "kShield",
+      "kFortress"
+    ]
+  },
+  "security_critical_keys": [
+    "network.adblock",
+    "network.tracker-block",
+    "network.https-upgrade",
+    "network.route",
+    "privacy.notifications",
+    "privacy.storage-in-memory",
+    "privacy.letterbox",
+    "privacy.vault-export",
+    "identity.kind",
+    "identity.storage",
+    "identity.default_grade"
+  ],
+  "writable_in_v0": []
+}

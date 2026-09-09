@@ -11,3 +11,7 @@ ui/toolchain/node_modules/
 ui/toolchain/dist/
 ui/toolchain/.repro_a/
 ui/toolchain/.repro_b/
+settings/tests/build/
+themes/tests/build/
+settings/tests/*-test-store/
+themes/tests/*-test-store/

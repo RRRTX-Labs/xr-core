@@ -1,0 +1,809 @@
+{
+ "schema": "xr-settings-recall-corpus",
+ "schema_version": 1,
+ "note": "200-phrase settings-search recall corpus (P8). >=95% top-3 bar. Derived deterministically from settings_schema_v1.json aliases by gen_recall_corpus.py — regenerate, never hand-edit. Every searchable setting is represented (round-robin).",
+ "generated_from": "settings/core/settings_schema_v1.json",
+ "count": 200,
+ "queries": [
+  {
+   "query": "ads",
+   "expect": "network.adblock"
+  },
+  {
+   "query": "trackers",
+   "expect": "network.tracker-block"
+  },
+  {
+   "query": "https",
+   "expect": "network.https-upgrade"
+  },
+  {
+   "query": "route",
+   "expect": "network.route"
+  },
+  {
+   "query": "notification",
+   "expect": "privacy.notifications"
+  },
+  {
+   "query": "storage",
+   "expect": "privacy.storage-in-memory"
+  },
+  {
+   "query": "letterbox",
+   "expect": "privacy.letterbox"
+  },
+  {
+   "query": "vault",
+   "expect": "privacy.vault-export"
+  },
+  {
+   "query": "kind",
+   "expect": "identity.kind"
+  },
+  {
+   "query": "storage",
+   "expect": "identity.storage"
+  },
+  {
+   "query": "default grade",
+   "expect": "identity.default_grade"
+  },
+  {
+   "query": "how do i change ads",
+   "expect": "network.adblock"
+  },
+  {
+   "query": "how do i change trackers",
+   "expect": "network.tracker-block"
+  },
+  {
+   "query": "how do i change https",
+   "expect": "network.https-upgrade"
+  },
+  {
+   "query": "how do i change route",
+   "expect": "network.route"
+  },
+  {
+   "query": "how do i change notification",
+   "expect": "privacy.notifications"
+  },
+  {
+   "query": "how do i change storage",
+   "expect": "privacy.storage-in-memory"
+  },
+  {
+   "query": "how do i change letterbox",
+   "expect": "privacy.letterbox"
+  },
+  {
+   "query": "how do i change vault",
+   "expect": "privacy.vault-export"
+  },
+  {
+   "query": "how do i change kind",
+   "expect": "identity.kind"
+  },
+  {
+   "query": "how do i change storage",
+   "expect": "identity.storage"
+  },
+  {
+   "query": "how do i change default grade",
+   "expect": "identity.default_grade"
+  },
+  {
+   "query": "where is ads",
+   "expect": "network.adblock"
+  },
+  {
+   "query": "where is trackers",
+   "expect": "network.tracker-block"
+  },
+  {
+   "query": "where is https",
+   "expect": "network.https-upgrade"
+  },
+  {
+   "query": "where is route",
+   "expect": "network.route"
+  },
+  {
+   "query": "where is notification",
+   "expect": "privacy.notifications"
+  },
+  {
+   "query": "where is storage",
+   "expect": "privacy.storage-in-memory"
+  },
+  {
+   "query": "where is letterbox",
+   "expect": "privacy.letterbox"
+  },
+  {
+   "query": "where is vault",
+   "expect": "privacy.vault-export"
+  },
+  {
+   "query": "where is kind",
+   "expect": "identity.kind"
+  },
+  {
+   "query": "where is storage",
+   "expect": "identity.storage"
+  },
+  {
+   "query": "where is default grade",
+   "expect": "identity.default_grade"
+  },
+  {
+   "query": "settings for ads",
+   "expect": "network.adblock"
+  },
+  {
+   "query": "settings for trackers",
+   "expect": "network.tracker-block"
+  },
+  {
+   "query": "settings for https",
+   "expect": "network.https-upgrade"
+  },
+  {
+   "query": "settings for route",
+   "expect": "network.route"
+  },
+  {
+   "query": "settings for notification",
+   "expect": "privacy.notifications"
+  },
+  {
+   "query": "settings for storage",
+   "expect": "privacy.storage-in-memory"
+  },
+  {
+   "query": "settings for letterbox",
+   "expect": "privacy.letterbox"
+  },
+  {
+   "query": "settings for vault",
+   "expect": "privacy.vault-export"
+  },
+  {
+   "query": "settings for kind",
+   "expect": "identity.kind"
+  },
+  {
+   "query": "settings for storage",
+   "expect": "identity.storage"
+  },
+  {
+   "query": "settings for default grade",
+   "expect": "identity.default_grade"
+  },
+  {
+   "query": "turn on ads",
+   "expect": "network.adblock"
+  },
+  {
+   "query": "turn on trackers",
+   "expect": "network.tracker-block"
+  },
+  {
+   "query": "turn on https",
+   "expect": "network.https-upgrade"
+  },
+  {
+   "query": "turn on route",
+   "expect": "network.route"
+  },
+  {
+   "query": "turn on notification",
+   "expect": "privacy.notifications"
+  },
+  {
+   "query": "turn on storage",
+   "expect": "privacy.storage-in-memory"
+  },
+  {
+   "query": "turn on letterbox",
+   "expect": "privacy.letterbox"
+  },
+  {
+   "query": "turn on vault",
+   "expect": "privacy.vault-export"
+  },
+  {
+   "query": "turn on kind",
+   "expect": "identity.kind"
+  },
+  {
+   "query": "turn on storage",
+   "expect": "identity.storage"
+  },
+  {
+   "query": "turn on default grade",
+   "expect": "identity.default_grade"
+  },
+  {
+   "query": "find ads",
+   "expect": "network.adblock"
+  },
+  {
+   "query": "find trackers",
+   "expect": "network.tracker-block"
+  },
+  {
+   "query": "find https",
+   "expect": "network.https-upgrade"
+  },
+  {
+   "query": "find route",
+   "expect": "network.route"
+  },
+  {
+   "query": "find notification",
+   "expect": "privacy.notifications"
+  },
+  {
+   "query": "find storage",
+   "expect": "privacy.storage-in-memory"
+  },
+  {
+   "query": "find letterbox",
+   "expect": "privacy.letterbox"
+  },
+  {
+   "query": "find vault",
+   "expect": "privacy.vault-export"
+  },
+  {
+   "query": "find kind",
+   "expect": "identity.kind"
+  },
+  {
+   "query": "find storage",
+   "expect": "identity.storage"
+  },
+  {
+   "query": "find default grade",
+   "expect": "identity.default_grade"
+  },
+  {
+   "query": "ads settings",
+   "expect": "network.adblock"
+  },
+  {
+   "query": "trackers settings",
+   "expect": "network.tracker-block"
+  },
+  {
+   "query": "https settings",
+   "expect": "network.https-upgrade"
+  },
+  {
+   "query": "route settings",
+   "expect": "network.route"
+  },
+  {
+   "query": "notification settings",
+   "expect": "privacy.notifications"
+  },
+  {
+   "query": "storage settings",
+   "expect": "privacy.storage-in-memory"
+  },
+  {
+   "query": "letterbox settings",
+   "expect": "privacy.letterbox"
+  },
+  {
+   "query": "vault settings",
+   "expect": "privacy.vault-export"
+  },
+  {
+   "query": "kind settings",
+   "expect": "identity.kind"
+  },
+  {
+   "query": "storage settings",
+   "expect": "identity.storage"
+  },
+  {
+   "query": "default grade settings",
+   "expect": "identity.default_grade"
+  },
+  {
+   "query": "ad blocker",
+   "expect": "network.adblock"
+  },
+  {
+   "query": "tackers",
+   "expect": "network.tracker-block"
+  },
+  {
+   "query": "htps",
+   "expect": "network.https-upgrade"
+  },
+  {
+   "query": "rute",
+   "expect": "network.route"
+  },
+  {
+   "query": "ntification",
+   "expect": "privacy.notifications"
+  },
+  {
+   "query": "sorage",
+   "expect": "privacy.storage-in-memory"
+  },
+  {
+   "query": "ltterbox",
+   "expect": "privacy.letterbox"
+  },
+  {
+   "query": "vult",
+   "expect": "privacy.vault-export"
+  },
+  {
+   "query": "identity kind",
+   "expect": "identity.kind"
+  },
+  {
+   "query": "sorage",
+   "expect": "identity.storage"
+  },
+  {
+   "query": "defaultgrade",
+   "expect": "identity.default_grade"
+  },
+  {
+   "query": "how do i change ad blocker",
+   "expect": "network.adblock"
+  },
+  {
+   "query": "trckers",
+   "expect": "network.tracker-block"
+  },
+  {
+   "query": "http",
+   "expect": "network.https-upgrade"
+  },
+  {
+   "query": "rote",
+   "expect": "network.route"
+  },
+  {
+   "query": "noification",
+   "expect": "privacy.notifications"
+  },
+  {
+   "query": "strage",
+   "expect": "privacy.storage-in-memory"
+  },
+  {
+   "query": "leterbox",
+   "expect": "privacy.letterbox"
+  },
+  {
+   "query": "valt",
+   "expect": "privacy.vault-export"
+  },
+  {
+   "query": "how do i change identity kind",
+   "expect": "identity.kind"
+  },
+  {
+   "query": "strage",
+   "expect": "identity.storage"
+  },
+  {
+   "query": "grade default",
+   "expect": "identity.default_grade"
+  },
+  {
+   "query": "where is ad blocker",
+   "expect": "network.adblock"
+  },
+  {
+   "query": "tracker",
+   "expect": "network.tracker-block"
+  },
+  {
+   "query": "secure connection",
+   "expect": "network.https-upgrade"
+  },
+  {
+   "query": "rout",
+   "expect": "network.route"
+  },
+  {
+   "query": "notificatio",
+   "expect": "privacy.notifications"
+  },
+  {
+   "query": "storag",
+   "expect": "privacy.storage-in-memory"
+  },
+  {
+   "query": "letterbo",
+   "expect": "privacy.letterbox"
+  },
+  {
+   "query": "vaul",
+   "expect": "privacy.vault-export"
+  },
+  {
+   "query": "where is identity kind",
+   "expect": "identity.kind"
+  },
+  {
+   "query": "storag",
+   "expect": "identity.storage"
+  },
+  {
+   "query": "grade",
+   "expect": "identity.default_grade"
+  },
+  {
+   "query": "settings for ad blocker",
+   "expect": "network.adblock"
+  },
+  {
+   "query": "tracking",
+   "expect": "network.tracker-block"
+  },
+  {
+   "query": "how do i change secure connection",
+   "expect": "network.https-upgrade"
+  },
+  {
+   "query": "connection route",
+   "expect": "network.route"
+  },
+  {
+   "query": "notifications",
+   "expect": "privacy.notifications"
+  },
+  {
+   "query": "in memory",
+   "expect": "privacy.storage-in-memory"
+  },
+  {
+   "query": "letterboxing",
+   "expect": "privacy.letterbox"
+  },
+  {
+   "query": "export",
+   "expect": "privacy.vault-export"
+  },
+  {
+   "query": "settings for identity kind",
+   "expect": "identity.kind"
+  },
+  {
+   "query": "identity storage",
+   "expect": "identity.storage"
+  },
+  {
+   "query": "dfault grade",
+   "expect": "identity.default_grade"
+  },
+  {
+   "query": "turn on ad blocker",
+   "expect": "network.adblock"
+  },
+  {
+   "query": "how do i change tracking",
+   "expect": "network.tracker-block"
+  },
+  {
+   "query": "where is secure connection",
+   "expect": "network.https-upgrade"
+  },
+  {
+   "query": "how do i change connection route",
+   "expect": "network.route"
+  },
+  {
+   "query": "how do i change notifications",
+   "expect": "privacy.notifications"
+  },
+  {
+   "query": "how do i change in memory",
+   "expect": "privacy.storage-in-memory"
+  },
+  {
+   "query": "how do i change letterboxing",
+   "expect": "privacy.letterbox"
+  },
+  {
+   "query": "how do i change export",
+   "expect": "privacy.vault-export"
+  },
+  {
+   "query": "turn on identity kind",
+   "expect": "identity.kind"
+  },
+  {
+   "query": "how do i change identity storage",
+   "expect": "identity.storage"
+  },
+  {
+   "query": "deault grade",
+   "expect": "identity.default_grade"
+  },
+  {
+   "query": "find ad blocker",
+   "expect": "network.adblock"
+  },
+  {
+   "query": "where is tracking",
+   "expect": "network.tracker-block"
+  },
+  {
+   "query": "settings for secure connection",
+   "expect": "network.https-upgrade"
+  },
+  {
+   "query": "where is connection route",
+   "expect": "network.route"
+  },
+  {
+   "query": "where is notifications",
+   "expect": "privacy.notifications"
+  },
+  {
+   "query": "where is in memory",
+   "expect": "privacy.storage-in-memory"
+  },
+  {
+   "query": "where is letterboxing",
+   "expect": "privacy.letterbox"
+  },
+  {
+   "query": "where is export",
+   "expect": "privacy.vault-export"
+  },
+  {
+   "query": "find identity kind",
+   "expect": "identity.kind"
+  },
+  {
+   "query": "where is identity storage",
+   "expect": "identity.storage"
+  },
+  {
+   "query": "defaul grade",
+   "expect": "identity.default_grade"
+  },
+  {
+   "query": "ad blocker settings",
+   "expect": "network.adblock"
+  },
+  {
+   "query": "settings for tracking",
+   "expect": "network.tracker-block"
+  },
+  {
+   "query": "turn on secure connection",
+   "expect": "network.https-upgrade"
+  },
+  {
+   "query": "settings for connection route",
+   "expect": "network.route"
+  },
+  {
+   "query": "settings for notifications",
+   "expect": "privacy.notifications"
+  },
+  {
+   "query": "settings for in memory",
+   "expect": "privacy.storage-in-memory"
+  },
+  {
+   "query": "settings for letterboxing",
+   "expect": "privacy.letterbox"
+  },
+  {
+   "query": "settings for export",
+   "expect": "privacy.vault-export"
+  },
+  {
+   "query": "identity kind settings",
+   "expect": "identity.kind"
+  },
+  {
+   "query": "settings for identity storage",
+   "expect": "identity.storage"
+  },
+  {
+   "query": "default gade",
+   "expect": "identity.default_grade"
+  },
+  {
+   "query": "adblocker",
+   "expect": "network.adblock"
+  },
+  {
+   "query": "turn on tracking",
+   "expect": "network.tracker-block"
+  },
+  {
+   "query": "find secure connection",
+   "expect": "network.https-upgrade"
+  },
+  {
+   "query": "turn on connection route",
+   "expect": "network.route"
+  },
+  {
+   "query": "turn on notifications",
+   "expect": "privacy.notifications"
+  },
+  {
+   "query": "turn on in memory",
+   "expect": "privacy.storage-in-memory"
+  },
+  {
+   "query": "turn on letterboxing",
+   "expect": "privacy.letterbox"
+  },
+  {
+   "query": "turn on export",
+   "expect": "privacy.vault-export"
+  },
+  {
+   "query": "identitykind",
+   "expect": "identity.kind"
+  },
+  {
+   "query": "turn on identity storage",
+   "expect": "identity.storage"
+  },
+  {
+   "query": "default grde",
+   "expect": "identity.default_grade"
+  },
+  {
+   "query": "blocker ad",
+   "expect": "network.adblock"
+  },
+  {
+   "query": "find tracking",
+   "expect": "network.tracker-block"
+  },
+  {
+   "query": "secure connection settings",
+   "expect": "network.https-upgrade"
+  },
+  {
+   "query": "find connection route",
+   "expect": "network.route"
+  },
+  {
+   "query": "find notifications",
+   "expect": "privacy.notifications"
+  },
+  {
+   "query": "find in memory",
+   "expect": "privacy.storage-in-memory"
+  },
+  {
+   "query": "find letterboxing",
+   "expect": "privacy.letterbox"
+  },
+  {
+   "query": "find export",
+   "expect": "privacy.vault-export"
+  },
+  {
+   "query": "kind identity",
+   "expect": "identity.kind"
+  },
+  {
+   "query": "find identity storage",
+   "expect": "identity.storage"
+  },
+  {
+   "query": "default grad",
+   "expect": "identity.default_grade"
+  },
+  {
+   "query": "blocker",
+   "expect": "network.adblock"
+  },
+  {
+   "query": "tracking settings",
+   "expect": "network.tracker-block"
+  },
+  {
+   "query": "secureconnection",
+   "expect": "network.https-upgrade"
+  },
+  {
+   "query": "connection route settings",
+   "expect": "network.route"
+  },
+  {
+   "query": "notifications settings",
+   "expect": "privacy.notifications"
+  },
+  {
+   "query": "in memory settings",
+   "expect": "privacy.storage-in-memory"
+  },
+  {
+   "query": "letterboxing settings",
+   "expect": "privacy.letterbox"
+  },
+  {
+   "query": "export settings",
+   "expect": "privacy.vault-export"
+  },
+  {
+   "query": "ientity kind",
+   "expect": "identity.kind"
+  },
+  {
+   "query": "identity storage settings",
+   "expect": "identity.storage"
+  },
+  {
+   "query": "default trust",
+   "expect": "identity.default_grade"
+  },
+  {
+   "query": "ad bocker",
+   "expect": "network.adblock"
+  },
+  {
+   "query": "tacking",
+   "expect": "network.tracker-block"
+  },
+  {
+   "query": "connection secure",
+   "expect": "network.https-upgrade"
+  },
+  {
+   "query": "connectionroute",
+   "expect": "network.route"
+  },
+  {
+   "query": "ntifications",
+   "expect": "privacy.notifications"
+  },
+  {
+   "query": "inmemory",
+   "expect": "privacy.storage-in-memory"
+  },
+  {
+   "query": "ltterboxing",
+   "expect": "privacy.letterbox"
+  },
+  {
+   "query": "eport",
+   "expect": "privacy.vault-export"
+  },
+  {
+   "query": "idntity kind",
+   "expect": "identity.kind"
+  },
+  {
+   "query": "identitystorage",
+   "expect": "identity.storage"
+  },
+  {
+   "query": "how do i change default trust",
+   "expect": "identity.default_grade"
+  },
+  {
+   "query": "ad blcker",
+   "expect": "network.adblock"
+  },
+  {
+   "query": "trcking",
+   "expect": "network.tracker-block"
+  }
+ ]
+}

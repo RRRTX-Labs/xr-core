@@ -1,0 +1,18 @@
+{
+  "tool": "settings-bench",
+  "sub_budget_us_p99": 5000,
+  "real_v0_corpus_note": "the shipped v0 schema indexes 11 settings + 3 sections (sub-microsecond per query); this 2000-entry corpus is the future-scale shape (P13/P29)",
+  "plan_budget_note": "core sub-budget (5 ms p99) supports the settings-shell interactive budget, which is HUMAN-GATED on the farm (HG-35) and NOT measured here",
+  "seed": 20260909,
+  "corpus_size": 2000,
+  "query_len": 32,
+  "query_pool": 200,
+  "iterations": 20000,
+  "warmup_excluded": 200,
+  "sample_query": "network blocking ephemeral tlkiq",
+  "p50_us": 9,
+  "p95_us": 10,
+  "p99_us": 23,
+  "hardware": "Intel(R) Xeon(R) Processor @ 2.60GHz (nproc via /proc; sandbox)",
+  "verdict": "MET"
+}

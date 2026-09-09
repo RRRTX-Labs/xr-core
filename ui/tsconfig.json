@@ -25,6 +25,8 @@
     "shell.ts",
     "palette/*.ts",
     "shortcut-editor/*.ts",
-    "help-index/*.ts"
+    "help-index/*.ts",
+    "settings-shell/*.ts",
+    "settings/*.ts"
   ]
 }
