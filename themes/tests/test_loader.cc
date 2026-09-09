@@ -101,6 +101,40 @@ int main() {
     ApplyResult r7 = xr::themes::ImportTheme(
         &st, "{\"critical-red\":\"#1565c0\"}");
     XR_EXPECT_MSG(!r7.ok, "calm critical-red refused on import");
+    // 5g. invalid UTF-8 in the raw doc (parser validates UTF-8 strictly)
+    {
+      std::string bad8 = "{\"surface\":\"#ffffff\",\"note\":\"";
+      bad8.append("\xc3\x28");  // 0xC3 needs a continuation byte
+      bad8.append("\"}");
+      ApplyResult r8 = xr::themes::ImportTheme(&st, bad8);
+      XR_EXPECT_MSG(!r8.ok &&
+                       r8.refusal.find("UTF-8") != std::string::npos,
+                   "invalid UTF-8 refused at parse");
+      XR_EXPECT_STREQ(st.applied, "dark");  // atomic
+    }
+    // 5h. nesting depth tricks (parser depth cap 64)
+    {
+      std::string deep;
+      for (int i = 0; i < 70; ++i) deep += "{\"a\":";
+      deep += "1";
+      for (int i = 0; i < 70; ++i) deep += "}";
+      ApplyResult r9 = xr::themes::ImportTheme(&st, deep);
+      XR_EXPECT_MSG(!r9.ok && r9.refusal.find("nesting depth") !=
+                                  std::string::npos,
+                    "deeply nested doc refused at parse");
+    }
+    // 5i. huge ints (overflow): 2^63 parses as double; the schema demands
+    // typed integers for dimension tokens -> refused, never coerced.
+    ApplyResult r10 = xr::themes::ImportTheme(
+        &st, "{\"space-1\":9223372036854775808}");
+    XR_EXPECT_MSG(!r10.ok && r10.refusal.find("does not match declared type") !=
+                                 std::string::npos,
+                  "huge int refused by the type check");
+    // 5j. NaN-ish numbers (1e999 overflows the double range)
+    ApplyResult r11 =
+        xr::themes::ImportTheme(&st, "{\"space-1\":1e999}");
+    XR_EXPECT_MSG(!r11.ok,
+                  "out-of-range number refused (never inf/NaN coercion)");
   }
 
   // 6. Failing-contrast custom doc refused (never applies): take the light
