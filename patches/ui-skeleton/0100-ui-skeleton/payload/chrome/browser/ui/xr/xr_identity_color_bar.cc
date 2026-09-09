@@ -6,19 +6,14 @@
 
 #include <string>
 
+#include "xr/ui/themes/tokens.h"  // generated: one source (tokens.json) -> this
+                                  // header + tokens.css (P8-T2); uint32_t
+                                  // 0xAARRGGBB, no Skia include by design.
+
 namespace xr {
 namespace {
 
 IdentityColorBarState g_state;
-
-// Deterministic, data-only tint by trust tier (the Identity/website-tint path,
-// layout-agnostic). Not a resolver decision — it only maps a trusted input
-// (the pinned snapshot's tier) to a color; the TIER itself comes from P6.
-constexpr unsigned int kTierArgb[3] = {
-    0x2E7D32FF,  // kStandard  (green)
-    0x1565C0FF,  // kShield    (blue)
-    0x6A1B9AFF,  // kFortress  (violet)
-};
 
 }  // namespace
 
@@ -31,12 +26,17 @@ void XrIdentityColorBar::OnTabStripStateChanged(const std::string& active_identi
   // Identity vocabulary (L21): label says Identity, never "container".
   g_state.label = active_identity;
   g_state.trust_tier = trust_tier;
+  // Deterministic, data-only tint by trust tier (the Identity/website-tint
+  // path, layout-agnostic). Not a resolver decision — it only maps a trusted
+  // input (the pinned snapshot's tier) to a GENERATED token; the TIER itself
+  // comes from P6. Values are xr::tokens::kTrust* (0xAARRGGBB from
+  // ui/themes/tokens.json) — never literals.
   if (trust_tier == "kStandard") {
-    g_state.argb = kTierArgb[0];
+    g_state.argb = tokens::kTrustStandard;
   } else if (trust_tier == "kShield") {
-    g_state.argb = kTierArgb[1];
+    g_state.argb = tokens::kTrustShield;
   } else if (trust_tier == "kFortress") {
-    g_state.argb = kTierArgb[2];
+    g_state.argb = tokens::kTrustFortress;
   }
 }
 

@@ -2,48 +2,76 @@
  * Use of this source code is governed by the MPL-2.0 license that can be
  * found in the LICENSE file.
  *
- * Design tokens (Plan §10). RTL-logical ONLY (no physical left/right — see
- * xr-browser tools/rtl_lint.py). The identity/trust color vocabulary is here:
- * Identity (never "container"), the trust-dial tiers, and the shield chip.
- * Views reference these custom properties; they never hard-code colors.
+ * GENERATED FILE — do not hand-edit. Regenerate with
+ *   python3 tools/tokens_gen.py   (xr-browser)
+ * and keep `tools/tokens_gen.py --check` diff-clean in CI.
+ *
+ * Design tokens (Plan §10, theme-tokens-v1): ONE source
+ * (ui/themes/tokens.json) -> tokens.css (--xr-* custom properties)
+ * + ui/themes/tokens.h (C++ 0xAARRGGBB). RTL-logical ONLY (no
+ * physical left/right — tools/rtl_lint.py). Views reference these
+ * custom properties; they never hard-code colors. 'critical-red' is
+ * reserved in data + validator (never themeable to a non-alarming
+ * color).
  */
 
 :root {
-  /* Identity color-bar tiers (the §1.4/§10 identity/trust vocabulary). */
+  --xr-surface: #f3f4f6;
+  --xr-surface-raised: #ffffff;
+  --xr-surface-muted: #eef1f4;
+  --xr-surface-sunken: #e6e9ed;
+  --xr-text: #1f2328;
+  --xr-text-dim: #57606a;
+  --xr-text-inverse: #ffffff;
+  --xr-border: #d0d7de;
+  --xr-border-strong: #8c959f;
+  --xr-accent: #0969da;
+  --xr-accent-hover: #0550ae;
+  --xr-accent-soft: #ddf4ff;
+  --xr-danger-caution: #9a6700;
+  --xr-danger-caution-bg: #fff8c5;
+  --xr-danger-destructive: #cf222e;
+  --xr-danger-destructive-bg: #ffebe9;
+  /* RESERVED (data+validator): never themeable to a non-alarming color. */
+  --xr-critical-red: #d1242f;
+  --xr-critical-red-bg: #ffe9e9;
+  --xr-success-ok: #1a7f37;
+  --xr-success-ok-bg: #dafbe1;
   --xr-trust-standard: #2e7d32;
   --xr-trust-shield: #1565c0;
   --xr-trust-fortress: #6a1b9a;
-
-  /* Neutral surface + text (theme-agnostic; the chrome theme maps these). */
-  --xr-surface: #f3f4f6;
-  --xr-surface-raised: #ffffff;
-  --xr-text: #1f2328;
-  --xr-text-dim: #57606a;
-  --xr-border: #d0d7de;
-  --xr-accent: #0969da;
-
-  /* Danger classes (§10) — the palette renders the class, not a red herring. */
-  --xr-danger-safe: var(--xr-text-dim);
-  --xr-danger-caution: #9a6700;
-  --xr-danger-destructive: #cf222e;
-
-  /* Spacing + geometry (logical, flip-safe). */
+  --xr-trust-standard-bg: #e6f4ea;
+  --xr-trust-shield-bg: #e7f0fb;
+  --xr-trust-fortress-bg: #f3e8f9;
+  --xr-code-bg: #f6f8fa;
+  --xr-focus-ring: #0969da;
+  --xr-overlay-scrim: #1f232866;
   --xr-space-1: 4px;
   --xr-space-2: 8px;
   --xr-space-3: 12px;
+  --xr-space-4: 16px;
   --xr-radius: 6px;
-
-  /* Focus: keyboard users MUST see where focus is (a11y_lint). Logical inset
-     so the ring is direction-agnostic. */
+  --xr-radius-lg: 12px;
+  --xr-font-size-sm: 12px;
+  --xr-font-size-base: 14px;
+  --xr-font-size-lg: 16px;
+  --xr-font-family-ui: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --xr-font-family-mono: ui-monospace, 'Cascadia Code', monospace;
+  /* Derived (kept from the P7 baseline, values from tokens). */
+  --xr-danger-safe: var(--xr-text-dim);
   --xr-focus-ring: 2px solid var(--xr-accent);
 }
 
-/* Focus-visible ring on every interactive control (logical, no physical L/R). */
+/* Focus-visible ring on every interactive control (logical, no physical L/R;
+   a11y law: keyboard users MUST see where focus is). */
 xr-palette input:focus-visible,
 xr-palette [role="option"]:focus-visible,
 xr-shortcut-editor button:focus-visible,
 xr-help-index a:focus-visible,
-:xr-focusable:focus-visible {
+xr-settings-shell a:focus-visible,
+xr-settings-search input:focus-visible,
+xr-settings-search [role="option"]:focus-visible,
+xr-settings-section a:focus-visible {
   outline: var(--xr-focus-ring);
   outline-offset: 2px;
 }
@@ -78,3 +106,61 @@ xr-help-index a:focus-visible,
   background: var(--xr-surface-raised);
   border: 1px solid var(--xr-border);
 }
+
+/* Settings views (P8): the search-first shell + section/row chrome. */
+.xr-settings {
+  display: grid;
+  gap: var(--xr-space-3);
+  padding-inline: var(--xr-space-3);
+  padding-block: var(--xr-space-3);
+}
+
+.xr-settings-title { font-size: var(--xr-space-4); margin: 0; }
+.xr-settings-section { display: grid; gap: var(--xr-space-2); }
+.xr-settings-section-title { display: flex; align-items: baseline; gap: var(--xr-space-2); }
+.xr-section-id { color: var(--xr-text-dim); font-family: var(--xr-font-family-mono); }
+.xr-anchor { color: var(--xr-accent); }
+.xr-setting-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--xr-space-1); }
+.xr-setting-row {
+  display: flex;
+  align-items: center;
+  gap: var(--xr-space-2);
+  padding-inline: var(--xr-space-2);
+  padding-block: var(--xr-space-1);
+  background: var(--xr-surface-raised);
+  border: 1px solid var(--xr-border);
+  border-radius: var(--xr-radius);
+}
+.xr-setting-value { font-family: var(--xr-font-family-mono); }
+.xr-setting-meta { color: var(--xr-text-dim); }
+.xr-setting-badge {
+  font-size: calc(var(--xr-space-3) - 2px);
+  padding-inline: var(--xr-space-1);
+  border-radius: var(--xr-radius);
+  border: 1px solid var(--xr-border-strong);
+}
+.xr-settings-label { display: block; margin-block-end: var(--xr-space-1); }
+.xr-settings-input {
+  inline-size: 100%;
+  box-sizing: border-box;
+  padding-inline: var(--xr-space-2);
+  padding-block: var(--xr-space-1);
+  background: var(--xr-surface-raised);
+  color: var(--xr-text);
+  border: 1px solid var(--xr-border-strong);
+  border-radius: var(--xr-radius);
+}
+.xr-settings-list {
+  list-style: none; margin: 0; padding: 0;
+  background: var(--xr-surface-raised);
+  border: 1px solid var(--xr-border);
+  border-radius: var(--xr-radius);
+}
+.xr-settings-list [role="option"] {
+  display: flex; justify-content: space-between; gap: var(--xr-space-2);
+  padding-inline: var(--xr-space-2); padding-block: var(--xr-space-1);
+}
+.xr-settings-list [role="option"][aria-selected="true"] { background: var(--xr-accent-soft); }
+.xr-settings-kind { color: var(--xr-text-dim); }
+.xr-unavailable { color: var(--xr-danger-caution); }
+

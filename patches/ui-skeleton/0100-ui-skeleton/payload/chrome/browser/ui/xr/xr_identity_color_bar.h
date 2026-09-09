@@ -20,7 +20,8 @@ namespace xr {
 // Resolves the Identity color-bar state for a site from the pinned snapshot.
 // Deterministic: (active identity, trust tier) -> color + label. Pure data.
 struct IdentityColorBarState {
-  // 0xRRGGBBAA, or 0x00000000 when no Identity is active (bar hidden).
+  // 0xAARRGGBB (the generated tokens.h convention — never SkColor), or
+  // 0x00000000 when no Identity is active (bar hidden).
   unsigned int argb = 0;
   // The Identity pill label (Identity vocabulary, never "container").
   std::string label;
