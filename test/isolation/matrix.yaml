@@ -1,0 +1,147 @@
+# Isolation matrix definition (P9-T2) — the signature suite, §11.4.
+#
+# Every pair of identities x mechanism x assertion is a cell. `mode` says how
+# the cell is executed TODAY:
+#   fake    — runnable in-sandbox against xr-core/fakes/ + the P6 resolver +
+#             P8 hosts (real assertion, not a stub).
+#   browser — needs a browser (partitioned storage, process attachment); the
+#             runner records it `not-run` with the owning phase (HG-31 farm).
+#   exception — documented exception; the verdict must map to a
+#             docs/limitations.md §1.13 row (owner + expiry) in the same
+#             commit (tools/exception_ledger_check.py), else the gate fails.
+#   not-yet — the mechanism has no home yet; owning phase must be named.
+#
+# This file is data, not code: P36/P38 extend it without touching the runner.
+schema_version: 1
+
+identities:
+  - id: standard
+    vid: "xr:00000000-0000-4000-8000-000000000001"
+  - id: shield
+    vid: "xr:00000000-0000-4000-8000-000000000001"   # same vid, trust kShield
+    trust: "kShield"
+  - id: fortress
+    vid: "xr:00000000-0000-4000-8000-000000000002"
+    trust: "kFortress"
+  - id: ephemeral
+    vid: "xr:00000000-0000-4000-8000-0000000000ef"
+
+identity_pairs:
+  - [standard, shield]
+  - [standard, fortress]
+  - [standard, ephemeral]
+  - [shield, fortress]
+  - [shield, ephemeral]
+
+mechanisms:
+  # ---- fake-executable (P6 resolver + P5 fakes) ----
+  - id: storage-scope
+    mode: fake
+    question: "do two identities get distinct storage scopes, with ephemeral in-memory?"
+  - id: vault-scope
+    mode: fake
+    question: "is autofill/export scope decided per identity, never inherited across pairs?"
+  - id: egress-route
+    mode: fake
+    question: "is the network route (direct/proxy/tor) decided per identity, with 3P blocked on stricter tiers?"
+  - id: permission-overlay
+    mode: fake
+    question: "are permission defaults decided per identity tier, deny on the strictest?"
+  - id: fingerprint-mode
+    mode: fake
+    question: "is fingerprinting mode per identity (reduce vs strict)?"
+  - id: process-isolation
+    mode: fake
+    question: "is site isolation + dedicated process per identity (fortress)?"
+
+  # ---- browser-only (not-run here; HG-31 farm) ----
+  - id: cookies-1p
+    mode: browser
+    question: "1P cookies partitioned per identity"
+  - id: cookies-3p-chips
+    mode: browser
+    question: "3P cookies + CHIPS partitioned per identity"
+  - id: localstorage
+    mode: browser
+    question: "localStorage partitioned per identity"
+  - id: sessionstorage
+    mode: browser
+    question: "sessionStorage partitioned per identity"
+  - id: indexeddb
+    mode: browser
+    question: "IndexedDB partitioned per identity"
+  - id: cache-api
+    mode: browser
+    question: "Cache API partitioned per identity"
+  - id: serviceworker
+    mode: browser
+    question: "ServiceWorker registrations + push state partitioned"
+  - id: broadcastchannel
+    mode: browser
+    question: "BroadcastChannel not observable across identities"
+  - id: sharedworker
+    mode: browser
+    question: "SharedWorker not shared across identities"
+  - id: messagechannel-opener
+    mode: browser
+    question: "MessageChannel-to-opener not routable across identities"
+  - id: window-name
+    mode: browser
+    question: "window.name not carried across identity boundaries"
+  - id: downloads-metadata
+    mode: browser
+    question: "downloads metadata scoped per identity"
+  - id: notification-state
+    mode: browser
+    question: "notification prompts + granted-origin state per identity"
+  - id: clipboard
+    mode: browser
+    question: "clipboard permission-level isolation"
+  - id: hsts-expect-ct
+    mode: browser
+    question: "HSTS/expect-CT visibility per identity"
+  - id: tls-resumption
+    mode: browser
+    question: "TLS session resumption ticket reuse per identity"
+  - id: devtools-attach
+    mode: browser
+    question: "DevTools attach cannot cross identity boundaries"
+  - id: omnibox
+    mode: browser
+    question: "omnibox history/suggest surface per identity"
+  - id: print
+    mode: browser
+    question: "print path cannot exfiltrate another identity's document"
+  - id: drag-across-identity
+    mode: browser
+    question: "tab-join (drag) between identities refused"
+
+  # ---- documented exceptions (§1.13 rows, owner + expiry) ----
+  - id: dns-cache-observable
+    mode: exception
+    question: "per-context host cache is partition-local but the OS resolver cache is shared"
+  - id: gpu-texture-side-channel
+    mode: exception
+    question: "GPU process texture state is shared (documented, not asserted-closed)"
+  - id: favicon-cache
+    mode: exception
+    question: "shared favicon cache discloses visit history across identities"
+  - id: http-auth-cache
+    mode: exception
+    question: "HTTP-auth cache is Profile-level (shared across identities)"
+
+  # ---- no home yet (owning phase must be named) ----
+  - id: extension-availability
+    mode: not-yet
+    phase: "P13"
+    question: "extension availability state per identity (P4 papercut census item)"
+  - id: blob-storage
+    mode: not-yet
+    phase: "P11"
+    question: "Blob storage partitioning (Shield phase)"
+
+adversarial:
+  # Deterministic seeded interleaving: cross-identity call storm on the
+  # resolver fake, asserting purity + deny-safety (unknown identity => deny).
+  rounds: 200
+  seed: 20260910
