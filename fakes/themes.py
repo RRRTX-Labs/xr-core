@@ -254,9 +254,15 @@ def is_alarming(hexv: str) -> bool:
 
 
 def audit_theme(values: dict[str, Any], src: TokenSource) -> list[dict[str, Any]]:
-    """Findings mirroring the C++ ContrastFinding shape (deterministic)."""
+    """Findings mirroring the C++ ContrastFinding shape (deterministic).
+
+    P9-T0-a canonicalization: token iteration order is NAME-SORTED to match
+    the C++ core, whose JSON Object is a std::map (sorted by key) — the
+    refusal text therefore lists findings in the same deterministic order in
+    both backends (byte-parity law)."""
     out: list[dict[str, Any]] = []
-    for tname, t in src.tokens.items():
+    for tname in sorted(src.tokens):
+        t = src.tokens[tname]
         if t["type"] != "color" or not t["pairing"]:
             continue
         fg = values.get(tname)
@@ -283,13 +289,23 @@ def audit_doc(doc: dict[str, Any], src: TokenSource) -> list[dict[str, Any]]:
 # loader (validate -> audit -> refuse)
 # ---------------------------------------------------------------------------
 
-def validate_doc(doc: dict[str, Any], src: TokenSource) -> list[str]:
-    """Returns refusal strings (empty = valid)."""
-    problems: list[str] = []
-    for key, v in doc.items():
+def validate_doc(doc: dict[str, Any],
+                 src: TokenSource) -> list[tuple[str, str]]:
+    """Returns (where, what) problem pairs (empty = valid).
+
+    P9-T0-a canonicalization: problems are emitted in NAME-SORTED key order
+    (the C++ core iterates a std::map, so both backends list problems in the
+    same order) and use the EXACT C++ wording (byte-parity law): the refusal
+    detail string must be identical across backends, not merely the verdict."""
+    problems: list[tuple[str, str]] = []
+    for key in sorted(doc):
+        v = doc[key]
         t = src.tokens.get(key)
         if t is None:
-            problems.append(f"key '{key}': unknown token — refused (strict)")
+            problems.append((f"key '{key}'",
+                             "unknown token — the v1 token set is fixed; "
+                             "unknown tokens are rejected (contract), not "
+                             "ignored"))
             continue
         typ = t["type"]
         ok_type = False
@@ -306,23 +322,31 @@ def validate_doc(doc: dict[str, Any], src: TokenSource) -> list[str]:
                     "\n" not in v
                 if not ok_type:
                     if "url(" in v:
-                        problems.append(f"token '{key}': font value contains "
-                                        "url( — rejected")
+                        problems.append((f"token '{key}'",
+                                         "font value contains url( — "
+                                         "remote/embedded resources are "
+                                         "rejected (no code/no asset path in "
+                                         "themes)"))
                     elif "http" in v:
-                        problems.append(f"token '{key}': font references a "
-                                        "remote resource — rejected")
+                        problems.append((f"token '{key}'",
+                                         "font value references a remote "
+                                         "resource — rejected"))
                     else:
-                        problems.append(f"token '{key}': font must be a plain "
-                                        "system stack")
+                        problems.append((f"token '{key}'",
+                                         "font value must be a plain "
+                                         "system-font stack"))
                     continue
         if not ok_type:
-            problems.append(f"token '{key}': value does not match declared "
-                            f"type '{typ}'")
+            problems.append((f"token '{key}'",
+                             f"value does not match declared type '{typ}'"))
             continue
         if key == "critical-red":
             if isinstance(v, str) and not is_alarming(v):
-                problems.append("token 'critical-red': RESERVED — non-"
-                                "alarming color refused")
+                problems.append(("token 'critical-red'",
+                                 "RESERVED: critical-red must stay in the "
+                                 "canonical alarming family (red-dominant); "
+                                 "mapping it to a non-alarming color is "
+                                 "refused"))
     return problems
 
 
@@ -479,8 +503,10 @@ class Loader:
         values = dict(self.builtin(resolved))
         probs = validate_doc(values, self.src)
         if probs:
+            # P9-T0-a: probs are (where, what) pairs; the C++ host surfaces
+            # only the FIRST problem's `what` here (byte-parity law).
             return err("kRejected", f"built-in '{name}' failed schema "
-                        f"validation: {probs[0]}")
+                        f"validation: {probs[0][1]}")
         refusal = self._refusal_from_findings(
             audit_with_waivers(values, self.src, self.builtin_waivers(resolved)))
         if refusal:
@@ -515,9 +541,12 @@ class Loader:
             return err("kRejected", f"theme doc is not strict JSON: {e}")
         probs = validate_doc(doc, self.src)
         if probs:
+            # P9-T0-a: canonical problem rendering matches the C++ host
+            # exactly — `[{where}] {what};` per problem, key-sorted (both
+            # backends), identical wording (byte-parity law).
             refusal = "theme doc rejected (strict):"
-            for pr in probs:
-                refusal += f" {pr};"
+            for where, what in probs:
+                refusal += f" [{where}] {what};"
             return err("kRejected", refusal)
         findings = audit_doc(doc, self.src)
         refusal = self._refusal_from_findings(findings)
@@ -546,13 +575,28 @@ class Loader:
 
     @staticmethod
     def _refusal_from_findings(findings: list[dict[str, Any]]) -> str:
+        """Canonical refusal text (P9-T0-a): identical wording + ordering to
+        the C++ RefusalFromFindings — the (security-critical pair) annotation
+        is driven by the 7.0 threshold, and unnecessary/mismatched waiver rows
+        render with the exact C++ strings (byte-parity law)."""
         parts = []
         for f in findings:
-            if f["passed"]:
+            if f["passed"] and not f.get("unnecessary"):
                 continue
-            parts.append(f"contrast {f['token']}/{f['pair']}: "
-                         f"{fmt2(f['ratio'])}:1 < required "
-                         f"{fmt2(f['required'])}:1")
+            if f.get("unnecessary"):
+                parts.append(f"waiver for passing pair {f['token']}/{f['pair']} "
+                             f"(ratio {fmt2(f['ratio'])} >= "
+                             f"{fmt2(f['required'])}) is unnecessary (waivers "
+                             f"must be exact data)")
+            elif f.get("waiver_mismatch"):
+                parts.append(f"waiver best for {f['token']}/{f['pair']} does "
+                             f"not match actual ratio {fmt2(f['ratio'])}")
+            else:
+                suffix = (" (security-critical pair)"
+                          if f["required"] >= 7.0 else "")
+                parts.append(f"contrast {f['token']}/{f['pair']}: "
+                             f"{fmt2(f['ratio'])}:1 < required "
+                             f"{fmt2(f['required'])}:1{suffix}")
         return "; ".join(parts)
 
     def list_json(self) -> dict[str, Any]:
@@ -590,7 +634,11 @@ class Loader:
 def audit_with_waivers(values: dict[str, Any], src: TokenSource,
                        waiver_rows: list[Any]) -> list[dict[str, Any]]:
     """Audit honoring waiver rows (exact best match; unnecessary/mismatched
-    rows are surfaced as failures)."""
+    rows are surfaced as failures).
+
+    P9-T0-a: the flag set now mirrors the C++ AuditTheme EXACTLY (waived /
+    waiver_mismatch / unnecessary), so the refusal text is byte-identical
+    across backends even for stale or unnecessary waiver rows."""
     rows: list[tuple[str, str, float, str]] = []
     for w in waiver_rows:
         if not isinstance(w, dict):
@@ -607,26 +655,24 @@ def audit_with_waivers(values: dict[str, Any], src: TokenSource,
     for f in findings:
         row = next((r for r in rows if r[0] == f["token"] and
                     r[1] == f["pair"]), None)
-        if row is not None and f["passed"]:
-            # data-hygiene law: a waiver row on a passing pair is refused
-            # as unnecessary (mirror of the C++ audit rule)
-            ff = dict(f)
-            ff["passed"] = False
-            ff["unnecessary"] = True
-            out.append(ff)
-            continue
-        if f["passed"]:
-            out.append(f)
-            continue
+        ff = dict(f)
+        waiver_row = row is not None
+        waiver_mismatch = False
+        if waiver_row and abs(row[2] - f["ratio"]) > 0.011:
+            waiver_mismatch = True  # stale/aspirational — never honored
+        waived = waiver_row and not waiver_mismatch
         # Waiver eligibility floor (recorded law): below body-text 4.5
         # nothing is waivable; in [4.5, required) an EXACT waiver passes.
-        if f["ratio"] < 4.5 or row is None or abs(row[2] - f["ratio"]) > 0.011:
-            out.append(f)  # not waivable (below floor / no / stale waiver)
-            continue
-        ff = dict(f)
-        ff["passed"] = True
-        ff["waived"] = True
-        ff["reason"] = row[3]
+        if waived and f["ratio"] < 4.5:
+            waived = False
+        ff["waived"] = waived
+        ff["waiver_mismatch"] = waiver_mismatch
+        # data-hygiene law: ANY waiver row on a passing pair is unnecessary
+        # (mirror of the C++ audit rule).
+        ff["unnecessary"] = waiver_row and f["ratio"] >= f["required"]
+        ff["passed"] = (f["ratio"] >= f["required"]) or waived
+        if waived:
+            ff["reason"] = row[3]
         out.append(ff)
     return out
 

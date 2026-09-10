@@ -45,9 +45,15 @@ std::string RefusalFromFindings(const std::vector<ContrastFinding>& fs) {
       out += "waiver best for " + f.token + "/" + f.pair +
              " does not match actual ratio " + ToFixed2(f.ratio);
     else
+      // P9-T0-a canonicalization: the (security-critical pair) annotation is
+      // driven by the audit threshold (kSecurityCriticalRatio == 7.0), not by
+      // a name substring. danger-caution/danger-destructive/trust-* are
+      // security-critical pairs audited at 7.0 exactly like critical-red, so
+      // every pair that fails at 7.0 carries the annotation identically in
+      // both backends (the fake mirrors this rule — byte-parity law).
       out += "contrast " + f.token + "/" + f.pair + ": " + ToFixed2(f.ratio) +
              ":1 < required " + ToFixed2(f.required) + ":1" +
-             (f.token.find("critical") != std::string::npos
+             (f.required >= kSecurityCriticalRatio
                   ? " (security-critical pair)"
                   : "");
   }

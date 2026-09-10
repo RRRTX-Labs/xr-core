@@ -203,6 +203,26 @@ int main() {
     }
   }
 
+  // 9. P9-T0-a canonical refusal: the import contrast-fail detail is pinned
+  // BYTE-EXACT so the C++ suite itself locks the canonical string the fake
+  // must mirror (name-sorted findings + the (security-critical pair)
+  // annotation driven by the 7.0 threshold).
+  {
+    RunResult r = RunHost(kStore,
+        R"({"method":"import","args":{"theme-doc":"{\"critical-red\":\"#d1242f\",\"surface\":\"#f3f4f6\",\"surface-raised\":\"#ffffff\"}"}})");
+    XR_EXPECT_EQ(r.rc, 1);
+    JsonParseResult p = ParseLine(r);
+    if (p.ok) {
+      XR_EXPECT_STREQ(p.value.find("error")->as_string(), "kRejected");
+      const char* want =
+          "custom theme refused: contrast critical-red/surface: 4.77:1 < "
+          "required 7.00:1 (security-critical pair); contrast "
+          "critical-red/surface-raised: 5.24:1 < required 7.00:1 "
+          "(security-critical pair)";
+      XR_EXPECT_STREQ(p.value.find("detail")->as_string(), want);
+    }
+  }
+
   Sys("rm -rf " + std::string(kStore) + " " + std::string(kStore2));
   Sys("mkdir -p " + std::string(kStore) + " " + std::string(kStore2));
   return xrtest::Report("themes-host");
