@@ -1,0 +1,43 @@
+# Copyright 2026 RRRTX Labs
+# Use of this source code is governed by the MPL-2.0 license that can be
+# found in the LICENSE file.
+#
+# XR browser-test fixture targets (P9-T1). These attach to upstream
+# content_browsertests; they are built with gn/ninja on the farm, NOT in this
+# sandbox (no gn/ninja, no Chromium checkout — the P9 gate lint-checks them and
+# records the compile half as farm-runbook).
+
+import("//testing/test.gni")
+
+source_set("xr_browser_test_fixtures") {
+  testonly = true
+  sources = [
+    "fixtures/xr_browser_test_base.cc",
+    "fixtures/xr_browser_test_base.h",
+    "fixtures/multi_identity_window.cc",
+    "fixtures/multi_identity_window.h",
+    "fixtures/ephemeral_partition.cc",
+    "fixtures/ephemeral_partition.h",
+    "fixtures/network_stub.cc",
+    "fixtures/network_stub.h",
+    "fixtures/frozen_clock.cc",
+    "fixtures/frozen_clock.h",
+  ]
+  deps = [
+    "//base",
+    "//content/public/test:test_support",
+    "//net/dns:test_support",
+    "//net/base:test_support",
+  ]
+}
+
+source_set("xr_browser_tests") {
+  testonly = true
+  sources = [
+    "xr_identity_isolation_browsertest.cc",
+  ]
+  deps = [
+    ":xr_browser_test_fixtures",
+    "//content/test:test_support",
+  ]
+}

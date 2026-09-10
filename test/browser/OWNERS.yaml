@@ -1,0 +1,10 @@
+# P9-T1 browser-test ownership (enforced by xr-browser tools/browser_test_lint.py).
+# Every XR_*_TEST must be covered here (default owner or a per-path row).
+default:
+  owner: "A lead (Platform/Chromium) — browser-test track"
+  # Security assertions may not be skipped on the farm; the owner is the
+  # escalation path when a test cannot run (fail loudly, never GTEST_SKIP).
+paths:
+  - file: "xr_identity_isolation_browsertest.cc"
+    owner: "A lead (Platform/Chromium) — browser-test track"
+    note: "isolation-matrix browser row (plan §11.4)"
