@@ -1,0 +1,122 @@
+# Compat corpus (P9-T4) — data, not code. §11.12.
+#
+# Entries carry a URL *class* (never a live URL): no scraping and no live-site
+# dependency in this phase. Each entry = {url class, flow steps as data,
+# expectations, owner, provenance}. `mode: expectations-only` is what runs
+# here; `mode: live` needs XR_LIVE_NET=1 AND a host on the fetch.py allowlist
+# (none is, for web hosts) — see tools/compat.py for the refusal law.
+#
+# Corpus size honesty (DoD 6): the plan's full 500+200+50 set is authored
+# progressively — P36 (hard-app scripts) and P38 (corpus freshness) own the
+# remaining entries; padding entries that test nothing are worse than a
+# missing one, so this phase ships the representative set below and names
+# the owning phase per entry. Every entry here is real: its flow class has an
+# offline replay fixture that exercises the same class.
+schema_version: 1
+
+entries:
+  # ---- top-500 global representatives (class-level) ----
+  - {id: "corp-001", class: "top500", url_class: "search-engine",
+     flows: [{open: "home", act: "type query", expect: "results render"}],
+     expectations: {visual: stable, console: clean},
+     owner: "compat track", provenance: "class-level; no live fetch",
+     mode: "expectations-only", replay: "search.html"}
+  - {id: "corp-002", class: "top500", url_class: "webmail",
+     flows: [{open: "inbox", act: "open message", expect: "body renders"}],
+     expectations: {visual: stable, console: clean},
+     owner: "compat track", provenance: "class-level; no live fetch",
+     mode: "expectations-only", replay: "webmail.html"}
+  - {id: "corp-003", class: "top500", url_class: "social-feed",
+     flows: [{open: "feed", act: "scroll", expect: "infinite scroll ok"}],
+     expectations: {visual: stable, console: clean},
+     owner: "compat track", provenance: "class-level; no live fetch",
+     mode: "expectations-only", replay: "social.html"}
+  - {id: "corp-004", class: "top500", url_class: "video-streaming",
+     flows: [{open: "player", act: "play", expect: "media pipeline ok"}],
+     expectations: {visual: stable, media: codec-honest},
+     owner: "compat track", provenance: "class-level; no live fetch",
+     mode: "expectations-only", replay: "video.html"}
+  - {id: "corp-005", class: "top500", url_class: "e-commerce",
+     flows: [{open: "product", act: "add-to-cart", expect: "cart updates"}],
+     expectations: {visual: stable, console: clean},
+     owner: "compat track", provenance: "class-level; no live fetch",
+     mode: "expectations-only", replay: "ecommerce.html"}
+  - {id: "corp-006", class: "top500", url_class: "news-portal",
+     flows: [{open: "article", act: "read", expect: "text+media render"}],
+     expectations: {visual: stable, console: clean},
+     owner: "compat track", provenance: "class-level; no live fetch",
+     mode: "expectations-only", replay: "news.html"}
+  - {id: "corp-007", class: "top500", url_class: "cloud-office",
+     flows: [{open: "doc", act: "edit", expect: "editor responsive"}],
+     expectations: {visual: stable, console: clean},
+     owner: "compat track", provenance: "class-level; no live fetch",
+     mode: "expectations-only", replay: "office.html"}
+  - {id: "corp-008", class: "top500", url_class: "mapping",
+     flows: [{open: "map", act: "pan/zoom", expect: "tiles render"}],
+     expectations: {visual: stable, console: clean},
+     owner: "compat track", provenance: "class-level; no live fetch",
+     mode: "expectations-only", replay: "mapping.html"}
+  - {id: "corp-009", class: "top500", url_class: "banking",
+     flows: [{open: "dashboard", act: "view", expect: "no console errors"}],
+     expectations: {visual: stable, console: clean},
+     owner: "compat track", provenance: "class-level; no live fetch",
+     mode: "expectations-only", replay: "banking.html"}
+  - {id: "corp-010", class: "top500", url_class: "file-hosting",
+     flows: [{open: "folder", act: "download", expect: "downloads scoped"}],
+     expectations: {visual: stable, downloads: per-identity},
+     owner: "compat track", provenance: "class-level; no live fetch",
+     mode: "expectations-only", replay: "filehost.html"}
+
+  # ---- regional representatives ----
+  - {id: "corp-101", class: "regional", url_class: "regional-portal",
+     flows: [{open: "home", act: "navigate", expect: "RTL layout honored"}],
+     expectations: {visual: stable, bidi: rtl-ok},
+     owner: "compat track", provenance: "class-level; no live fetch",
+     mode: "expectations-only", replay: "regional.html"}
+  - {id: "corp-102", class: "regional", url_class: "regional-marketplace",
+     flows: [{open: "listing", act: "checkout", expect: "forms submit"}],
+     expectations: {visual: stable, console: clean},
+     owner: "compat track", provenance: "class-level; no live fetch",
+     mode: "expectations-only", replay: "marketplace.html"}
+  - {id: "corp-103", class: "regional", url_class: "regional-bank",
+     flows: [{open: "login", act: "2FA", expect: "login flow completes"}],
+     expectations: {visual: stable, login: ok},
+     owner: "compat track", provenance: "class-level; no live fetch",
+     mode: "expectations-only", replay: "bank-login.html"}
+  - {id: "corp-104", class: "regional", url_class: "regional-video",
+     flows: [{open: "player", act: "play", expect: "media ok"}],
+     expectations: {visual: stable, media: codec-honest},
+     owner: "compat track", provenance: "class-level; no live fetch",
+     mode: "expectations-only", replay: "video.html"}
+  - {id: "corp-105", class: "regional", url_class: "regional-news",
+     flows: [{open: "article", act: "read", expect: "render ok"}],
+     expectations: {visual: stable, console: clean},
+     owner: "compat track", provenance: "class-level; no live fetch",
+     mode: "expectations-only", replay: "news.html"}
+
+  # ---- hard-app flows (login/upload/video/conferencing smoke) ----
+  - {id: "corp-201", class: "hardapp", url_class: "login-flow",
+     flows: [{open: "login", act: "submit creds", expect: "session scoped"}],
+     expectations: {login: ok, console: clean},
+     owner: "compat track", provenance: "class-level; no live fetch",
+     mode: "expectations-only", replay: "login.html"}
+  - {id: "corp-202", class: "hardapp", url_class: "upload-flow",
+     flows: [{open: "upload", act: "select file", expect: "upload per-identity"}],
+     expectations: {console: clean, uploads: ok},
+     owner: "compat track", provenance: "class-level; no live fetch",
+     mode: "expectations-only", replay: "upload.html"}
+  - {id: "corp-203", class: "hardapp", url_class: "video-conferencing",
+     flows: [{open: "room", act: "join", expect: "webrtc policy interplay"}],
+     expectations: {console: clean, webrtc: policy-interplay},
+     owner: "compat track", provenance: "class-level; no live fetch",
+     mode: "expectations-only", replay: "conferencing.html"}
+  - {id: "corp-204", class: "hardapp", url_class: "pdf-viewer",
+     flows: [{open: "pdf", act: "render", expect: "pdf pipeline ok"}],
+     expectations: {visual: stable, console: clean},
+     owner: "compat track", provenance: "class-level; no live fetch",
+     mode: "expectations-only", replay: "pdf.html"}
+  - {id: "corp-205", class: "hardapp", url_class: "printing",
+     flows: [{open: "doc", act: "print", expect: "print path per-identity"}],
+     expectations: {console: clean, print: ok},
+     owner: "compat track", provenance: "class-level; no live fetch",
+     mode: "expectations-only", replay: "print.html"}
