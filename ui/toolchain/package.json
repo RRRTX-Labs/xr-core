@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Reproducible WebUI toolchain for the command-registry UI (P7). Build-time ONLY; runtime zero network. Exactly three packages (lit, esbuild, typescript) — any other npm package is a P7 stop-condition.",
+  "description": "Reproducible WebUI toolchain for the command-registry UI (P7/P9). Build-time ONLY; runtime zero network. Packages governed by npm-allowlist.json (tools/npm_allowlist_check.py) \u2014 no magic package count.",
   "scripts": {
     "build": "node build.mjs",
     "check": "node check-bundle.js",
@@ -13,6 +13,7 @@
     "lit": "3.3.3"
   },
   "devDependencies": {
+    "axe-core": "4.13.0",
     "esbuild": "0.28.2",
     "typescript": "5.9.3"
   }
