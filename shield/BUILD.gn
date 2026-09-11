@@ -1,0 +1,71 @@
+# Copyright 2026 RRRTX Labs
+# Use of this source code is governed by the MPL-2.0 license that can be
+# found in the LICENSE file.
+
+# BUILD.gn — //xr/shield: THE shield decision core (Plan P11-T2).
+#
+# The core below is deliberately STD-ONLY C++20 — no Chromium headers —
+# which is what makes it compilable and exhaustively testable off-tree
+# (g++/make: shield/tests/Makefile, 10 suites) with byte-parity against the
+# Python reference fake (xr-browser consumption: fakes/shield.py) on all
+# 157 golden vectors (docs/contracts/vectors/shield-v1.json).
+#
+# Engine law (P11 architectural row): shield/core defines the injected
+# BlockingEngine interface (core/engine.h); the TEST-ONLY TableEngine
+# (core/fake_engine.*) is the default and ONLY local binding. The vendored
+# adblock-rust binding lives behind the SAME interface via the engine/ FFI
+# shim — a Rust cdylib built in the HOSTED lane (core-hardening
+# shield-vendor job; no cargo locally, and nothing here claims otherwise).
+# Engine death is total and observable: alive() flips false, and the
+# posture core (core/posture.*) owns the consequence — fail-OPEN + amber
+# for engine death/poison, fail-CLOSED + red for route loss, absolutely.
+#
+# NO FAKE INTEGRATION (P7 ui/BUILD.gn precedent): wiring this core into
+# the network service (the Chromium seam at the DEPS pin) is FARM glue —
+# it needs a real Chromium build. The GN flag xr_shield_v1 gates the whole
+# surface (T6 lands flags.yaml + xr://shield); with the flag off,
+# flag-status/Status report off and stock networking is untouched.
+
+source_set("shield_core") {
+  sources = [
+    "core/apply.cc",
+    "core/apply.h",
+    "core/bundle.cc",
+    "core/bundle.h",
+    "core/context.cc",
+    "core/context.h",
+    "core/engine.h",
+    "core/events.cc",
+    "core/events.h",
+    "core/fake_engine.cc",
+    "core/fake_engine.h",
+    "core/match.cc",
+    "core/match.h",
+    "core/posture.cc",
+    "core/posture.h",
+    "core/scope.cc",
+    "core/scope.h",
+  ]
+  public_deps = [ "//xr/common:common_core" ]
+  # P11-T0-b: json model/parser + SHA-256 are the SINGLE shared copy in
+  # //xr/common (ADR-0043). No Chromium deps; std-only by design. The core
+  # never opens a socket or a clock — every input rides in the request.
+}
+
+# Host binary (dev/diagnostics; the stdio façade the vectors drive).
+source_set("shield_host_lib") {
+  sources = [ "host/shield_host.cc" ]
+  deps = [ ":shield_core" ]
+}
+
+group("shield_all") {
+  deps = [
+    ":shield_core",
+    ":shield_host_lib",
+  ]
+  # NOTE: the engine/ FFI shim (Rust cdylib over the vendored adblock-rust)
+  # is deliberately NOT a GN target here: it builds with cargo in the
+  # hosted lane against //xr/third_party/rust (see shield/engine/README.md
+  # and .github/workflows/core-hardening.yml shield-vendor). A GN row
+  # claiming it compiles in-tree would be a lie until the seam lands.
+}

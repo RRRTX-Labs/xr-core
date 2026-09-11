@@ -16,4 +16,5 @@ themes/tests/build/
 settings/tests/*-test-store/
 themes/tests/*-test-store/
 update/tests/build/
+shield/tests/build/
 update_host_request.tmp

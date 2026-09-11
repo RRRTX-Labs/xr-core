@@ -35,6 +35,7 @@ group("xr_all") {
   deps = [
     "//xr/common:common_all",  # P11-T0-b: the single shared json/sha256 copy
     "//xr/policy:policy_all",
+    "//xr/shield:shield_all",  # P11-T2: std-only decision core + host binary
     "//xr/update:update_all",  # P10-T1: std-only verifier core + stdio host
   ]
 }

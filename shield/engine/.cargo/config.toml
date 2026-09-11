@@ -1,0 +1,9 @@
+# Source replacement for the shield FFI shim (HOSTED LANE ONLY — the same
+# law as third_party/rust/.cargo/config.toml: every dependency byte comes
+# from the T1-vendored, sha256-pinned tree; crates.io is never contacted.
+# Path is relative to this file's directory (cargo config resolution).
+[source.crates-io]
+replace-with = "xr-vendored-sources"
+
+[source.xr-vendored-sources]
+directory = "../../third_party/rust/vendor"
