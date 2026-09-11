@@ -1,0 +1,9 @@
+# P11-T1 vendored-source replacement (ADR-0044). Cargo discovers
+# this file from any crate dir under third_party/rust/. The lock's
+# dev-dep-only entries are intentionally NOT vendored: the honest
+# --offline boundary is the build graph (supply-chain/PROVENANCE.md).
+[source.crates-io]
+replace-with = "xr-vendored-sources"
+
+[source.xr-vendored-sources]
+directory = "vendor"

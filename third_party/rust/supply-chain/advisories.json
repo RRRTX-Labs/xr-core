@@ -1,0 +1,181 @@
+{
+ "advisories_scanned": 14,
+ "as_of": "2026-09-11",
+ "match": {
+  "hits": [],
+  "name_matches": [
+   {
+    "crate": "base64",
+    "cve_id": "CVE-2017-1000430",
+    "first_patched_version": "0.5.2",
+    "ghsa_id": "GHSA-x67x-vg9m-65c3",
+    "severity": "critical",
+    "vendored_version": "0.22.1",
+    "verdict": "miss",
+    "vulnerable_version_range": "< 0.5.2"
+   },
+   {
+    "crate": "flatbuffers",
+    "cve_id": null,
+    "first_patched_version": "22.9.29",
+    "ghsa_id": "GHSA-3jch-9qgp-4844",
+    "severity": "critical",
+    "vendored_version": "25.12.19",
+    "verdict": "miss",
+    "vulnerable_version_range": "< 22.9.29"
+   },
+   {
+    "crate": "flatbuffers",
+    "cve_id": "CVE-2020-35864",
+    "first_patched_version": "2.0.0",
+    "ghsa_id": "GHSA-c9h5-hf8r-m97x",
+    "severity": "high",
+    "vendored_version": "25.12.19",
+    "verdict": "miss",
+    "vulnerable_version_range": ">= 0.4.0, < 2.0.0"
+   },
+   {
+    "crate": "flatbuffers",
+    "cve_id": "CVE-2019-25004",
+    "first_patched_version": "0.6.1",
+    "ghsa_id": "GHSA-gx73-2498-r55c",
+    "severity": "critical",
+    "vendored_version": "25.12.19",
+    "verdict": "miss",
+    "vulnerable_version_range": ">= 0.4.0, < 0.6.1"
+   },
+   {
+    "crate": "idna",
+    "cve_id": "CVE-2024-12224",
+    "first_patched_version": "1.0.0",
+    "ghsa_id": "GHSA-h97m-ww89-6jmq",
+    "severity": "medium",
+    "vendored_version": "1.1.0",
+    "verdict": "miss",
+    "vulnerable_version_range": "< 1.0.0"
+   },
+   {
+    "crate": "regex",
+    "cve_id": "CVE-2022-24713",
+    "first_patched_version": "1.5.5",
+    "ghsa_id": "GHSA-m5pq-gvj9-9vr8",
+    "severity": "high",
+    "vendored_version": "1.12.3",
+    "verdict": "miss",
+    "vulnerable_version_range": "< 1.5.5"
+   },
+   {
+    "crate": "smallvec",
+    "cve_id": "CVE-2021-25900",
+    "first_patched_version": "0.6.14",
+    "ghsa_id": "GHSA-43w2-9j62-hq99",
+    "severity": "critical",
+    "vendored_version": "1.15.1",
+    "verdict": "miss",
+    "vulnerable_version_range": ">= 0.6.3, < 0.6.14"
+   },
+   {
+    "crate": "smallvec",
+    "cve_id": "CVE-2021-25900",
+    "first_patched_version": "1.6.1",
+    "ghsa_id": "GHSA-43w2-9j62-hq99",
+    "severity": "critical",
+    "vendored_version": "1.15.1",
+    "verdict": "miss",
+    "vulnerable_version_range": ">= 1.0.0, < 1.6.1"
+   },
+   {
+    "crate": "smallvec",
+    "cve_id": "CVE-2018-25023",
+    "first_patched_version": "0.6.13",
+    "ghsa_id": "GHSA-55m5-whcv-c49c",
+    "severity": "high",
+    "vendored_version": "1.15.1",
+    "verdict": "miss",
+    "vulnerable_version_range": "< 0.6.13"
+   },
+   {
+    "crate": "smallvec",
+    "cve_id": null,
+    "first_patched_version": "0.6.13",
+    "ghsa_id": "GHSA-66p5-j55p-32r9",
+    "severity": "medium",
+    "vendored_version": "1.15.1",
+    "verdict": "miss",
+    "vulnerable_version_range": "< 0.6.13"
+   },
+   {
+    "crate": "smallvec",
+    "cve_id": "CVE-2019-15551",
+    "first_patched_version": "0.6.10",
+    "ghsa_id": "GHSA-mm7v-vpv8-xfc3",
+    "severity": "critical",
+    "vendored_version": "1.15.1",
+    "verdict": "miss",
+    "vulnerable_version_range": ">= 0.6.5, < 0.6.10"
+   },
+   {
+    "crate": "smallvec",
+    "cve_id": "CVE-2019-15554",
+    "first_patched_version": "0.6.10",
+    "ghsa_id": "GHSA-69gw-hgj3-45m7",
+    "severity": "critical",
+    "vendored_version": "1.15.1",
+    "verdict": "miss",
+    "vulnerable_version_range": ">= 0.6.3, < 0.6.10"
+   },
+   {
+    "crate": "smallvec",
+    "cve_id": "CVE-2018-20991",
+    "first_patched_version": "0.6.3",
+    "ghsa_id": "GHSA-rxr4-x558-x7hw",
+    "severity": "critical",
+    "vendored_version": "1.15.1",
+    "verdict": "miss",
+    "vulnerable_version_range": ">= 0.3.2, < 0.6.3"
+   },
+   {
+    "crate": "zerovec",
+    "cve_id": null,
+    "first_patched_version": "0.10.4",
+    "ghsa_id": "GHSA-xrv3-jmcp-374j",
+    "severity": "medium",
+    "vendored_version": "0.11.6",
+    "verdict": "miss",
+    "vulnerable_version_range": ">= 0.10.0, < 0.10.4"
+   },
+   {
+    "crate": "zerovec",
+    "cve_id": null,
+    "first_patched_version": "0.9.7",
+    "ghsa_id": "GHSA-xrv3-jmcp-374j",
+    "severity": "medium",
+    "vendored_version": "0.11.6",
+    "verdict": "miss",
+    "vulnerable_version_range": "< 0.9.7"
+   },
+   {
+    "crate": "zerovec-derive",
+    "cve_id": null,
+    "first_patched_version": "0.9.7",
+    "ghsa_id": "GHSA-74r5-g7vc-j2v2",
+    "severity": "medium",
+    "vendored_version": "0.11.3",
+    "verdict": "miss",
+    "vulnerable_version_range": "< 0.9.7"
+   },
+   {
+    "crate": "zerovec-derive",
+    "cve_id": null,
+    "first_patched_version": "0.10.3",
+    "ghsa_id": "GHSA-74r5-g7vc-j2v2",
+    "severity": "medium",
+    "vendored_version": "0.11.3",
+    "verdict": "miss",
+    "vulnerable_version_range": ">= 0.10.0, < 0.10.3"
+   }
+  ],
+  "needs_review": []
+ },
+ "source": "api.github.com /advisories?ecosystem=rust&type=reviewed&affects=<crate> (per-crate, through the fetch.py chokepoint; bulk listing is deep-pagination-capped)"
+}
