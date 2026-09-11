@@ -57,8 +57,9 @@ int main() {
   std::string err;
   XR_EXPECT_MSG(Load(&ctx, &err), "LoadContext: " + err);
 
-  // Seeded roster: 20 commands, 7 tier1, tor.open disabled-by-predicate.
-  XR_EXPECT_EQ(ctx.registry.Size(), 20);
+  // Seeded roster: 23 commands (P10-T8 +update.about/-check-now/
+  // -manual-download), 7 tier1, tor.open disabled-by-predicate.
+  XR_EXPECT_EQ(ctx.registry.Size(), 23);
   XR_EXPECT_EQ(ctx.registry.Tier1Count(), 7);
 
   // flag-status.
@@ -69,7 +70,7 @@ int main() {
   // list (all + by group).
   {
     std::string r = HandleMethod("list", Req("{}"), ctx);
-    XR_EXPECT_EQ(OkCount(r), 20);
+    XR_EXPECT_EQ(OkCount(r), 23);
     std::string rg = HandleMethod("list", Req("{\"group\":\"Trust\"}"), ctx);
     XR_EXPECT_EQ(OkCount(rg), 5);  // 4 dial + shield.toggle
   }
