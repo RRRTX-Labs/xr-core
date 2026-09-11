@@ -26,10 +26,12 @@ BUILD    ?= build
 XR_BROWSER_ROOT ?= ../../../xr-browser
 VECTORS_ENV := XR_BROWSER_ROOT=$(XR_BROWSER_ROOT)
 
+# P11-T0-b: json/json_parse/sha256 moved to the SINGLE shared copy in
+# ../../common/core (ADR-0043); this suite compiles those objects and the
+# shared KAT so the lane still pins the primitives it consumes.
+COMMON_OBJS := $(BUILD)/common_json.o $(BUILD)/common_json_parse.o $(BUILD)/common_sha256.o
+
 CORE_SRCS := \
-  ../../policy/core/json.cc \
-  ../../policy/core/json_parse.cc \
-  ../../policy/core/sha256.cc \
   ../../policy/core/effective_policy.cc \
   ../../policy/core/resolve.cc \
   ../../policy/core/resolve_io.cc \
@@ -40,15 +42,25 @@ CORE_SRCS := \
   ../../policy/core/service.cc \
   ../../policy/enterprise/managed_source.cc
 
-CORE_OBJS := $(patsubst %.cc,$(BUILD)/%.o,$(notdir $(CORE_SRCS)))
+CORE_OBJS := $(patsubst %.cc,$(BUILD)/%.o,$(notdir $(CORE_SRCS))) $(COMMON_OBJS)
 
-TESTS := test_vectors test_resolve test_purity test_cache test_snapshot test_store test_events test_enterprise test_json test_service
+TESTS := test_vectors test_resolve test_purity test_cache test_snapshot test_store test_events test_enterprise test_service test_sha256_kat
 
 .PHONY: build test bench clean
 
 $(BUILD)/%.o: ../../policy/core/%.cc
 	@mkdir -p $(BUILD)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+$(BUILD)/common_%.o: ../../common/core/%.cc
+	@mkdir -p $(BUILD)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+# The ONE shared KAT source (common/tests), compiled into this lane too —
+# coverage cannot desynchronize (P11-T0-b). test_json moved to the common
+# lane with the parser it pins.
+$(BUILD)/test_sha256_kat: ../../common/tests/test_sha256_kat.cc $(COMMON_OBJS)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $< $(COMMON_OBJS) -o $@
 
 $(BUILD)/managed_source.o: ../../policy/enterprise/managed_source.cc
 	@mkdir -p $(BUILD)

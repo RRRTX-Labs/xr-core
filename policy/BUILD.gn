@@ -24,22 +24,22 @@ source_set("policy_core") {
     "core/effective_policy.h",
     "core/events.cc",
     "core/events.h",
-    "core/json.cc",
     "core/json.h",
-    "core/json_parse.cc",
     "core/resolve.cc",
     "core/resolve.h",
     "core/resolve_io.cc",
     "core/service.cc",
     "core/service.h",
-    "core/sha256.cc",
     "core/sha256.h",
     "core/snapshot.cc",
     "core/snapshot.h",
     "core/store.cc",
     "core/store.h",
   ]
-  public_deps = []
+  public_deps = [ "//xr/common:common_core" ]
+  # P11-T0-b: the shared std-only primitives (json model/parser + SHA-256)
+  # are the SINGLE copy in //xr/common (ADR-0043); core/json.h + core/sha256.h
+  # here are alias shims into xr::common. Still no Chromium deps.
   # NOTE: no deps. std-only by design (see header comment). Enterprise
   # source is grouped separately because it shells out to minisign.
 }

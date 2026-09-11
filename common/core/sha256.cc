@@ -3,11 +3,11 @@
 // found in the LICENSE file.
 //
 // Intent: S0 — FIPS 180-4 SHA-256 implementation (see sha256.h).
-#include "commands/core/sha256.h"
+#include "common/core/sha256.h"
 
 #include <cstring>
 
-namespace xr::commands {
+namespace xr::common {
 namespace {
 
 constexpr uint32_t K[64] = {
@@ -94,4 +94,4 @@ std::string Sha256Hex(std::string_view data) {
   return out;
 }
 
-}  // namespace xr::commands
+}  // namespace xr::common

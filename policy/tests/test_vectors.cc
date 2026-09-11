@@ -28,13 +28,10 @@ std::string VectorsPath(const char* argv0) {
 }  // namespace
 
 int main(int, char** argv) {
-  // SHA-256 FIPS 180-4 test vectors (sanity for the snapshot integrity base).
-  XR_EXPECT_STREQ(xr::policy::Sha256Hex(""),
-                  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
-  XR_EXPECT_STREQ(xr::policy::Sha256Hex("abc"),
-                  "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
-  XR_EXPECT_STREQ(xr::policy::Sha256Hex("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"),
-                  "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1");
+  // P11-T0-b: the SHA-256 FIPS known-answer vectors moved to the ONE shared
+  // KAT (common/tests/test_sha256_kat.cc), which this suite's lane also
+  // compiles and runs (test_sha256_kat in TESTS) — the vectors previously
+  // lived ONLY here while four other cores shipped unpinned copies.
 
   bool ok = false;
   std::string data = xrtest::ReadFile(VectorsPath(argv[0]), &ok);

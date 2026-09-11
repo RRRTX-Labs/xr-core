@@ -27,9 +27,7 @@ source_set("commands_core") {
     "core/descriptor.h",
     "core/dispatch.cc",
     "core/dispatch.h",
-    "core/json.cc",
     "core/json.h",
-    "core/json_parse.cc",
     "core/matcher.cc",
     "core/matcher.h",
     "core/policy_state.cc",
@@ -38,10 +36,12 @@ source_set("commands_core") {
     "core/registry.h",
     "core/shortcuts.cc",
     "core/shortcuts.h",
-    "core/sha256.cc",
     "core/sha256.h",
   ]
-  public_deps = []
+  public_deps = [ "//xr/common:common_core" ]
+  # P11-T0-b: the shared std-only primitives (json model/parser + SHA-256)
+  # are the SINGLE copy in //xr/common (ADR-0043); core/json.h + core/sha256.h
+  # here are alias shims into xr::common. Still no Chromium deps.
   # NOTE: no Chromium deps. std-only by design (see header comment). The
   # availability contract READS a pinned P6 snapshot (data in, verdict out);
   # the mojom channel to policy_host is P16 glue, not the core.

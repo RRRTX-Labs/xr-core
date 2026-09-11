@@ -31,10 +31,15 @@ ENV := XR_BROWSER_ROOT=$(XR_BROWSER_ROOT) XR_COMMANDS_HOST=./$(BUILD)/commands_h
 # pre-built binary, so the default goal must produce it (XR-P7-CI).
 .DEFAULT_GOAL := build
 
+# P11-T0-b: json/json_parse/sha256 are the SINGLE shared copy in
+# ../../common/core (ADR-0043); this lane compiles those objects and
+# the shared KAT so it still pins the primitives it consumes.
+COMMON_OBJS := \
+  $(BUILD)/common/core/json.o \
+  $(BUILD)/common/core/json_parse.o \
+  $(BUILD)/common/core/sha256.o
+
 CORE_OBJS := \
-  $(BUILD)/commands/core/json.o \
-  $(BUILD)/commands/core/json_parse.o \
-  $(BUILD)/commands/core/sha256.o \
   $(BUILD)/commands/core/descriptor.o \
   $(BUILD)/commands/core/registry.o \
   $(BUILD)/commands/core/matcher.o \
@@ -43,6 +48,8 @@ CORE_OBJS := \
   $(BUILD)/commands/core/shortcuts.o \
   $(BUILD)/commands/core/policy_state.o
 
+CORE_OBJS += $(COMMON_OBJS)
+
 HOST_OBJS := $(BUILD)/commands/host/protocol.o
 MAIN_OBJ  := $(BUILD)/commands/host/main.o
 
@@ -50,21 +57,29 @@ MAIN_OBJ  := $(BUILD)/commands/host/main.o
 # pure resolver (TrustTierIndex) + the P6 store. (service/cache/snapshot/events
 # would drag in the enterprise managed-source TU — not needed here.)
 POLICY_OBJS := \
-  $(BUILD)/policy/core/json.o \
-  $(BUILD)/policy/core/json_parse.o \
-  $(BUILD)/policy/core/sha256.o \
   $(BUILD)/policy/core/effective_policy.o \
   $(BUILD)/policy/core/resolve.o \
   $(BUILD)/policy/core/store.o
 
 TESTS := test_descriptor test_registry test_matcher test_availability \
-         test_dispatch test_shortcuts test_dial test_host test_fuzz
+         test_dispatch test_shortcuts test_dial test_host test_fuzz \
+         test_sha256_kat
 
 .PHONY: build test bench clean
 
 $(BUILD)/commands/core/%.o: ../../commands/core/%.cc
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+$(BUILD)/common/core/%.o: ../../common/core/%.cc
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+# The ONE shared KAT source (common/tests), compiled into this lane too —
+# coverage cannot desynchronize (P11-T0-b, ADR-0043).
+$(BUILD)/test_sha256_kat: ../../common/tests/test_sha256_kat.cc $(COMMON_OBJS)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $< $(COMMON_OBJS) -o $@
 
 $(BUILD)/commands/host/protocol.o: ../../commands/host/protocol.cc
 	@mkdir -p $(dir $@)

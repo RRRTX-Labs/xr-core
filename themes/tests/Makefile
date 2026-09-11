@@ -23,19 +23,36 @@ ROOT     := $(abspath ../..)
 
 .DEFAULT_GOAL := build
 
+# P11-T0-b: json/json_parse/sha256 are the SINGLE shared copy in
+# ../../common/core (ADR-0043); this lane compiles those objects and
+# the shared KAT so it still pins the primitives it consumes.
+COMMON_OBJS := \
+  $(BUILD)/common/core/json.o \
+  $(BUILD)/common/core/json_parse.o \
+  $(BUILD)/common/core/sha256.o
+
 CORE_OBJS := \
-  $(BUILD)/themes/core/json.o \
-  $(BUILD)/themes/core/json_parse.o \
-  $(BUILD)/themes/core/sha256.o \
   $(BUILD)/themes/core/theme.o \
   $(BUILD)/themes/core/contrast.o \
   $(BUILD)/themes/core/loader.o
 
-TESTS := test_theme test_contrast test_loader test_host test_fuzz
+CORE_OBJS += $(COMMON_OBJS)
+
+TESTS := test_theme test_contrast test_loader test_host test_fuzz test_sha256_kat
 
 $(BUILD)/themes/core/%.o: ../../themes/core/%.cc
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+$(BUILD)/common/core/%.o: ../../common/core/%.cc
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+# The ONE shared KAT source (common/tests), compiled into this lane too —
+# coverage cannot desynchronize (P11-T0-b, ADR-0043).
+$(BUILD)/test_sha256_kat: ../../common/tests/test_sha256_kat.cc $(COMMON_OBJS)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $< $(COMMON_OBJS) -o $@
 
 $(BUILD)/themes_host: ../../themes/host/themes_host.cc $(CORE_OBJS)
 	@mkdir -p $(dir $@)

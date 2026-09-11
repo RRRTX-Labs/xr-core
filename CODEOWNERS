@@ -9,3 +9,7 @@
 /net/ @xr/platform @xr/security
 /vault/ @xr/platform @xr/security
 /extensions/ @xr/platform @xr/security
+/common/ @xr/platform @xr/security
+/update/ @xr/platform @xr/security
+/shield/ @xr/platform @xr/security
+/commands/ @xr/platform

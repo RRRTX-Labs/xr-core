@@ -32,10 +32,15 @@ ENV := XR_BROWSER_ROOT=$(XR_BROWSER_ROOT) XR_UPDATE_HOST=./$(BUILD)/update_host
 
 .DEFAULT_GOAL := build
 
+# P11-T0-b: json/json_parse/sha256 are the SINGLE shared copy in
+# ../../common/core (ADR-0043); this lane compiles those objects and
+# the shared KAT so it still pins the primitives it consumes.
+COMMON_OBJS := \
+  $(BUILD)/common/core/json.o \
+  $(BUILD)/common/core/json_parse.o \
+  $(BUILD)/common/core/sha256.o
+
 CORE_OBJS := \
-  $(BUILD)/update/core/json.o \
-  $(BUILD)/update/core/json_parse.o \
-  $(BUILD)/update/core/sha256.o \
   $(BUILD)/update/core/manifest.o \
   $(BUILD)/update/core/verify_policy.o \
   $(BUILD)/update/core/epoch.o \
@@ -43,9 +48,11 @@ CORE_OBJS := \
   $(BUILD)/update/core/backoff.o \
   $(BUILD)/update/core/seen.o
 
+CORE_OBJS += $(COMMON_OBJS)
+
 TESTS := test_manifest_strict test_verify_policy test_monotonic_downgrade \
          test_replay test_cohort test_backoff test_update_host \
-         test_golden_vectors test_update_fuzz
+         test_golden_vectors test_update_fuzz test_sha256_kat
 
 # XR_UPDATE_HOST is a TEST-ONLY façade (see update/host/update_host.cc): it
 # binds the stub verifier and refuses release channels in core policy. The
@@ -55,6 +62,16 @@ TESTS := test_manifest_strict test_verify_policy test_monotonic_downgrade \
 $(BUILD)/update/core/%.o: ../../update/core/%.cc
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+$(BUILD)/common/core/%.o: ../../common/core/%.cc
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+# The ONE shared KAT source (common/tests), compiled into this lane too —
+# coverage cannot desynchronize (P11-T0-b, ADR-0043).
+$(BUILD)/test_sha256_kat: ../../common/tests/test_sha256_kat.cc $(COMMON_OBJS)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $< $(COMMON_OBJS) -o $@
 
 $(BUILD)/update_host: ../../update/host/update_host.cc $(CORE_OBJS)
 	@mkdir -p $(dir $@)

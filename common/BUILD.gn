@@ -1,0 +1,39 @@
+# Copyright 2026 RRRTX Labs
+# Use of this source code is governed by the MPL-2.0 license that can be
+# found in the LICENSE file.
+
+# BUILD.gn — //xr/common: the SINGLE in-tree copy of the shared std-only
+# primitives (P11-T0-b, ADR-0043): SHA-256 (FIPS 180-4, one public algorithm
+# implemented exactly once) and the strict JSON value model/parser/canonical
+# serializer every core speaks. Before P11 these were five byte-identical
+# per-core copies (policy/commands/settings/themes/update), four of which no
+# test pinned; a second copy of either file anywhere in the tree is now a
+# DEFECT (xr-browser tools/no_new_crypto_check.py reddens the gate).
+#
+# Boundary law (sha256.h header comment): SHA-256 here is corruption
+# DETECTION, never authenticity — authenticity lives behind the injected
+# SignatureVerifier (//xr/update core/verifier.h + the P10 pinned-key path).
+#
+# GN label shape: //xr/common:common_core (the choice between
+# common/crypto_lite + common/json subdirs vs this flat core/ layout is
+# recorded in ADR-0043: flat `<name>/core` because that is the shape the
+# proof machinery — ci_lane_discovery, mutation_test/mutation_freshness —
+# already discovers, so the shared primitives inherit the same lanes as
+# every other core instead of sitting outside them).
+
+source_set("common_core") {
+  sources = [
+    "core/json.cc",
+    "core/json.h",
+    "core/json_parse.cc",
+    "core/sha256.cc",
+    "core/sha256.h",
+  ]
+  public_deps = []
+  # NOTE: no deps. std-only by design; no Chromium headers (compilable and
+  # exhaustively testable off-tree: common/tests/Makefile).
+}
+
+group("common_all") {
+  deps = [ ":common_core" ]
+}

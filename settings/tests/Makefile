@@ -33,25 +33,42 @@ ENV := XR_BROWSER_ROOT=$(XR_BROWSER_ROOT) XR_SETTINGS_HOST=./$(BUILD)/settings_h
 
 .DEFAULT_GOAL := build
 
+# P11-T0-b: json/json_parse/sha256 are the SINGLE shared copy in
+# ../../common/core (ADR-0043); this lane compiles those objects and
+# the shared KAT so it still pins the primitives it consumes.
+COMMON_OBJS := \
+  $(BUILD)/common/core/json.o \
+  $(BUILD)/common/core/json_parse.o \
+  $(BUILD)/common/core/sha256.o
+
 CORE_OBJS := \
-  $(BUILD)/settings/core/json.o \
-  $(BUILD)/settings/core/json_parse.o \
-  $(BUILD)/settings/core/sha256.o \
   $(BUILD)/settings/core/settings_schema.o \
   $(BUILD)/settings/core/sections.o \
   $(BUILD)/settings/core/search.o \
   $(BUILD)/settings/core/router.o \
   $(BUILD)/settings/core/counters.o
 
+CORE_OBJS += $(COMMON_OBJS)
+
 TESTS := test_settings_schema test_sections test_settings_search \
          test_recall_corpus test_router test_settings_host test_counters \
-         test_settings_fuzz
+         test_settings_fuzz test_sha256_kat
 
 .PHONY: build test bench clean
 
 $(BUILD)/settings/core/%.o: ../../settings/core/%.cc
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+$(BUILD)/common/core/%.o: ../../common/core/%.cc
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+# The ONE shared KAT source (common/tests), compiled into this lane too —
+# coverage cannot desynchronize (P11-T0-b, ADR-0043).
+$(BUILD)/test_sha256_kat: ../../common/tests/test_sha256_kat.cc $(COMMON_OBJS)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $< $(COMMON_OBJS) -o $@
 
 $(BUILD)/settings_host: ../../settings/host/settings_host.cc $(CORE_OBJS)
 	@mkdir -p $(dir $@)

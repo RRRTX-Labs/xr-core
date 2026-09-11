@@ -2,25 +2,18 @@
 // Use of this source code is governed by the MPL-2.0 license that can be
 // found in the LICENSE file.
 //
-// Intent: S0 — SHA-256 (FIPS 180-4) for snapshot integrity fields. This is a
-// standard, public algorithm implemented verbatim from the specification —
-// NOT an invented primitive — and is verified in tests against the official
-// FIPS test vectors ("abc", empty string, two-block message). Purpose:
-// corruption DETECTION on versioned settings counter blobs (defense in depth
-// next to schema-strict decode). It is not an authenticity mechanism.
+// Intent: S0 — ALIAS SHIM to the single shared SHA-256 (common/core/sha256.h;
+// P11-T0-b, ADR-0043: standard public algorithms live in-tree exactly once,
+// in an S0-owned location; a second copy is a defect — the boundary law and
+// the "not an authenticity mechanism" note live on the shared header). This
+// file carries NO implementation; it re-exports the xr::common symbols into
+// xr::themes so this core's call sites stay stable. The shared FIPS KAT
+// (common/tests/test_sha256_kat.cc) runs inside THIS core's suite lane.
 #pragma once
 
-#include <array>
-#include <cstdint>
-#include <string>
-#include <string_view>
+#include "common/core/sha256.h"
 
 namespace xr::themes {
-
-// 32-byte digest, hex-encoded lowercase (64 chars).
-std::string Sha256Hex(std::string_view data);
-
-// Raw 32-byte digest.
-std::array<uint8_t, 32> Sha256(std::string_view data);
-
+using common::Sha256;
+using common::Sha256Hex;
 }  // namespace xr::themes

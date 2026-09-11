@@ -5,7 +5,7 @@
 // Intent: S0 — implementation of the strict JSON layer (see json.h). Parser
 // is RFC 8259-strict with a 64-depth cap and UTF-8 validation; serializer
 // reproduces the Python canonical form byte-for-byte.
-#include "policy/core/json.h"
+#include "common/core/json.h"
 
 #include <algorithm>
 #include <cassert>
@@ -13,7 +13,7 @@
 #include <cstdio>
 #include <cstring>
 
-namespace xr::policy {
+namespace xr::common {
 
 constexpr int kMaxDepth = 64;
 
@@ -207,4 +207,4 @@ std::string JsonValue::Canonical() const {
   AppendCanonicalTo(&out);
   return out;
 }
-}  // namespace xr::policy
+}  // namespace xr::common

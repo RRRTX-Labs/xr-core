@@ -2,7 +2,9 @@
 // Use of this source code is governed by the MPL-2.0 license that can be
 // found in the LICENSE file.
 //
-// Intent: S0-test — strict JSON layer edge corpus: canonical output
+// Intent: S0-test — strict JSON layer edge corpus (the SHARED json core; moved
+// from policy/tests/test_json.cc by P11-T0-b when the five per-core copies
+// collapsed into common/core — the suite that pins the parser moved with it): canonical output
 // byte-parity with the Python reference form (json.dumps sort_keys +
 // compact separators, ensure_ascii semantics incl. surrogate pairs), UTF-8
 // validation (overlong / surrogate / truncated / out-of-range sequences),
@@ -13,10 +15,10 @@
 // deny-safe), so this suite pins only exact-match classes.
 #include <string>
 
-#include "policy/core/json.h"
+#include "common/core/json.h"
 #include "harness.h"
 
-using namespace xr::policy;
+using namespace xr::common;
 
 namespace {
 

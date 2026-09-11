@@ -10,9 +10,9 @@
 #include <cstdio>
 #include <cstring>
 
-#include "update/core/json.h"
+#include "common/core/json.h"
 
-namespace xr::update {
+namespace xr::common {
 
 constexpr int kMaxDepth = 64;
 
@@ -321,4 +321,4 @@ JsonParseResult ParseJson(std::string_view text) {
   return Parser(text).Run();
 }
 
-}  // namespace xr::update
+}  // namespace xr::common

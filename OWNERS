@@ -11,7 +11,10 @@
 # Source of truth for the S0 *path set* is
 # xr-browser/docs/process/s0-paths.yaml (owners_sync.py keeps CODEOWNERS in
 # sync with it; this OWNERS file carries the same path set for the
-# Chromium-style review model used once builds exist).
+# Chromium-style review model used once builds exist). P11-T0-b added
+# //common (the single shared crypto/JSON copy), //update (trust-deciding
+# verifier core) and //shield (network-path blocking orchestration); the
+# /commands/ S1 judgment is recorded in s0-paths.yaml + ADR-0043.
 
 //
   platform-lead@rrrtx.example
@@ -38,5 +41,17 @@
   security-lead@rrrtx.example
 
 //mojom
+  platform-lead@rrrtx.example
+  security-lead@rrrtx.example
+
+//common
+  platform-lead@rrrtx.example
+  security-lead@rrrtx.example
+
+//update
+  platform-lead@rrrtx.example
+  security-lead@rrrtx.example
+
+//shield
   platform-lead@rrrtx.example
   security-lead@rrrtx.example

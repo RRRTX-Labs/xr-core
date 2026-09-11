@@ -33,6 +33,7 @@ group("xr_all") {
   # C++20 core; the mojom-binding half stays farm-gated — see
   # policy/BUILD.gn and policy/core/service_mojom.h, HG-29).
   deps = [
+    "//xr/common:common_all",  # P11-T0-b: the single shared json/sha256 copy
     "//xr/policy:policy_all",
     "//xr/update:update_all",  # P10-T1: std-only verifier core + stdio host
   ]
