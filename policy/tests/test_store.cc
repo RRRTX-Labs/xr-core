@@ -210,6 +210,28 @@ int main() {
        "\"trust\":\"kShield\",\"created_at\":1,\"expires_at\":0,\"session_id\":\"\","
        "\"remaining_uses\":0,\"granted_by\":\"in_flow\"}]}}",
        StoreError::kInvalidEntry},
+      // P11-T0-c: the "integer REQUIRED" branches (expires_at / remaining_uses
+      // absent or non-int) were never exercised — a `return false`->`true`
+      // mutant there SURVIVED the seeded sample (deny-guard: a validation
+      // failure that accepts). Absence must reject, never guess a default.
+      {"missing-expires-at-field",
+       "{\"schema\":\"xr-exceptions\",\"schema_version\":2,\"created_at\":0,"
+       "\"data\":{\"exceptions\":[{\"id\":\"e\",\"domain\":\"a.com\",\"scope\":\"permanent\","
+       "\"trust\":\"kShield\",\"created_at\":1,\"session_id\":\"\","
+       "\"remaining_uses\":0,\"granted_by\":\"settings\"}]}}",
+       StoreError::kInvalidEntry},
+      {"missing-remaining-uses-field",
+       "{\"schema\":\"xr-exceptions\",\"schema_version\":2,\"created_at\":0,"
+       "\"data\":{\"exceptions\":[{\"id\":\"e\",\"domain\":\"a.com\",\"scope\":\"permanent\","
+       "\"trust\":\"kShield\",\"created_at\":1,\"expires_at\":0,\"session_id\":\"\","
+       "\"granted_by\":\"settings\"}]}}",
+       StoreError::kInvalidEntry},
+      {"non-int-remaining-uses",
+       "{\"schema\":\"xr-exceptions\",\"schema_version\":2,\"created_at\":0,"
+       "\"data\":{\"exceptions\":[{\"id\":\"e\",\"domain\":\"a.com\",\"scope\":\"permanent\","
+       "\"trust\":\"kShield\",\"created_at\":1,\"expires_at\":0,\"session_id\":\"\","
+       "\"remaining_uses\":\"3\",\"granted_by\":\"settings\"}]}}",
+       StoreError::kInvalidEntry},
       {"identity-list-bad-storage",
        "{\"schema\":\"xr-identity-list\",\"schema_version\":1,\"created_at\":0,"
        "\"data\":{\"identities\":[{\"value\":\"xr:abc\",\"storage\":\"somewhere-else\"}]}}",
