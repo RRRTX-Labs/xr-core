@@ -124,6 +124,13 @@ struct ManifestListEntry {
   std::string name;
   std::string sha256;
   long long rules = 0;
+  // T3: the frozen schema leaves lists[] entries free-form, so the
+  // pipeline embeds the per-list attribution here. Optional in the entry
+  // grammar; when PRESENT it must equal the bundle list's attribution
+  // (which the digest binds) — a manifest may not claim attribution
+  // other than the one the bytes it pins actually carry.
+  bool has_attribution = false;
+  std::string attribution;
 };
 BundleResult CheckAgainstManifest(const NormalizedBundle& bundle,
                                   const std::vector<ManifestListEntry>& man,

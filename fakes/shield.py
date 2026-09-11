@@ -410,6 +410,9 @@ def check_against_manifest(bundle: dict, man: list[dict]) -> str | None:
     for entry, bl in zip(man, bundle["lists"]):
         if entry["name"] != bl["name"]:
             return f"manifest-list-name:{entry['name']}"
+        if "attribution" in entry and \
+                entry["attribution"] != bl["attribution"]:
+            return f"manifest-attribution:{bl['name']}"
         if entry["rules"] != len(bl["rules"]):
             return f"manifest-rule-count:{bl['name']}"
         got = hashlib.sha256(
@@ -431,14 +434,20 @@ def parse_manifest(man: Any) -> list[dict]:
     for lv in lists:
         if not isinstance(lv, dict):
             raise fail("kMalformedInput", "manifest-entry-not-object")
-        only_keys(lv, ["name", "sha256", "rules"])
+        only_keys(lv, ["name", "sha256", "rules", "attribution"])
         if not isinstance(lv.get("name"), str) or lv["name"] == "" or \
                 not isinstance(lv.get("sha256"), str) or \
                 len(lv["sha256"]) != 64 or not is_int(lv.get("rules")) or \
                 lv["rules"] < 0:
             raise fail("kMalformedInput", "bad-manifest-entry")
-        out.append({"name": lv["name"], "rules": lv["rules"],
-                    "sha256": lv["sha256"]})
+        attr = lv.get("attribution")
+        if attr is not None and (not isinstance(attr, str) or attr == ""):
+            raise fail("kMalformedInput", "bad-manifest-entry")
+        entry = {"name": lv["name"], "rules": lv["rules"],
+                 "sha256": lv["sha256"]}
+        if attr is not None:
+            entry["attribution"] = attr
+        out.append(entry)
     return out
 
 

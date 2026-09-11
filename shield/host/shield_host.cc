@@ -166,7 +166,8 @@ bool ParseManifestLists(const JsonValue& man,
     return false;
   }
   for (const JsonValue& lv : lists->as_array()) {
-    if (!lv.is_object() || !OnlyKeys(lv, {"name", "sha256", "rules"}, &bad)) {
+    if (!lv.is_object() ||
+        !OnlyKeys(lv, {"name", "sha256", "rules", "attribution"}, &bad)) {
       *detail = lv.is_object() ? "unknown-field:" + bad : "manifest-entry-not-object";
       return false;
     }
@@ -183,6 +184,15 @@ bool ParseManifestLists(const JsonValue& man,
     e.name = n->as_string();
     e.sha256 = s->as_string();
     e.rules = r->as_int();
+    const JsonValue* a = lv.find("attribution");
+    if (a != nullptr) {
+      if (!a->is_string() || a->as_string().empty()) {
+        *detail = "bad-manifest-entry";
+        return false;
+      }
+      e.has_attribution = true;
+      e.attribution = a->as_string();
+    }
     out->push_back(std::move(e));
   }
   return true;

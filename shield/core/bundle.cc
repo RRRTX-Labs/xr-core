@@ -341,6 +341,10 @@ BundleResult CheckAgainstManifest(const NormalizedBundle& bundle,
       *detail = "manifest-list-name:" + man[i].name;
       return BundleResult::kManifestMismatch;
     }
+    if (man[i].has_attribution && man[i].attribution != bl.attribution) {
+      *detail = "manifest-attribution:" + bl.name;
+      return BundleResult::kManifestMismatch;
+    }
     if (man[i].rules != static_cast<long long>(bl.rules.size())) {
       *detail = "manifest-rule-count:" + bl.name;
       return BundleResult::kManifestMismatch;
