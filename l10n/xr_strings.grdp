@@ -265,5 +265,58 @@
 <message name="IDS_XR_HELP_NO_ENTRY" desc="Shown when a xr://help deep link targets a command id the registry does not contain; {ID} is the requested id — the index stays visible and honest" xr-id="help.no-entry">
     No help entry for “<ph name="ID">{ID}<ex>settings.network</ex></ph>”.
   </message>
-
+<message name="IDS_XR_ABOUT_HEADING" desc="Heading of the About page" xr-id="about.heading">
+    About XR
+  </message>
+<message name="IDS_XR_ABOUT_VERSION" desc="Label for the installed version row" xr-id="about.version">
+    Version
+  </message>
+<message name="IDS_XR_ABOUT_CHROMIUM_BASE" desc="Label for the Chromium base row; {CHROMIUM_REV} is the pinned upstream revision" xr-id="about.chromium-base">
+    Chromium base <ph name="CHROMIUM_REV">{CHROMIUM_REV}<ex>d04cdb24d67b081f6cf80200ffc5233f44b61109</ex></ph>
+  </message>
+<message name="IDS_XR_ABOUT_BUILD_HASH" desc="Label for the build hash row" xr-id="about.build-hash">
+    Build
+  </message>
+<message name="IDS_XR_ABOUT_SIGNATURE_STATUS" desc="Label for the signature status row" xr-id="about.signature-status">
+    Signature
+  </message>
+<message name="IDS_XR_ABOUT_NOT_SIGNED_DEV_CHANNEL" desc="Signature status shown verbatim on dev channels: the build is not signed" xr-id="about.not-signed-dev-channel">
+    not signed: dev channel
+  </message>
+<message name="IDS_XR_ABOUT_ROLLBACK" desc="Label for the rollback-availability row" xr-id="about.rollback">
+    Rollback available
+  </message>
+<message name="IDS_XR_ABOUT_UPDATE_HEADING" desc="Heading of the update-check state section" xr-id="about.update-heading">
+    Updates
+  </message>
+<message name="IDS_XR_ABOUT_CHECK_NOW" desc="Button: run an update check now" xr-id="about.check-now">
+    Check for updates
+  </message>
+<message name="IDS_XR_ABOUT_STATE_IDLE" desc="Update state: idle" xr-id="about.state-idle">
+    Up to date
+  </message>
+<message name="IDS_XR_ABOUT_STATE_CHECKING" desc="Update state: checking" xr-id="about.state-checking">
+    Checking for updates…
+  </message>
+<message name="IDS_XR_ABOUT_STATE_AVAILABLE" desc="Update state: an update is available" xr-id="about.state-available">
+    An update is available
+  </message>
+<message name="IDS_XR_ABOUT_STATE_DOWNLOADING" desc="Update state: downloading" xr-id="about.state-downloading">
+    Downloading update…
+  </message>
+<message name="IDS_XR_ABOUT_STATE_READY" desc="Update state: ready to apply" xr-id="about.state-ready">
+    Update ready to apply
+  </message>
+<message name="IDS_XR_ABOUT_STATE_FAILED" desc="Update state: the check failed; {REASON} is the typed reason" xr-id="about.state-failed">
+    Update failed: <ph name="REASON">{REASON}<ex>download-unreachable</ex></ph>
+  </message>
+<message name="IDS_XR_ABOUT_STATE_REFUSED" desc="Update state: the update was refused (epoch/flag); {REASON} is the typed reason" xr-id="about.state-refused">
+    Update refused: <ph name="REASON">{REASON}<ex>unknown-signing-key</ex></ph>
+  </message>
+<message name="IDS_XR_ABOUT_MANUAL_DOWNLOAD" desc="Shown in a failed/refused state: the manual download pointer (never a hidden error)" xr-id="about.manual-download">
+    You can download the latest version manually: xr://about → manual download
+  </message>
+<message name="IDS_XR_ABOUT_CHECK_AGAIN" desc="Affordance in a failed state: try the update check again" xr-id="about.check-again">
+    Check again
+  </message>
 </grit-part>
