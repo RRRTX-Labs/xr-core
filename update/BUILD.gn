@@ -1,0 +1,65 @@
+# Copyright 2026 RRRTX Labs
+# Use of this source code is governed by the MPL-2.0 license that can be
+# found in the LICENSE file.
+
+# BUILD.gn — //xr/update: THE update verifier core (Plan P10-T1).
+#
+# The core below is deliberately STD-ONLY C++20 — no Chromium headers —
+# which is what makes it compilable and exhaustively testable off-tree
+# (g++/make: update/tests/Makefile, 9 suites) with byte-parity against the
+# Python reference fake (xr-browser consumption: fakes/update.py) on all 73
+# golden vectors (docs/contracts/vectors/update-v1.json).
+#
+# Signature law (P10 architectural row 2): there is NO crypto here.
+# verifier.h is an injected interface; update/tests binds a TEST-ONLY
+# verifier (stub signatures, banner in every accept); the production
+# binding is a farm/human act (minisign-ed25519 over artifact bytes) and
+# is documented in update/README-integration.md + release/keys/.
+#
+# NO FAKE INTEGRATION (P7 ui/BUILD.gn precedent): wiring this core into
+# //chrome/updater (app id, update URL, CRX3 packaging, registration) is
+# FARM glue (HG-31 class) — it needs a real //chrome/updater build at the
+# pin. The GN flag xr_updater_v0 gates the whole surface; with the flag
+# off the host reports the typed refusal and stock chrome update behavior
+# is untouched. A Chromium patch entry for About/update registration is a
+# FAILURE CONDITION (P10 §6) — none is used or needed here.
+
+source_set("update_core") {
+  sources = [
+    "core/backoff.cc",
+    "core/backoff.h",
+    "core/cohort.cc",
+    "core/cohort.h",
+    "core/epoch.cc",
+    "core/epoch.h",
+    "core/json.cc",
+    "core/json.h",
+    "core/json_parse.cc",
+    "core/manifest.cc",
+    "core/manifest.h",
+    "core/seen.cc",
+    "core/seen.h",
+    "core/sha256.cc",
+    "core/sha256.h",
+    "core/verifier.h",
+    "core/verify_policy.cc",
+    "core/verify_policy.h",
+  ]
+  public_deps = []
+  # NOTE: no deps. std-only by design (see header comment). The verifier is
+  # injected by the embedder; core/** never opens a socket, a TLS stack, or
+  # a Chromium header — verification is transport-independent by law.
+}
+
+# Host binary (dev/diagnostics; the stdio façade xr-updater drives).
+source_set("update_host_lib") {
+  sources = [ "host/update_host.cc" ]
+  deps = [ ":update_core" ]
+}
+
+group("update_all") {
+  deps = [
+    ":update_core",
+    ":update_host_lib",
+  ]
+}
