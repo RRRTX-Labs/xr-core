@@ -1204,7 +1204,12 @@ USAGE = ("usage: shield.py <method> ['<json-args>'] [options]\n"
          "event-emit\n")
 
 
-def call(method: str, args: Any, flag: str) -> tuple[dict, int]:
+def call(method: str, args: Any, flag: str = "on") -> tuple[dict, int]:
+    # flag defaults to "on" — the CLI's documented default. The default
+    # matters for xrctl's generic two-arg call path (xr-browser
+    # docs/contracts/tests/test_all_interfaces_parity.py): without it the
+    # shield fake raised TypeError there since T2 (hosted-CI debt,
+    # root-caused and fixed in P11-T5).
     if method == "flag-status":
         return method_flag_status(args if isinstance(args, dict) else {}, flag)
     if method == "Status":
