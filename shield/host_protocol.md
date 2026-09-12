@@ -70,6 +70,7 @@ quietly growing this table.
 | `exception-remove` | `{scopes?, scope_id}` | remove by id ⇒ `{"scopes":[survivors]}`. The id not present ⇒ `kRejected` `unknown-scope-id:<id>` (exit 0 — removing a non-existent exception is a refusal, never a silent no-op); missing/empty/non-string `scope_id` ⇒ `kMalformedInput` `bad-scope-id` |
 | `exception-sweep` | `{scopes?, now_mono}` | the deterministic expiry job as a method ⇒ `{"scopes":[active],"swept":["<expired ids>"]}`, input order preserved in both arrays. `now_mono` REQUIRED and ≥ 0 (else `kMalformedInput` `missing-now-mono` — no wall clock anywhere; the as-of IS the argument). Expiry boundary is INCLUSIVE: `expiry_mono >= 0 && now_mono >= expiry_mono` ⇒ swept (the T2 SweepAsOf law); `expiry_mono: -1` = never expires, never swept |
 | `site-toggle` | `{scopes?, site, on, expiry_mono?}` | the per-site toggle mechanic ⇒ `{"scopes":[…],"scope_id":"site-toggle:<site>","toggled":"on\|off"}`. `on:true` adds the canonical scope `{scope_id:"site-toggle:<site>", site:<site>, reason:"user-site-toggle", expiry_mono:<arg or -1>}`; `on:false` removes it. Re-presenting the CURRENT state ⇒ `kRejected` `toggle-already-on:<site>` / `toggle-already-off:<site>` (exit 0 — the equal-reoffer precedent). The toggle's id space is SHARED with manual scopes: a hand-added scope with id `site-toggle:<site>` makes `on:true` a refusal (collision law, no namespace magic). `site` non-empty string (else `kMalformedInput` `bad-site`), `on` strict bool (else `bad-toggle`), `expiry_mono` int ≥ -1 (else `bad-expiry`) |
+| `event-emit` | `{context, seq, ts_millis, action, why_code}` required; `{tab_id, rule_id, rule, list_id, bundle_version}` optional | the Activity Ledger emitter ⇒ `{"row": …}` — a living `block-event-v1` document (xr-browser registry-post-freeze.md): the canonical superset row around the FROZEN BlockEvent vocabulary (`action` k-spellings, `request_class`, redacted `target`) plus provenance (`rule_id`/`rule`/`list_id`/`bundle_version`, site-class via `origin`), the caller's monotonic `seq` (no clock — the dispatch.cc ledger-row precedent) and `why_code` from the closed verdict set below. `seq`/`ts_millis` int ≥ 0 (else `missing-seq` / `missing-ts-millis`); `tab_id`/`bundle_version` int ≥ 0 (else `bad-tab-id` / `bad-bundle-version`); `action` ∈ the frozen k-spellings (else `missing-action` / `field-not-string:action` / `bad-action:<name>`); `why_code` ∈ the closed set (else `missing-why-code` / `field-not-string:why_code` / `bad-why-code:<code>`); provenance fields strings (else `field-not-string:<key>`). No `kRejected` class — the emitter has no content-conflict semantics; every bad input is `kMalformedInput` (exit 1) |
 
 ## Error model
 
@@ -120,6 +121,11 @@ bad `--flag k=v`).
 - BlockEvent (FROZEN shape): `ts_millis`, `identity{value}`, `tab_id`,
   `origin{scheme,registrable_domain}`, `target`, `rule`, `list_provenance`,
   `action` ∈ `kBlocked|kAllowed|kRedirected|kUpgraded`, `request_class`.
+- `event-emit` row (living, T5): `event` = `block_event`,
+  `contract_version` = 1; `action` reuses the frozen k-spellings and
+  `why_code` reuses the closed verdict set above — no second naming.
+  A row may record ANY verdict (every decision is an event, plan
+  §data), not only blocks.
 
 ## Filter grammar v1 (network rules)
 
@@ -167,6 +173,15 @@ list-then-rule order wins.
 - **Redaction at creation:** `target` is `scheme://host/path` BEFORE an
   event is written — query strings and fragments never reach the ledger.
   The match surface uses the same redaction.
+- **Emitter = event, not policy (T5):** `event-emit` writes the
+  activity-ledger path (per-tab ring → ledger) and never touches
+  policy state: no bundle pin moves, no scope-set changes, no frozen
+  `policy-change-event-v1` widening (brief §architecture invariant 7).
+  Rows feed the passive chip counter and "why blocked" provenance —
+  no toast, badge or modal ever comes from the emitter. 90-day rolling
+  retention and per-identity persistence are browser-side (P13); v1
+  pins the row SHAPE + redaction, and the host ring cap (256) and
+  chunk budget (64 KiB) tests carry over unchanged.
 - **Determinism:** no wall clock, no RNG, no environment, no I/O; every
   time input is a caller-supplied monotonic integer (`now_mono`,
   `ts_millis`, `expiry_mono`, `last_apply_mono`).

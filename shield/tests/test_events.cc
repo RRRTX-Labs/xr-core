@@ -156,5 +156,41 @@ int main() {
     XR_EXPECT(pr.ok);
     XR_EXPECT(!ParseRing(pr.value, &ring, &d) && d == "ring-not-array");
   }
+  {  // P11-T5: living block-event-v1 ledger row — shape, redaction,
+     // determinism (MakeLedgerRow is the ONLY row constructor).
+    RequestContext c = Ctx("https://tracker.example/ad.js?q=secret#frag");
+    LedgerRowParams p;
+    p.seq = 7;
+    p.ts_millis = 1234;
+    p.tab_id = 3;
+    p.bundle_version = 2;
+    p.rule_id = "r-1";
+    p.rule = "||tracker.example^";
+    p.list_id = "l-1";
+    p.why_code = "rule-blocked";
+    p.action = BlockAction::kBlocked;
+    const std::string canon = MakeLedgerRow(c, p).Canonical();
+    XR_EXPECT(canon == MakeLedgerRow(c, p).Canonical());  // deterministic
+    XR_EXPECT(canon.find("\"target\":\"https://tracker.example/ad.js\"") !=
+              std::string::npos);
+    XR_EXPECT(canon.find("secret") == std::string::npos);  // query stripped
+    XR_EXPECT(canon.find("frag") == std::string::npos);    // fragment too
+    XR_EXPECT(canon.find("\"action\":\"kBlocked\"") != std::string::npos);
+    XR_EXPECT(canon.find("\"contract_version\":1") != std::string::npos);
+    XR_EXPECT(canon.find("\"event\":\"block_event\"") != std::string::npos);
+    XR_EXPECT(canon.find("\"request_class\":\"kScript\"") !=
+              std::string::npos);
+    XR_EXPECT(canon.find("\"why_code\":\"rule-blocked\"") !=
+              std::string::npos);
+    XR_EXPECT(canon.find("\"identity\":\"xr:a\"") != std::string::npos);
+    XR_EXPECT(canon.find("\"rule_id\":\"r-1\"") != std::string::npos);
+    XR_EXPECT(canon.find("\"bundle_version\":2") != std::string::npos);
+    p.action = BlockAction::kUpgraded;  // no v1 producer; still a legal row
+    XR_EXPECT(MakeLedgerRow(c, p).Canonical().find(
+                  "\"action\":\"kUpgraded\"") != std::string::npos);
+    p.why_code = "no-bundle";           // the vocab is the caller's choice
+    XR_EXPECT(MakeLedgerRow(c, p).Canonical().find(
+                  "\"why_code\":\"no-bundle\"") != std::string::npos);
+  }
   return xrtest::Report("test_events");
 }

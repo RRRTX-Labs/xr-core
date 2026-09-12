@@ -290,5 +290,60 @@ int main() {
                                "2>/dev/null").c_str()) != 0,
                   "unknown flag name (exit 2)");
   }
+  {  // P11-T5: event-emit — the living block-event-v1 row, byte-checked
+     // by the vectors; tokens and redaction pinned here too.
+    const std::string ctx =
+        R"({"identity":{"value":"xr:a"},"origin":{"scheme":"https",)"
+        R"("registrable_domain":"tracker.example"},)"
+        R"("url":"https://tracker.example/ad.js?q=secret#frag",)"
+        R"("request_class":"kScript"})";
+    RunResult r = Run(Frame("event-emit",
+        R"({"action":"kBlocked","bundle_version":2,"context":)" + ctx +
+        R"(,"list_id":"l-1","rule":"||tracker.example^","rule_id":"r-1",)"
+        R"("seq":7,"tab_id":3,"ts_millis":1234,"why_code":"rule-blocked"})"));
+    XR_EXPECT(r.rc == 0);
+    XR_EXPECT(r.out.find(R"("target":"https://tracker.example/ad.js")") !=
+              std::string::npos);
+    XR_EXPECT(r.out.find("secret") == std::string::npos);
+    XR_EXPECT(r.out.find(R"("seq":7)") != std::string::npos);
+    XR_EXPECT(r.out.find(R"("contract_version":1)") != std::string::npos);
+    // defaults: optional provenance omitted -> empty strings, zero ints
+    r = Run(Frame("event-emit", R"({"action":"kAllowed","context":)" + ctx +
+            R"(,"seq":0,"ts_millis":0,"why_code":"rule-allowed"})"));
+    XR_EXPECT(r.rc == 0 && r.out.find(R"("rule_id":"")") != std::string::npos);
+    XR_EXPECT(r.out.find(R"("tab_id":0)") != std::string::npos &&
+              r.out.find(R"("bundle_version":0)") != std::string::npos);
+    // closed vocabularies + required-arg tokens (kMalformedInput, exit 1)
+    r = Run(Frame("event-emit", R"({"action":"blocked","context":)" + ctx +
+            R"(,"seq":1,"ts_millis":1,"why_code":"no-match"})"));
+    XR_EXPECT(r.rc == 1 && r.out.find("bad-action:blocked") !=
+              std::string::npos);
+    r = Run(Frame("event-emit", R"({"action":"kBlocked","context":)" + ctx +
+            R"(,"seq":1,"ts_millis":1,"why_code":"because"})"));
+    XR_EXPECT(r.rc == 1 && r.out.find("bad-why-code:because") !=
+              std::string::npos);
+    r = Run(Frame("event-emit", R"({"action":"kBlocked","context":)" + ctx +
+            R"(,"seq":-1,"ts_millis":1,"why_code":"no-match"})"));
+    XR_EXPECT(r.rc == 1 && r.out.find("missing-seq") != std::string::npos);
+    r = Run(Frame("event-emit", R"({"action":"kBlocked","context":)" + ctx +
+            R"(,"seq":1,"why_code":"no-match"})"));
+    XR_EXPECT(r.rc == 1 && r.out.find("missing-ts-millis") !=
+              std::string::npos);
+    r = Run(Frame("event-emit", R"({"context":)" + ctx +
+            R"(,"seq":1,"ts_millis":1})"));
+    XR_EXPECT(r.rc == 1 && r.out.find("missing-action") != std::string::npos);
+    r = Run(Frame("event-emit",
+            R"({"action":"kBlocked","seq":1,"ts_millis":1,)"
+            R"("why_code":"no-match"})"));
+    XR_EXPECT(r.rc == 1 && r.out.find("missing-context") != std::string::npos);
+    r = Run(Frame("event-emit", R"({"action":"kBlocked","context":)" + ctx +
+            R"(,"rule":7,"seq":1,"ts_millis":1,"why_code":"no-match"})"));
+    XR_EXPECT(r.rc == 1 && r.out.find("field-not-string:rule") !=
+              std::string::npos);
+    r = Run(Frame("event-emit", R"({"action":"kBlocked","context":)" + ctx +
+            R"(,"extra":1,"seq":1,"ts_millis":1,"why_code":"no-match"})"));
+    XR_EXPECT(r.rc == 1 && r.out.find("unknown-field:extra") !=
+              std::string::npos);
+  }
   return xrtest::Report("test_shield_host");
 }

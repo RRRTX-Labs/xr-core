@@ -60,9 +60,9 @@ JsonValue EventToJson(const BlockEvent& e) {
                  })},
       {"request_class", JsonValue(RequestClassName(e.request_class))},
       {"rule", JsonValue(e.rule)},
-      {"tab_id", JsonValue(static_cast<int>(e.tab_id))},
+      {"tab_id", JsonValue(static_cast<int64_t>(e.tab_id))},
       {"target", JsonValue(e.target)},
-      {"ts_millis", JsonValue(static_cast<int>(e.ts_millis))},
+      {"ts_millis", JsonValue(static_cast<int64_t>(e.ts_millis))},
   };
   return JsonValue(o);
 }
@@ -164,6 +164,39 @@ bool ParseRing(const JsonValue& v, EventRing* out, std::string* detail) {
     RingAppend(out, std::move(e));
   }
   return true;
+}
+
+// living block-event-v1 row — the canonical activity-ledger document.
+// xr-browser's tools/xr_schema.py validates the SAME shape
+// (docs/contracts/block-event-v1.schema.json); the golden instance is
+// byte-verified from both backends. Redaction rides on RedactTarget —
+// one implementation, one law, at creation time. Numeric fields are
+// int64 on the wire: mojom BlockEvent declares ts_millis/tab_id int64,
+// so epoch-scale values must survive (the T2-era int32 casts in
+// EventToJson truncated them — fixed alongside the emitter, T5).
+JsonValue MakeLedgerRow(const RequestContext& ctx, const LedgerRowParams& p) {
+  JsonValue::Object origin{
+      {"registrable_domain", JsonValue(ctx.origin.registrable_domain)},
+      {"scheme", JsonValue(ctx.origin.scheme)},
+  };
+  JsonValue::Object row{
+      {"action", JsonValue(BlockActionName(p.action))},
+      {"bundle_version", JsonValue(static_cast<int64_t>(p.bundle_version))},
+      {"contract_version", JsonValue(1)},
+      {"event", JsonValue("block_event")},
+      {"identity", JsonValue(ctx.identity.value)},
+      {"list_id", JsonValue(p.list_id)},
+      {"origin", JsonValue(origin)},
+      {"request_class", JsonValue(RequestClassName(ctx.request_class))},
+      {"rule", JsonValue(p.rule)},
+      {"rule_id", JsonValue(p.rule_id)},
+      {"seq", JsonValue(static_cast<int64_t>(p.seq))},
+      {"tab_id", JsonValue(static_cast<int64_t>(p.tab_id))},
+      {"target", JsonValue(RedactTarget(ctx.parts))},
+      {"ts_millis", JsonValue(static_cast<int64_t>(p.ts_millis))},
+      {"why_code", JsonValue(p.why_code)},
+  };
+  return JsonValue(row);
 }
 
 }  // namespace xr::shield

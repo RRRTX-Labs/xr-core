@@ -804,6 +804,122 @@ int main(int argc, char** argv) {
     return 0;
   }
 
+  // ---- P11-T5: the activity-ledger emitter (living block-event-v1) ----
+  // An EVENT, never a policy change (brief §architecture invariant 7):
+  // no bundle pin moves, no scope set changes, no policy-change-event
+  // widening. seq/ts_millis are caller-supplied (no clock reads — the
+  // dispatch.cc ledger-row precedent); the row is canonical and redacted
+  // at creation (MakeLedgerRow). No kRejected class: the emitter has no
+  // content-conflict semantics — every bad input is kMalformedInput.
+  if (method == "event-emit") {
+    if (!OnlyKeys(args, {"context", "tab_id", "ts_millis", "seq", "action",
+                         "rule_id", "rule", "list_id", "bundle_version",
+                         "why_code"}, &bad)) {
+      EmitError("kMalformedInput", "unknown-field:" + bad);
+      return 1;
+    }
+    const JsonValue* cv = args.find("context");
+    if (cv == nullptr) {
+      EmitError("kMalformedInput", "missing-context");
+      return 1;
+    }
+    RequestContext ctx;
+    std::string detail;
+    if (ParseRequestContext(*cv, &ctx, &detail) != ParseResult::kOk) {
+      EmitError("kMalformedInput", detail);
+      return 1;
+    }
+    LedgerRowParams p;
+    const JsonValue* sv = args.find("seq");
+    if (sv == nullptr || !sv->is_int() || sv->as_int() < 0) {
+      EmitError("kMalformedInput", "missing-seq");
+      return 1;
+    }
+    p.seq = sv->as_int();
+    const JsonValue* tv = args.find("ts_millis");
+    if (tv == nullptr || !tv->is_int() || tv->as_int() < 0) {
+      EmitError("kMalformedInput", "missing-ts-millis");
+      return 1;
+    }
+    p.ts_millis = tv->as_int();
+    if (const JsonValue* v = args.find("tab_id")) {
+      if (!v->is_int() || v->as_int() < 0) {
+        EmitError("kMalformedInput", "bad-tab-id");
+        return 1;
+      }
+      p.tab_id = v->as_int();
+    }
+    if (const JsonValue* v = args.find("bundle_version")) {
+      if (!v->is_int() || v->as_int() < 0) {
+        EmitError("kMalformedInput", "bad-bundle-version");
+        return 1;
+      }
+      p.bundle_version = v->as_int();
+    }
+    const JsonValue* av = args.find("action");
+    if (av == nullptr) {
+      EmitError("kMalformedInput", "missing-action");
+      return 1;
+    }
+    if (!av->is_string()) {
+      EmitError("kMalformedInput", "field-not-string:action");
+      return 1;
+    }
+    const std::string an = av->as_string();
+    if (an == "kBlocked") {
+      p.action = BlockAction::kBlocked;
+    } else if (an == "kAllowed") {
+      p.action = BlockAction::kAllowed;
+    } else if (an == "kRedirected") {
+      p.action = BlockAction::kRedirected;
+    } else if (an == "kUpgraded") {
+      p.action = BlockAction::kUpgraded;
+    } else {
+      EmitError("kMalformedInput", "bad-action:" + an);
+      return 1;
+    }
+    const JsonValue* wv = args.find("why_code");
+    if (wv == nullptr) {
+      EmitError("kMalformedInput", "missing-why-code");
+      return 1;
+    }
+    if (!wv->is_string()) {
+      EmitError("kMalformedInput", "field-not-string:why_code");
+      return 1;
+    }
+    // closed set — host_protocol.md §Decision vocabularies (verbatim).
+    static const char* kWhyCodes[] = {
+        "rule-blocked", "rule-allowed", "rule-redirected", "rule-replaced",
+        "no-match", "no-bundle", "exception-scope", "engine-dead-fail-open",
+        "engine-poisoned-fail-open", "kill-switch", "route-loss-fail-closed"};
+    bool why_known = false;
+    for (const char* w : kWhyCodes) {
+      if (wv->as_string() == w) {
+        why_known = true;
+        break;
+      }
+    }
+    if (!why_known) {
+      EmitError("kMalformedInput", "bad-why-code:" + wv->as_string());
+      return 1;
+    }
+    p.why_code = wv->as_string();
+    for (const char* key : {"rule_id", "rule", "list_id"}) {
+      const JsonValue* v = args.find(key);
+      if (v == nullptr) continue;
+      if (!v->is_string()) {
+        EmitError("kMalformedInput", std::string("field-not-string:") + key);
+        return 1;
+      }
+      const std::string k(key);
+      if (k == "rule_id") p.rule_id = v->as_string();
+      else if (k == "rule") p.rule = v->as_string();
+      else p.list_id = v->as_string();
+    }
+    Emit(JsonValue(JsonValue::Object{{"row", MakeLedgerRow(ctx, p)}}));
+    return 0;
+  }
+
   EmitError("kUnknownMethod", method);
   return 1;
 }

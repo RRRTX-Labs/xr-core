@@ -4,8 +4,8 @@
 //
 // Intent: shield/core/events — the block-event ledger + ring feeding the
 // FROZEN mojom surface (mojom/shield.mojom BlockEvent, kContractVersion=1)
-// and the living block-event-v1 registry row (P11-T5 wires it to
-// ledger/event-sink-v1 + event-stream-v1). Field names and the action
+// and the living block-event-v1 registry row (P11-T5: the activity-
+// ledger emitter — MakeLedgerRow below). Field names and the action
 // enum order are FROZEN vocabulary: ts_millis, identity{value}, tab_id,
 // origin{scheme,registrable_domain}, target, rule, list_provenance,
 // action ∈ blocked|allowed|redirected|upgraded, request_class.
@@ -81,5 +81,36 @@ common::JsonValue EventToJson(const BlockEvent& e);
 common::JsonValue RingToJson(const EventRing& ring);
 bool ParseRing(const common::JsonValue& v, EventRing* out,
                std::string* detail);
+
+// ---------------------------------------------------------------------------
+// P11-T5: living `block-event-v1` ledger row
+// (docs/contracts/block-event-v1.md, xr-browser registry-post-freeze.md)
+// ---------------------------------------------------------------------------
+// A row is a living SUPERSET document around the FROZEN BlockEvent
+// vocabulary — the mojom surface is never widened (brief §architecture
+// invariant 7: a block is an event, not a policy change). Provenance
+// (rule id / filter text / list / bundle version / site-class via origin)
+// and the caller's `why_code` (the closed verdict vocabulary in
+// host_protocol.md) ride on the row; redaction happens at row CREATION,
+// the same law as MakeEvent: `target` is always scheme://host/path —
+// query strings and fragments never reach the ledger.
+//
+// Determinism law (precedent: the ledger rows in commands/core/
+// dispatch.cc): `seq` and `ts_millis` are caller-supplied — no clock
+// reads here. `seq` is the caller's monotonic per-identity counter.
+struct LedgerRowParams {
+  long long seq = 0;             // caller's monotonic counter
+  long long ts_millis = 0;       // caller-supplied
+  long long tab_id = 0;
+  long long bundle_version = 0;  // 0 = no bundle context (no-bundle rows)
+  std::string rule_id;           // engine rule id ("" = not rule-derived)
+  std::string rule;              // filter text — "why blocked" provenance
+  std::string list_id;           // "" = not list-derived
+  std::string why_code;          // closed verdict vocabulary (host_protocol)
+  BlockAction action = BlockAction::kBlocked;
+};
+
+common::JsonValue MakeLedgerRow(const RequestContext& ctx,
+                                const LedgerRowParams& p);
 
 }  // namespace xr::shield

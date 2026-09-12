@@ -1111,8 +1111,83 @@ def method_site_toggle(args: dict) -> tuple[dict, int]:
             "toggled": "on" if on else "off"}, 0
 
 
+# P11-T5: living block-event-v1 row vocabulary (host_protocol.md, verbatim)
+ROW_ACTIONS = ("kBlocked", "kAllowed", "kRedirected", "kUpgraded")
+WHY_CODES = ("rule-blocked", "rule-allowed", "rule-redirected",
+             "rule-replaced", "no-match", "no-bundle", "exception-scope",
+             "engine-dead-fail-open", "engine-poisoned-fail-open",
+             "kill-switch", "route-loss-fail-closed")
+
+
+def ledger_row(ctx: dict, seq: int, ts_millis: int, tab_id: int,
+               bundle_version: int, action: str, why_code: str,
+               strings: dict) -> dict:
+    """Mirror of MakeLedgerRow (events.cc): canonical living row, redaction
+    at creation (ctx["parts"] -> scheme://host/path, never query/fragment).
+    """
+    return {"action": action, "bundle_version": bundle_version,
+            "contract_version": 1, "event": "block_event",
+            "identity": ctx["identity"]["value"],
+            "list_id": strings.get("list_id", ""),
+            "origin": {"registrable_domain": ctx["origin"]["registrable_domain"],
+                       "scheme": ctx["origin"]["scheme"]},
+            "request_class": ctx["request_class"],
+            "rule": strings.get("rule", ""),
+            "rule_id": strings.get("rule_id", ""), "seq": seq,
+            "tab_id": tab_id, "target": redact_target(ctx["parts"]),
+            "ts_millis": ts_millis, "why_code": why_code}
+
+
+def method_event_emit(args: dict) -> tuple[dict, int]:
+    only_keys(args, ["context", "tab_id", "ts_millis", "seq", "action",
+                     "rule_id", "rule", "list_id", "bundle_version",
+                     "why_code"])
+    if "context" not in args:
+        raise fail("kMalformedInput", "missing-context")
+    ctx = parse_context(args["context"])
+    seq = args.get("seq")
+    if seq is None or not is_int(seq) or seq < 0:
+        raise fail("kMalformedInput", "missing-seq")
+    ts_millis = args.get("ts_millis")
+    if ts_millis is None or not is_int(ts_millis) or ts_millis < 0:
+        raise fail("kMalformedInput", "missing-ts-millis")
+    tab_id = 0
+    if "tab_id" in args:
+        if not is_int(args["tab_id"]) or args["tab_id"] < 0:
+            raise fail("kMalformedInput", "bad-tab-id")
+        tab_id = args["tab_id"]
+    bundle_version = 0
+    if "bundle_version" in args:
+        if not is_int(args["bundle_version"]) or args["bundle_version"] < 0:
+            raise fail("kMalformedInput", "bad-bundle-version")
+        bundle_version = args["bundle_version"]
+    if "action" not in args:
+        raise fail("kMalformedInput", "missing-action")
+    action = args["action"]
+    if not isinstance(action, str):
+        raise fail("kMalformedInput", "field-not-string:action")
+    if action not in ROW_ACTIONS:
+        raise fail("kMalformedInput", f"bad-action:{action}")
+    if "why_code" not in args:
+        raise fail("kMalformedInput", "missing-why-code")
+    why_code = args["why_code"]
+    if not isinstance(why_code, str):
+        raise fail("kMalformedInput", "field-not-string:why_code")
+    if why_code not in WHY_CODES:
+        raise fail("kMalformedInput", f"bad-why-code:{why_code}")
+    strings: dict = {}
+    for key in ("rule_id", "rule", "list_id"):
+        if key in args:
+            if not isinstance(args[key], str):
+                raise fail("kMalformedInput", f"field-not-string:{key}")
+            strings[key] = args[key]
+    return {"row": ledger_row(ctx, seq, ts_millis, tab_id, bundle_version,
+                              action, why_code, strings)}, 0
+
+
 METHODS = {"apply": method_apply, "bundle-check": method_bundle_check,
            "bundle-load": method_bundle_load,
+           "event-emit": method_event_emit,
            "exception-add": method_exception_add,
            "exception-remove": method_exception_remove,
            "exception-sweep": method_exception_sweep, "flag-status": None,
@@ -1125,7 +1200,8 @@ USAGE = ("usage: shield.py <method> ['<json-args>'] [options]\n"
          "options: --flag xr_shield_v1=on|off   (default on)\n"
          "methods: flag-status Status RecentEvents bundle-load\n"
          "         bundle-check match posture apply\n"
-         "exception-add exception-remove exception-sweep site-toggle\n")
+         "exception-add exception-remove exception-sweep site-toggle\n"
+         "event-emit\n")
 
 
 def call(method: str, args: Any, flag: str) -> tuple[dict, int]:
