@@ -88,6 +88,25 @@ void EmitFrozenError(const char* code) {
   Emit(JsonValue(JsonValue::Object{{"error", JsonValue(std::string(code))}}));
 }
 
+// ---- P11-T4: exception-surface plumbing ----------------------------------
+// Parse the optional `scopes` arg (absent = empty set) with the T2 grammar.
+// ANY non-kOk ScopeResult maps to kMalformedInput (exit 1) — the match
+// method's law, unchanged by T4.
+bool ParseScopesArg(const JsonValue& args, ScopeSet* out,
+                    std::string* detail) {
+  const JsonValue* sv = args.find("scopes");
+  if (sv == nullptr) return true;
+  JsonValue wrapper(JsonValue::Object{{"scopes", *sv}});
+  return ParseScopeSet(wrapper, out, detail) == ScopeResult::kOk;
+}
+
+// Canonical wire form of a resulting set: {"scopes":[ScopeToJson...]}.
+JsonValue ScopesOut(const ScopeSet& set) {
+  JsonValue::Array arr;
+  for (const auto& s : set.scopes) arr.push_back(ScopeToJson(s));
+  return JsonValue(arr);
+}
+
 std::string ReadAllStdin() {
   std::string data;
   char buf[65536];
@@ -605,6 +624,183 @@ int main(int argc, char** argv) {
     }
     Emit(JsonValue(
         JsonValue::Object{{"state", ApplyStateToJson(next)}}));
+    return 0;
+  }
+
+  // ---- P11-T4: the exception surface (scope.h toggle mechanics) ----------
+  // State rides in the request (v1 host is stateless): the scope set is an
+  // arg, the resulting set is the response. Per-site toggle =
+  // exception-add/remove of the canonical scope_id "site-toggle:<site>"
+  // (fixed ledger-friendly reason); dynamic rule add/remove =
+  // exception-add/remove of rule_id/list_id-scoped scopes; expiry sweep is
+  // the deterministic core job (SweepAsOf) as a method — the as-of is the
+  // now_mono ARG, never a wall clock. Refusal split: scope-document parse
+  // errors stay kMalformedInput (exit 1, T2 law untouched); CONTENT
+  // conflicts with the existing set are kRejected (exit 0) — re-presenting
+  // an equal offer is a refusal (equal-reoffer precedent).
+
+  if (method == "exception-add") {
+    if (!OnlyKeys(args, {"scopes", "scope"}, &bad)) {
+      EmitError("kMalformedInput", "unknown-field:" + bad);
+      return 1;
+    }
+    ScopeSet set;
+    std::string detail;
+    if (!ParseScopesArg(args, &set, &detail)) {
+      EmitError("kMalformedInput", detail);
+      return 1;
+    }
+    const JsonValue* sc = args.find("scope");
+    if (sc == nullptr) {
+      EmitError("kMalformedInput", "missing-scope");
+      return 1;
+    }
+    JsonValue::Array one_arr;
+    one_arr.push_back(*sc);
+    JsonValue wrapper(JsonValue::Object{{"scopes", JsonValue(one_arr)}});
+    ScopeSet one;
+    ScopeResult sr = ParseScopeSet(wrapper, &one, &detail);
+    if (sr != ScopeResult::kOk) {
+      EmitError("kMalformedInput", detail);  // bad-scope-id / missing-reason /
+      return 1;                              // field-not-string / bad-expiry
+    }
+    for (const auto& prev : set.scopes) {
+      if (prev.scope_id == one.scopes[0].scope_id) {
+        EmitReject("duplicate-scope-id:" + prev.scope_id);
+        return 0;
+      }
+    }
+    set.scopes.push_back(one.scopes[0]);
+    Emit(JsonValue(JsonValue::Object{{"scopes", ScopesOut(set)}}));
+    return 0;
+  }
+
+  if (method == "exception-remove") {
+    if (!OnlyKeys(args, {"scopes", "scope_id"}, &bad)) {
+      EmitError("kMalformedInput", "unknown-field:" + bad);
+      return 1;
+    }
+    ScopeSet set;
+    std::string detail;
+    if (!ParseScopesArg(args, &set, &detail)) {
+      EmitError("kMalformedInput", detail);
+      return 1;
+    }
+    const JsonValue* idv = args.find("scope_id");
+    if (idv == nullptr || !idv->is_string() || idv->as_string().empty()) {
+      EmitError("kMalformedInput", "bad-scope-id");
+      return 1;
+    }
+    ScopeSet kept;
+    bool found = false;
+    for (auto& s : set.scopes) {
+      if (s.scope_id == idv->as_string()) {
+        found = true;
+        continue;
+      }
+      kept.scopes.push_back(std::move(s));
+    }
+    if (!found) {
+      EmitReject("unknown-scope-id:" + idv->as_string());
+      return 0;
+    }
+    Emit(JsonValue(JsonValue::Object{{"scopes", ScopesOut(kept)}}));
+    return 0;
+  }
+
+  if (method == "exception-sweep") {
+    if (!OnlyKeys(args, {"scopes", "now_mono"}, &bad)) {
+      EmitError("kMalformedInput", "unknown-field:" + bad);
+      return 1;
+    }
+    ScopeSet set;
+    std::string detail;
+    if (!ParseScopesArg(args, &set, &detail)) {
+      EmitError("kMalformedInput", detail);
+      return 1;
+    }
+    const JsonValue* nm = args.find("now_mono");
+    if (nm == nullptr || !nm->is_int() || nm->as_int() < 0) {
+      EmitError("kMalformedInput", "missing-now-mono");  // apply's token:
+      return 1;                                          // REQUIRED and >= 0
+    }
+    SweepResult sr = SweepAsOf(set, nm->as_int());
+    ScopeSet kept;
+    for (auto& s : set.scopes) {
+      bool expired = false;
+      for (const auto& id : sr.expired_ids) {
+        if (id == s.scope_id) expired = true;
+      }
+      if (!expired) kept.scopes.push_back(std::move(s));
+    }
+    JsonValue::Array swept;
+    for (const auto& id : sr.expired_ids) swept.push_back(JsonValue(id));
+    Emit(JsonValue(JsonValue::Object{{"scopes", ScopesOut(kept)},
+                                     {"swept", JsonValue(swept)}}));
+    return 0;
+  }
+
+  if (method == "site-toggle") {
+    if (!OnlyKeys(args, {"scopes", "site", "on", "expiry_mono"}, &bad)) {
+      EmitError("kMalformedInput", "unknown-field:" + bad);
+      return 1;
+    }
+    ScopeSet set;
+    std::string detail;
+    if (!ParseScopesArg(args, &set, &detail)) {
+      EmitError("kMalformedInput", detail);
+      return 1;
+    }
+    const JsonValue* site = args.find("site");
+    if (site == nullptr || !site->is_string() || site->as_string().empty()) {
+      EmitError("kMalformedInput", "bad-site");
+      return 1;
+    }
+    const JsonValue* on = args.find("on");
+    if (on == nullptr || !on->is_bool()) {
+      EmitError("kMalformedInput", "bad-toggle");
+      return 1;
+    }
+    long long expiry = -1;
+    if (const JsonValue* ex = args.find("expiry_mono")) {
+      if (!ex->is_int() || ex->as_int() < -1) {
+        EmitError("kMalformedInput", "bad-expiry");
+        return 1;
+      }
+      expiry = ex->as_int();
+    }
+    const std::string sid = "site-toggle:" + site->as_string();
+    size_t at = 0;
+    bool found = false;
+    for (size_t i = 0; i < set.scopes.size(); ++i) {
+      if (set.scopes[i].scope_id == sid) {
+        at = i;
+        found = true;
+        break;
+      }
+    }
+    if (on->as_bool()) {
+      if (found) {
+        EmitReject("toggle-already-on:" + site->as_string());
+        return 0;
+      }
+      ExceptionScope s;
+      s.scope_id = sid;
+      s.site = site->as_string();
+      s.reason = "user-site-toggle";  // fixed: ledger rows carry it verbatim
+      s.expiry_mono = expiry;
+      set.scopes.push_back(std::move(s));
+    } else {
+      if (!found) {
+        EmitReject("toggle-already-off:" + site->as_string());
+        return 0;
+      }
+      set.scopes.erase(set.scopes.begin() + static_cast<long>(at));
+    }
+    Emit(JsonValue(JsonValue::Object{
+        {"scopes", ScopesOut(set)},
+        {"scope_id", JsonValue(sid)},
+        {"toggled", JsonValue(on->as_bool() ? "on" : "off")}}));
     return 0;
   }
 

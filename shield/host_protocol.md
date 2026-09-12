@@ -66,6 +66,10 @@ quietly growing this table.
 | `match` | `{context, bundle?, scopes?, engine_alive?, engine_poisoned?, route_bound?, kill_switch_on?, now_mono?}` | the decision pipeline: `{"fail_closed":bool,"posture":{mode,chip,reason},"verdict":{action,why_code,rule_id,list_id,bundle_version,engine_decision}}`. Order is LAW: posture (fail-closed ⇒ blocked verdict + `fail_closed:true`; fail-open ⇒ allowed + the posture why) → bundle presence → engine → exception scopes over blocking hits. `context` is the strict request context (required `identity/origin/url/request_class`; optional `first_party`/`tab_type`/`workspace` with documented defaults) |
 | `posture` | `{engine_alive?, engine_poisoned?, route_bound?, kill_switch_on?}` | `{"mode","chip","reason"}` — the pure truth table: route loss ⇒ `fail-closed`/`red`/`route-loss` ABSOLUTELY (nothing un-fail-closes it); else engine death ⇒ `fail-open`/`amber`/`engine-dead`; else poison ⇒ `engine-poisoned`; else kill switch ⇒ `kill-switch`; else `normal`/`green` |
 | `apply` | `{bundle, state, now_mono}` | candidate activation ⇒ `{"state":…new}`. Monotonic per `bundle_id`: downgrade AND equal re-offer ⇒ `kRejected`; the displaced active becomes `lkg`; `pins` keep the last TWO slots and MUST contain the active slot (violation ⇒ `kRejected` `pins-missing-active` — the hot-pin-out refusal, never a repair); `now_mono` < recorded `last_apply_mono` ⇒ `kRejected` `stale-apply-clock`; `now_mono` REQUIRED (determinism — no wall clock anywhere) |
+| `exception-add` | `{scopes?, scope}` | append one scope to an exception set ⇒ `{"scopes":[…]}` — every scope in the canonical 8-key form, input order preserved. The new `scope_id` must not already exist in `scopes`: a conflict ⇒ `kRejected` `duplicate-scope-id:<id>` (exit 0 — a content conflict, not a parse error); malformed scope documents (including duplicates INSIDE the `scopes` arg) ⇒ `kMalformedInput` with the T2 scope-grammar token (exit 1). `scopes` absent = empty set |
+| `exception-remove` | `{scopes?, scope_id}` | remove by id ⇒ `{"scopes":[survivors]}`. The id not present ⇒ `kRejected` `unknown-scope-id:<id>` (exit 0 — removing a non-existent exception is a refusal, never a silent no-op); missing/empty/non-string `scope_id` ⇒ `kMalformedInput` `bad-scope-id` |
+| `exception-sweep` | `{scopes?, now_mono}` | the deterministic expiry job as a method ⇒ `{"scopes":[active],"swept":["<expired ids>"]}`, input order preserved in both arrays. `now_mono` REQUIRED and ≥ 0 (else `kMalformedInput` `missing-now-mono` — no wall clock anywhere; the as-of IS the argument). Expiry boundary is INCLUSIVE: `expiry_mono >= 0 && now_mono >= expiry_mono` ⇒ swept (the T2 SweepAsOf law); `expiry_mono: -1` = never expires, never swept |
+| `site-toggle` | `{scopes?, site, on, expiry_mono?}` | the per-site toggle mechanic ⇒ `{"scopes":[…],"scope_id":"site-toggle:<site>","toggled":"on\|off"}`. `on:true` adds the canonical scope `{scope_id:"site-toggle:<site>", site:<site>, reason:"user-site-toggle", expiry_mono:<arg or -1>}`; `on:false` removes it. Re-presenting the CURRENT state ⇒ `kRejected` `toggle-already-on:<site>` / `toggle-already-off:<site>` (exit 0 — the equal-reoffer precedent). The toggle's id space is SHARED with manual scopes: a hand-added scope with id `site-toggle:<site>` makes `on:true` a refusal (collision law, no namespace magic). `site` non-empty string (else `kMalformedInput` `bad-site`), `on` strict bool (else `bad-toggle`), `expiry_mono` int ≥ -1 (else `bad-expiry`) |
 
 ## Error model
 
@@ -89,6 +93,9 @@ Typed codes, never bare failures:
   - manifest binding: `manifest-list-count`, `manifest-list-name:<name>`,
     `manifest-attribution:<name>`, `manifest-rule-count:<name>`,
     `manifest-sha256:<name>`.
+  - exception surface (T4): `duplicate-scope-id:<id>`,
+    `unknown-scope-id:<id>`, `toggle-already-on:<site>`,
+    `toggle-already-off:<site>`.
 - Frozen-surface errors (exit 0, envelope): `kUnknownIdentity`,
   `kUnknownOrigin`, `kMalformedInput` — per mojom/shield.mojom ErrorCode.
 
@@ -146,6 +153,17 @@ list-then-rule order wins.
   covers identity B; site and workspace dimensions are exact, with no
   inheritance (the resolver's domain hierarchy stays the resolver's
   business).
+- **Exception surface = data, stateless (T4):** the v1 host holds no
+  state — the scope set rides in on every request and the resulting set
+  is the response; persistence is the caller's (and the disclosure
+  ledger's) job. The per-site toggle and dynamic rule add/remove map
+  onto `site-toggle` / `exception-add` / `exception-remove`: a toggle IS
+  a site-dimension scope with a canonical id and the fixed reason
+  `user-site-toggle`; a dynamic rule exception is a `rule_id`/`list_id`
+  dimension scope. User-added BLOCK rules are NOT scopes — they arrive
+  as custom lists through the xr-lists pipeline. Refusal split: scope
+  DOCUMENT parse errors are `kMalformedInput` (exit 1, the T2 grammar
+  untouched); CONFLICTS with the existing set are `kRejected` (exit 0).
 - **Redaction at creation:** `target` is `scheme://host/path` BEFORE an
   event is written — query strings and fragments never reach the ledger.
   The match surface uses the same redaction.

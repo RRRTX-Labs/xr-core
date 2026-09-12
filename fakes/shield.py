@@ -1009,16 +1009,123 @@ def method_apply(args: dict) -> tuple[dict, int]:
                                              args["now_mono"]))}, 0
 
 
+# ---- P11-T4: the exception surface (scope.h toggle mechanics) --------------
+# State rides in the request (v1 host is stateless): the scope set is an
+# arg, the resulting set is the response. Per-site toggle =
+# exception-add/remove of the canonical scope_id "site-toggle:<site>"
+# (fixed ledger-friendly reason); dynamic rule add/remove =
+# exception-add/remove of rule_id/list_id-scoped scopes; expiry sweep is
+# the deterministic core job (sweep_as_of) as a method — the as-of is the
+# now_mono ARG, never a wall clock. Refusal split: scope-document parse
+# errors stay kMalformedInput (exit 1, T2 law untouched); CONTENT
+# conflicts with the existing set are kRejected (exit 0) — re-presenting
+# an equal offer is a refusal (equal-reoffer precedent).
+
+SCOPE_KEYS = ("expiry_mono", "identity", "list_id", "reason", "rule_id",
+              "scope_id", "site", "workspace")
+
+
+def scope_to_json(s: dict) -> dict:
+    """Canonical wire form of one scope (all 8 keys) — ScopeToJson mirror."""
+    return {k: s[k] for k in SCOPE_KEYS}
+
+
+def scopes_arg(args: dict) -> list[dict]:
+    """Parse the optional `scopes` arg (absent = empty set), T2 grammar."""
+    if "scopes" not in args:
+        return []
+    return parse_scopes(args["scopes"])
+
+
+def scopes_out(scopes: list[dict]) -> list[dict]:
+    return [scope_to_json(s) for s in scopes]
+
+
+def method_exception_add(args: dict) -> tuple[dict, int]:
+    only_keys(args, ["scopes", "scope"])
+    scopes = scopes_arg(args)
+    if "scope" not in args:
+        raise fail("kMalformedInput", "missing-scope")
+    one = parse_scopes([args["scope"]])
+    for prev in scopes:
+        if prev["scope_id"] == one[0]["scope_id"]:
+            raise reject(f"duplicate-scope-id:{prev['scope_id']}")
+    return {"scopes": scopes_out(scopes + one)}, 0
+
+
+def method_exception_remove(args: dict) -> tuple[dict, int]:
+    only_keys(args, ["scopes", "scope_id"])
+    scopes = scopes_arg(args)
+    sid = args.get("scope_id")
+    if not isinstance(sid, str) or sid == "":
+        raise fail("kMalformedInput", "bad-scope-id")
+    kept = [s for s in scopes if s["scope_id"] != sid]
+    if len(kept) == len(scopes):
+        raise reject(f"unknown-scope-id:{sid}")
+    return {"scopes": scopes_out(kept)}, 0
+
+
+def method_exception_sweep(args: dict) -> tuple[dict, int]:
+    only_keys(args, ["scopes", "now_mono"])
+    scopes = scopes_arg(args)
+    nm = args.get("now_mono")
+    if not is_int(nm) or nm < 0:
+        raise fail("kMalformedInput", "missing-now-mono")  # apply's token:
+    kept, swept = [], []                                   # REQUIRED and >=0
+    for s in scopes:
+        if s["expiry_mono"] >= 0 and nm >= s["expiry_mono"]:
+            swept.append(s["scope_id"])
+        else:
+            kept.append(s)
+    return {"scopes": scopes_out(kept), "swept": swept}, 0
+
+
+def method_site_toggle(args: dict) -> tuple[dict, int]:
+    only_keys(args, ["scopes", "site", "on", "expiry_mono"])
+    scopes = scopes_arg(args)
+    site = args.get("site")
+    if not isinstance(site, str) or site == "":
+        raise fail("kMalformedInput", "bad-site")
+    on = args.get("on")
+    if not isinstance(on, bool):
+        raise fail("kMalformedInput", "bad-toggle")
+    expiry = -1
+    if "expiry_mono" in args:
+        if not is_int(args["expiry_mono"]) or args["expiry_mono"] < -1:
+            raise fail("kMalformedInput", "bad-expiry")
+        expiry = args["expiry_mono"]
+    sid = f"site-toggle:{site}"
+    found = any(s["scope_id"] == sid for s in scopes)
+    if on:
+        if found:
+            raise reject(f"toggle-already-on:{site}")
+        scopes = scopes + [{"expiry_mono": expiry, "identity": "",
+                            "list_id": "", "reason": "user-site-toggle",
+                            "rule_id": "", "scope_id": sid, "site": site,
+                            "workspace": ""}]
+    else:
+        if not found:
+            raise reject(f"toggle-already-off:{site}")
+        scopes = [s for s in scopes if s["scope_id"] != sid]
+    return {"scopes": scopes_out(scopes), "scope_id": sid,
+            "toggled": "on" if on else "off"}, 0
+
+
 METHODS = {"apply": method_apply, "bundle-check": method_bundle_check,
-           "bundle-load": method_bundle_load, "flag-status": None,
-           "match": method_match, "posture": method_posture}
+           "bundle-load": method_bundle_load,
+           "exception-add": method_exception_add,
+           "exception-remove": method_exception_remove,
+           "exception-sweep": method_exception_sweep, "flag-status": None,
+           "match": method_match, "posture": method_posture,
+           "site-toggle": method_site_toggle}
 
 USAGE = ("usage: shield.py <method> ['<json-args>'] [options]\n"
          "       shield.py '<json-with-method>' [options]\n"
          "       shield.py [options]   # request JSON on stdin\n"
          "options: --flag xr_shield_v1=on|off   (default on)\n"
          "methods: flag-status Status RecentEvents bundle-load\n"
-         "         bundle-check match posture apply\n")
+         "         bundle-check match posture apply\n"
+         "exception-add exception-remove exception-sweep site-toggle\n")
 
 
 def call(method: str, args: Any, flag: str) -> tuple[dict, int]:
