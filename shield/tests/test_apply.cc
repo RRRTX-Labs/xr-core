@@ -138,6 +138,13 @@ int main() {
        R"("last_apply_mono":-1})", "bad-slot-fields:active"},
       {R"({"active":{"present":"yes"},"lkg":{"present":false},"pins":[],)"
        R"("last_apply_mono":-1})", "bad-present:active"},
+      // P11-T4 mutation-matrix find: the slot-level refusals below were
+      // UNTESTED (4 survivors in ParseSlot, 2 of them deny-guards) — the
+      // full matrix at 20260912 reddened and these rows are the fix.
+      {R"({"active":5,"lkg":{"present":false},"pins":[],)"
+       R"("last_apply_mono":-1})", "slot-not-object:active"},
+      {R"({"active":{"present":false,"bogus":1},"lkg":{"present":false},)"
+       R"("pins":[],"last_apply_mono":-1})", "unknown-field:bogus"},
       {R"({"active":{"present":false},"lkg":{"present":false},"pins":[],)"
        R"("last_apply_mono":-1,"x":1})", "unknown-field:x"},
       {R"({"active":{"present":false},"lkg":{"present":false},"pins":[],)"
