@@ -33,6 +33,7 @@ int main() {
   // Registered set + known-check.
   XR_EXPECT(a.KnownPredicate("always"));
   XR_EXPECT(a.KnownPredicate("tor.engine-ready"));
+  XR_EXPECT(a.KnownPredicate("build.channel-dev"));
   XR_EXPECT(!a.KnownPredicate("no.such.predicate"));
 
   // Predicate flips.
@@ -57,6 +58,18 @@ int main() {
     XR_EXPECT(a.Evaluate("identity.active", s).available);
     s = Snap(true, {}, "");
     XR_EXPECT(!a.Evaluate("identity.active", s).available);
+  }
+  {
+    // P11-T6: the dev-channel predicate (capabilities snapshot; disabled
+    // WITH a reason everywhere else — the never-absent law).
+    JsonValue s = Snap(true, {"build.channel-dev"}, "");
+    XR_EXPECT(a.Evaluate("build.channel-dev", s).available);
+    s = Snap(true, {}, "");  // no channel capability
+    AvailabilityVerdict v = a.Evaluate("build.channel-dev", s);
+    XR_EXPECT(!v.available);
+    XR_EXPECT(v.reason.find("not dev") != std::string::npos);
+    s = Snap(true, {"tor.engine"}, "");  // a wrong capability is not dev
+    XR_EXPECT(!a.Evaluate("build.channel-dev", s).available);
   }
   {
     JsonValue s = Snap(false, {}, "");

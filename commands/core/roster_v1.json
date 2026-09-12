@@ -1,474 +1,536 @@
 {
- "commands": [
-  {
-   "descriptor": {
-    "attention_tier": "tier2",
-    "danger_class": "safe",
-    "handler": "action.tab.new",
-    "id": "tab.new",
-    "surface": "command-palette",
-    "title": "New Tab"
-   },
-   "registry": {
-    "group": "Tabs",
-    "keywords": [
-     "new",
-     "tab",
-     "open"
-    ],
-    "predicate_id": "always",
-    "scope": "global"
-   }
-  },
-  {
-   "descriptor": {
-    "attention_tier": "tier2",
-    "danger_class": "safe",
-    "handler": "action.window.new",
-    "id": "window.new",
-    "surface": "command-palette",
-    "title": "New Window"
-   },
-   "registry": {
-    "group": "Windows",
-    "keywords": [
-     "new",
-     "window"
-    ],
-    "predicate_id": "always",
-    "scope": "global"
-   }
-  },
-  {
-   "descriptor": {
-    "attention_tier": "tier1",
-    "danger_class": "safe",
-    "handler": "action.window.new-identity",
-    "id": "window.new-identity",
-    "surface": "tools-menu",
-    "title": "New Window in Identity"
-   },
-   "registry": {
-    "group": "Identity",
-    "keywords": [
-     "window",
-     "identity",
-     "new"
-    ],
-    "predicate_id": "identity.active",
-    "scope": "window"
-   }
-  },
-  {
-   "descriptor": {
-    "attention_tier": "tier1",
-    "danger_class": "safe",
-    "handler": "action.identity.create",
-    "id": "identity.new",
-    "surface": "tools-menu",
-    "title": "New Identity"
-   },
-   "registry": {
-    "group": "Identity",
-    "keywords": [
-     "identity",
-     "new",
-     "profile",
-     "persona"
-    ],
-    "predicate_id": "always",
-    "scope": "global"
-   }
-  },
-  {
-   "descriptor": {
-    "attention_tier": "tier1",
-    "danger_class": "safe",
-    "handler": "action.identity.switcher",
-    "id": "identity.switcher",
-    "surface": "tools-menu",
-    "title": "Open Identity Switcher"
-   },
-   "registry": {
-    "group": "Identity",
-    "keywords": [
-     "identity",
-     "switcher",
-     "switch",
-     "pill"
-    ],
-    "predicate_id": "always",
-    "scope": "window"
-   }
-  },
-  {
-   "descriptor": {
-    "attention_tier": "tier1",
-    "danger_class": "safe",
-    "handler": "action.disposable.new",
-    "id": "disposable.new",
-    "surface": "command-palette",
-    "title": "New Disposable Session"
-   },
-   "registry": {
-    "group": "Identity",
-    "keywords": [
-     "disposable",
-     "ephemeral",
-     "temporary",
-     "new"
-    ],
-    "predicate_id": "always",
-    "scope": "global"
-   }
-  },
-  {
-   "descriptor": {
-    "attention_tier": "tier2",
-    "danger_class": "caution",
-    "handler": "action.tor.open",
-    "id": "tor.open",
-    "surface": "command-palette",
-    "title": "Tor Session"
-   },
-   "registry": {
-    "group": "Identity",
-    "keywords": [
-     "tor",
-     "onion",
-     "new"
-    ],
-    "predicate_id": "tor.engine-ready",
-    "scope": "global"
-   }
-  },
-  {
-   "descriptor": {
-    "attention_tier": "tier1",
-    "danger_class": "safe",
-    "handler": "action.panel.open",
-    "id": "panel.open",
-    "surface": "tools-menu",
-    "title": "Open XR Panel"
-   },
-   "registry": {
-    "group": "Panel",
-    "keywords": [
-     "panel",
-     "open",
-     "xr"
-    ],
-    "predicate_id": "always",
-    "scope": "global"
-   }
-  },
-  {
-   "descriptor": {
-    "attention_tier": "tier2",
-    "danger_class": "safe",
-    "handler": "action.dial.standard",
-    "id": "dial.set-standard",
-    "surface": "command-palette",
-    "title": "Trust: Standard"
-   },
-   "registry": {
-    "group": "Trust",
-    "keywords": [
-     "trust",
-     "standard",
-     "dial"
-    ],
-    "predicate_id": "policy.trust-dial-writable",
-    "scope": "site"
-   }
-  },
-  {
-   "descriptor": {
-    "attention_tier": "tier2",
-    "danger_class": "safe",
-    "handler": "action.dial.shield",
-    "id": "dial.set-shield",
-    "surface": "command-palette",
-    "title": "Trust: Shield"
-   },
-   "registry": {
-    "group": "Trust",
-    "keywords": [
-     "trust",
-     "shield",
-     "dial"
-    ],
-    "predicate_id": "policy.trust-dial-writable",
-    "scope": "site"
-   }
-  },
-  {
-   "descriptor": {
-    "attention_tier": "tier2",
-    "danger_class": "destructive",
-    "handler": "action.dial.fortress",
-    "id": "dial.set-fortress",
-    "surface": "command-palette",
-    "title": "Trust: Fortress"
-   },
-   "registry": {
-    "group": "Trust",
-    "keywords": [
-     "trust",
-     "fortress",
-     "dial"
-    ],
-    "predicate_id": "policy.trust-dial-writable",
-    "scope": "site"
-   }
-  },
-  {
-   "descriptor": {
-    "attention_tier": "tier2",
-    "danger_class": "caution",
-    "handler": "action.dial.reset",
-    "id": "dial.reset",
-    "surface": "command-palette",
-    "title": "Reset Trust Dial"
-   },
-   "registry": {
-    "group": "Trust",
-    "keywords": [
-     "trust",
-     "reset",
-     "dial"
-    ],
-    "predicate_id": "policy.trust-dial-writable",
-    "scope": "site"
-   }
-  },
-  {
-   "descriptor": {
-    "attention_tier": "tier2",
-    "danger_class": "safe",
-    "handler": "action.shield.toggle-stub",
-    "id": "shield.toggle",
-    "surface": "command-palette",
-    "title": "Toggle Shields (stub)"
-   },
-   "registry": {
-    "group": "Trust",
-    "keywords": [
-     "shields",
-     "toggle",
-     "block"
-    ],
-    "predicate_id": "always",
-    "scope": "site"
-   }
-  },
-  {
-   "descriptor": {
-    "attention_tier": "tier2",
-    "danger_class": "safe",
-    "handler": "action.settings.network",
-    "id": "settings.network",
-    "surface": "tools-menu",
-    "title": "Settings: Network"
-   },
-   "registry": {
-    "group": "Settings",
-    "keywords": [
-     "settings",
-     "network",
-     "dns",
-     "proxy"
-    ],
-    "predicate_id": "always",
-    "scope": "global"
-   }
-  },
-  {
-   "descriptor": {
-    "attention_tier": "tier2",
-    "danger_class": "safe",
-    "handler": "action.settings.privacy",
-    "id": "settings.privacy",
-    "surface": "tools-menu",
-    "title": "Settings: Privacy"
-   },
-   "registry": {
-    "group": "Settings",
-    "keywords": [
-     "settings",
-     "privacy",
-     "tracking",
-     "fingerprint"
-    ],
-    "predicate_id": "always",
-    "scope": "global"
-   }
-  },
-  {
-   "descriptor": {
-    "attention_tier": "tier2",
-    "danger_class": "safe",
-    "handler": "action.settings.identity",
-    "id": "settings.identity",
-    "surface": "tools-menu",
-    "title": "Settings: Identities"
-   },
-   "registry": {
-    "group": "Settings",
-    "keywords": [
-     "settings",
-     "identity",
-     "manage"
-    ],
-    "predicate_id": "always",
-    "scope": "global"
-   }
-  },
-  {
-   "descriptor": {
-    "attention_tier": "tier2",
-    "danger_class": "safe",
-    "handler": "action.help.index",
-    "id": "help.index",
-    "surface": "command-palette",
-    "title": "Open Help Index"
-   },
-   "registry": {
-    "group": "Help",
-    "keywords": [
-     "help",
-     "index",
-     "docs"
-    ],
-    "predicate_id": "always",
-    "scope": "global"
-   }
-  },
-  {
-   "descriptor": {
-    "attention_tier": "tier2",
-    "danger_class": "safe",
-    "handler": "action.help.cheatsheet",
-    "id": "help.cheatsheet",
-    "surface": "command-palette",
-    "title": "Open Printable Cheatsheet"
-   },
-   "registry": {
-    "group": "Help",
-    "keywords": [
-     "help",
-     "cheatsheet",
-     "shortcuts",
-     "print"
-    ],
-    "predicate_id": "always",
-    "scope": "global"
-   }
-  },
-  {
-   "descriptor": {
-    "attention_tier": "tier1",
-    "danger_class": "destructive",
-    "handler": "action.history.clear-identity",
-    "id": "history.clear-identity",
-    "surface": "tools-menu",
-    "title": "Clear Identity History"
-   },
-   "registry": {
-    "group": "Identity",
-    "keywords": [
-     "history",
-     "clear",
-     "identity",
-     "erase"
-    ],
-    "predicate_id": "always",
-    "scope": "identity"
-   }
-  },
-  {
-   "descriptor": {
-    "attention_tier": "tier1",
-    "danger_class": "destructive",
-    "handler": "action.tab.close-all",
-    "id": "tab.close-all",
-    "surface": "overflow-menu",
-    "title": "Close All Tabs"
-   },
-   "registry": {
-    "group": "Tabs",
-    "keywords": [
-     "close",
-     "tabs",
-     "all"
-    ],
-    "predicate_id": "always",
-    "scope": "window"
-   }
-  },
-  {
-   "descriptor": {
-    "attention_tier": "tier2",
-    "danger_class": "safe",
-    "handler": "action.update.about",
-    "id": "update.about",
-    "surface": "command-palette",
-    "title": "Open About (Version & Updates)"
-   },
-   "registry": {
-    "group": "Browser",
-    "keywords": [
-     "about",
-     "version",
-     "update",
-     "info"
-    ],
-    "predicate_id": "always",
-    "scope": "global"
-   }
-  },
-  {
-   "descriptor": {
-    "attention_tier": "tier2",
-    "danger_class": "safe",
-    "handler": "action.update.check",
-    "id": "update.check-now",
-    "surface": "command-palette",
-    "title": "Check for Updates Now"
-   },
-   "registry": {
-    "group": "Browser",
-    "keywords": [
-     "update",
-     "check",
-     "upgrade"
-    ],
-    "predicate_id": "always",
-    "scope": "global"
-   }
-  },
-  {
-   "descriptor": {
-    "attention_tier": "tier2",
-    "danger_class": "safe",
-    "handler": "action.update.manual",
-    "id": "update.manual-download",
-    "surface": "command-palette",
-    "title": "Open Manual Update Download"
-   },
-   "registry": {
-    "group": "Browser",
-    "keywords": [
-     "update",
-     "manual",
-     "download",
-     "failed"
-    ],
-    "predicate_id": "always",
-    "scope": "global"
-   }
-  }
- ],
- "schema": "xr-commands-registry",
- "schema_version": 1
+  "commands": [
+    {
+      "descriptor": {
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "handler": "action.tab.new",
+        "id": "tab.new",
+        "surface": "command-palette",
+        "title": "New Tab"
+      },
+      "registry": {
+        "group": "Tabs",
+        "keywords": [
+          "new",
+          "tab",
+          "open"
+        ],
+        "predicate_id": "always",
+        "scope": "global"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "handler": "action.window.new",
+        "id": "window.new",
+        "surface": "command-palette",
+        "title": "New Window"
+      },
+      "registry": {
+        "group": "Windows",
+        "keywords": [
+          "new",
+          "window"
+        ],
+        "predicate_id": "always",
+        "scope": "global"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier1",
+        "danger_class": "safe",
+        "handler": "action.window.new-identity",
+        "id": "window.new-identity",
+        "surface": "tools-menu",
+        "title": "New Window in Identity"
+      },
+      "registry": {
+        "group": "Identity",
+        "keywords": [
+          "window",
+          "identity",
+          "new"
+        ],
+        "predicate_id": "identity.active",
+        "scope": "window"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier1",
+        "danger_class": "safe",
+        "handler": "action.identity.create",
+        "id": "identity.new",
+        "surface": "tools-menu",
+        "title": "New Identity"
+      },
+      "registry": {
+        "group": "Identity",
+        "keywords": [
+          "identity",
+          "new",
+          "profile",
+          "persona"
+        ],
+        "predicate_id": "always",
+        "scope": "global"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier1",
+        "danger_class": "safe",
+        "handler": "action.identity.switcher",
+        "id": "identity.switcher",
+        "surface": "tools-menu",
+        "title": "Open Identity Switcher"
+      },
+      "registry": {
+        "group": "Identity",
+        "keywords": [
+          "identity",
+          "switcher",
+          "switch",
+          "pill"
+        ],
+        "predicate_id": "always",
+        "scope": "window"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier1",
+        "danger_class": "safe",
+        "handler": "action.disposable.new",
+        "id": "disposable.new",
+        "surface": "command-palette",
+        "title": "New Disposable Session"
+      },
+      "registry": {
+        "group": "Identity",
+        "keywords": [
+          "disposable",
+          "ephemeral",
+          "temporary",
+          "new"
+        ],
+        "predicate_id": "always",
+        "scope": "global"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier2",
+        "danger_class": "caution",
+        "handler": "action.tor.open",
+        "id": "tor.open",
+        "surface": "command-palette",
+        "title": "Tor Session"
+      },
+      "registry": {
+        "group": "Identity",
+        "keywords": [
+          "tor",
+          "onion",
+          "new"
+        ],
+        "predicate_id": "tor.engine-ready",
+        "scope": "global"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier1",
+        "danger_class": "safe",
+        "handler": "action.panel.open",
+        "id": "panel.open",
+        "surface": "tools-menu",
+        "title": "Open XR Panel"
+      },
+      "registry": {
+        "group": "Panel",
+        "keywords": [
+          "panel",
+          "open",
+          "xr"
+        ],
+        "predicate_id": "always",
+        "scope": "global"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "handler": "action.dial.standard",
+        "id": "dial.set-standard",
+        "surface": "command-palette",
+        "title": "Trust: Standard"
+      },
+      "registry": {
+        "group": "Trust",
+        "keywords": [
+          "trust",
+          "standard",
+          "dial"
+        ],
+        "predicate_id": "policy.trust-dial-writable",
+        "scope": "site"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "handler": "action.dial.shield",
+        "id": "dial.set-shield",
+        "surface": "command-palette",
+        "title": "Trust: Shield"
+      },
+      "registry": {
+        "group": "Trust",
+        "keywords": [
+          "trust",
+          "shield",
+          "dial"
+        ],
+        "predicate_id": "policy.trust-dial-writable",
+        "scope": "site"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier2",
+        "danger_class": "destructive",
+        "handler": "action.dial.fortress",
+        "id": "dial.set-fortress",
+        "surface": "command-palette",
+        "title": "Trust: Fortress"
+      },
+      "registry": {
+        "group": "Trust",
+        "keywords": [
+          "trust",
+          "fortress",
+          "dial"
+        ],
+        "predicate_id": "policy.trust-dial-writable",
+        "scope": "site"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier2",
+        "danger_class": "caution",
+        "handler": "action.dial.reset",
+        "id": "dial.reset",
+        "surface": "command-palette",
+        "title": "Reset Trust Dial"
+      },
+      "registry": {
+        "group": "Trust",
+        "keywords": [
+          "trust",
+          "reset",
+          "dial"
+        ],
+        "predicate_id": "policy.trust-dial-writable",
+        "scope": "site"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "handler": "action.shield.toggle",
+        "id": "shield.toggle",
+        "surface": "command-palette",
+        "title": "Toggle Shields for This Site"
+      },
+      "registry": {
+        "group": "Trust",
+        "keywords": [
+          "shields",
+          "toggle",
+          "block"
+        ],
+        "predicate_id": "always",
+        "scope": "site"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier2",
+        "danger_class": "caution",
+        "handler": "action.shield.add-rule",
+        "id": "shield.add-rule",
+        "surface": "command-palette",
+        "title": "Add Shield Exception Rule"
+      },
+      "registry": {
+        "group": "Trust",
+        "keywords": [
+          "shield",
+          "exception",
+          "rule",
+          "allow"
+        ],
+        "predicate_id": "always",
+        "scope": "site"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier2",
+        "danger_class": "caution",
+        "handler": "action.shield.remove-rule",
+        "id": "shield.remove-rule",
+        "surface": "command-palette",
+        "title": "Remove Shield Exception Rule"
+      },
+      "registry": {
+        "group": "Trust",
+        "keywords": [
+          "shield",
+          "exception",
+          "rule",
+          "remove"
+        ],
+        "predicate_id": "always",
+        "scope": "site"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "handler": "action.shield.page",
+        "id": "shield.page",
+        "surface": "command-palette",
+        "title": "Open Shield Debug Page (Dev)"
+      },
+      "registry": {
+        "group": "Browser",
+        "keywords": [
+          "shield",
+          "debug",
+          "page"
+        ],
+        "predicate_id": "build.channel-dev",
+        "scope": "global"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "handler": "action.settings.network",
+        "id": "settings.network",
+        "surface": "tools-menu",
+        "title": "Settings: Network"
+      },
+      "registry": {
+        "group": "Settings",
+        "keywords": [
+          "settings",
+          "network",
+          "dns",
+          "proxy"
+        ],
+        "predicate_id": "always",
+        "scope": "global"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "handler": "action.settings.privacy",
+        "id": "settings.privacy",
+        "surface": "tools-menu",
+        "title": "Settings: Privacy"
+      },
+      "registry": {
+        "group": "Settings",
+        "keywords": [
+          "settings",
+          "privacy",
+          "tracking",
+          "fingerprint"
+        ],
+        "predicate_id": "always",
+        "scope": "global"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "handler": "action.settings.identity",
+        "id": "settings.identity",
+        "surface": "tools-menu",
+        "title": "Settings: Identities"
+      },
+      "registry": {
+        "group": "Settings",
+        "keywords": [
+          "settings",
+          "identity",
+          "manage"
+        ],
+        "predicate_id": "always",
+        "scope": "global"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "handler": "action.help.index",
+        "id": "help.index",
+        "surface": "command-palette",
+        "title": "Open Help Index"
+      },
+      "registry": {
+        "group": "Help",
+        "keywords": [
+          "help",
+          "index",
+          "docs"
+        ],
+        "predicate_id": "always",
+        "scope": "global"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "handler": "action.help.cheatsheet",
+        "id": "help.cheatsheet",
+        "surface": "command-palette",
+        "title": "Open Printable Cheatsheet"
+      },
+      "registry": {
+        "group": "Help",
+        "keywords": [
+          "help",
+          "cheatsheet",
+          "shortcuts",
+          "print"
+        ],
+        "predicate_id": "always",
+        "scope": "global"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier1",
+        "danger_class": "destructive",
+        "handler": "action.history.clear-identity",
+        "id": "history.clear-identity",
+        "surface": "tools-menu",
+        "title": "Clear Identity History"
+      },
+      "registry": {
+        "group": "Identity",
+        "keywords": [
+          "history",
+          "clear",
+          "identity",
+          "erase"
+        ],
+        "predicate_id": "always",
+        "scope": "identity"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier1",
+        "danger_class": "destructive",
+        "handler": "action.tab.close-all",
+        "id": "tab.close-all",
+        "surface": "overflow-menu",
+        "title": "Close All Tabs"
+      },
+      "registry": {
+        "group": "Tabs",
+        "keywords": [
+          "close",
+          "tabs",
+          "all"
+        ],
+        "predicate_id": "always",
+        "scope": "window"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "handler": "action.update.about",
+        "id": "update.about",
+        "surface": "command-palette",
+        "title": "Open About (Version & Updates)"
+      },
+      "registry": {
+        "group": "Browser",
+        "keywords": [
+          "about",
+          "version",
+          "update",
+          "info"
+        ],
+        "predicate_id": "always",
+        "scope": "global"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "handler": "action.update.check",
+        "id": "update.check-now",
+        "surface": "command-palette",
+        "title": "Check for Updates Now"
+      },
+      "registry": {
+        "group": "Browser",
+        "keywords": [
+          "update",
+          "check",
+          "upgrade"
+        ],
+        "predicate_id": "always",
+        "scope": "global"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier2",
+        "danger_class": "safe",
+        "handler": "action.update.manual",
+        "id": "update.manual-download",
+        "surface": "command-palette",
+        "title": "Open Manual Update Download"
+      },
+      "registry": {
+        "group": "Browser",
+        "keywords": [
+          "update",
+          "manual",
+          "download",
+          "failed"
+        ],
+        "predicate_id": "always",
+        "scope": "global"
+      }
+    }
+  ],
+  "schema": "xr-commands-registry",
+  "schema_version": 1
 }

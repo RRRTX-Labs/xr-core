@@ -319,4 +319,112 @@
 <message name="IDS_XR_ABOUT_CHECK_AGAIN" desc="Affordance in a failed state: try the update check again" xr-id="about.check-again">
     Check again
   </message>
+<message name="IDS_XR_SHIELD_HEADING" desc="Heading of the xr://shield dev-only debug page (P11-T6)" xr-id="shield.heading">
+    Shield Debug
+  </message>
+<message name="IDS_XR_SHIELD_DEV_ONLY" desc="Note under the heading: the page exists in dev builds only (host-enforced)" xr-id="shield.dev.only">
+    Dev builds only — this page is refused on other build channels
+  </message>
+<message name="IDS_XR_SHIELD_STATE_NORMAL" desc="Page state: normal posture (blocking active, green chip)" xr-id="shield.state.normal">
+    Shield state: normal — blocking active
+  </message>
+<message name="IDS_XR_SHIELD_STATE_ENGINE_DEAD" desc="Page state: engine death (fail-open, amber chip — distinct from blocked-nothing)" xr-id="shield.state.engine.dead">
+    Shield state: engine dead — fail-open, requests pass unblocked
+  </message>
+<message name="IDS_XR_SHIELD_STATE_ENGINE_POISONED" desc="Page state: engine poison (fail-open, amber chip)" xr-id="shield.state.engine.poisoned">
+    Shield state: engine poisoned — fail-open, requests pass unblocked
+  </message>
+<message name="IDS_XR_SHIELD_STATE_KILL_SWITCH" desc="Page state: kill switch engaged (fail-open, amber chip)" xr-id="shield.state.kill.switch">
+    Shield state: kill switch on — fail-open, blocking disabled
+  </message>
+<message name="IDS_XR_SHIELD_STATE_ROUTE_LOSS" desc="Page state: guard route loss (fail-closed, red chip)" xr-id="shield.state.route.loss">
+    Shield state: route loss — fail-closed, requests are blocked
+  </message>
+<message name="IDS_XR_SHIELD_FORCED_DISABLED" desc="Enterprise force-disable row; {REASON} is the policy reason VERBATIM (no silent suppression)" xr-id="shield.forced.disabled">
+    Force-disabled by enterprise policy: <ph name="REASON">{REASON}<ex>IT policy 4711</ex></ph>
+  </message>
+<message name="IDS_XR_SHIELD_CHIP_COUNT_LABEL" desc="Label of the chip-count row (the only passive security counter)" xr-id="shield.chip.count.label">
+    Blocked requests (chip)
+  </message>
+<message name="IDS_XR_SHIELD_CHIP_COUNT" desc="The chip count value; {COUNT} is the blocked-request count" xr-id="shield.chip.count">
+    <ph name="COUNT">{COUNT}<ex>12</ex></ph> blocked
+  </message>
+<message name="IDS_XR_SHIELD_ENGINE_HEADING" desc="Section heading: decision engine rows" xr-id="shield.engine.heading">
+    Engine
+  </message>
+<message name="IDS_XR_SHIELD_ENGINE_ALIVE" desc="Row label: engine liveness" xr-id="shield.engine.alive">
+    Engine alive
+  </message>
+<message name="IDS_XR_SHIELD_ENGINE_POISONED" desc="Row label: engine poison flag" xr-id="shield.engine.poisoned">
+    Engine poisoned
+  </message>
+<message name="IDS_XR_SHIELD_ENGINE_BINDING" desc="Row label: which engine binding the host runs" xr-id="shield.engine.binding">
+    Decision engine binding
+  </message>
+<message name="IDS_XR_SHIELD_ENGINE_VENDORED" desc="Row label: the vendored engine pin (version of record)" xr-id="shield.engine.vendored">
+    Vendored engine pin
+  </message>
+<message name="IDS_XR_SHIELD_ENGINE_RUST_BOUND" desc="Row label: whether the Rust engine is actually bound (honesty row)" xr-id="shield.engine.rust.bound">
+    Rust engine bound
+  </message>
+<message name="IDS_XR_SHIELD_BUNDLES_HEADING" desc="Section heading: bundle slot rows" xr-id="shield.bundles.heading">
+    List bundles
+  </message>
+<message name="IDS_XR_SHIELD_BUNDLE_ACTIVE" desc="Row label: the active bundle slot" xr-id="shield.bundle.active">
+    Active bundle
+  </message>
+<message name="IDS_XR_SHIELD_BUNDLE_LKG" desc="Row label: the last-known-good slot" xr-id="shield.bundle.lkg">
+    Last known good
+  </message>
+<message name="IDS_XR_SHIELD_BUNDLE_PINS" desc="Row label: the pinned slots (last two)" xr-id="shield.bundle.pins">
+    Pinned slots (last two)
+  </message>
+<message name="IDS_XR_SHIELD_SLOT_VALUE" desc="One bundle slot rendered: name, version, digest" xr-id="shield.slot.value">
+    <ph name="NAME">{NAME}<ex>xr-default</ex></ph>, version <ph name="VERSION">{VERSION}<ex>3</ex></ph>, digest <ph name="DIGEST">{DIGEST}<ex>9f2c…</ex></ph>
+  </message>
+<message name="IDS_XR_SHIELD_APPLY_HEADING" desc="Section heading: last-apply row" xr-id="shield.apply.heading">
+    Last apply
+  </message>
+<message name="IDS_XR_SHIELD_APPLY_ROW" desc="The last-apply row: result, duration, caller-supplied timestamp" xr-id="shield.apply.row">
+    Result <ph name="RESULT">{RESULT}<ex>ok</ex></ph>, duration <ph name="DURATION">{DURATION}<ex>40</ex></ph> ms, at <ph name="TS">{TS}<ex>1234</ex></ph> ms
+  </message>
+<message name="IDS_XR_SHIELD_APPLY_NONE" desc="Last-apply row when no apply was recorded" xr-id="shield.apply.none">
+    No apply recorded
+  </message>
+<message name="IDS_XR_SHIELD_REFUSED_HEADING" desc="Section heading: refused-directive counts (never hidden)" xr-id="shield.refused.heading">
+    Refused directives
+  </message>
+<message name="IDS_XR_SHIELD_REFUSED_EMPTY" desc="Refused-directives row when the loaded bundle refused nothing" xr-id="shield.refused.empty">
+    No refused directives
+  </message>
+<message name="IDS_XR_SHIELD_REFUSED_ROW" desc="One refused-directive row: directive, count, typed reason" xr-id="shield.refused.row">
+    <ph name="DIRECTIVE">{DIRECTIVE}<ex>regex</ex></ph> refused <ph name="COUNT">{COUNT}<ex>2</ex></ph>: <ph name="REASON">{REASON}<ex>unsupported-directive:regex</ex></ph>
+  </message>
+<message name="IDS_XR_SHIELD_LISTS_HEADING" desc="Section heading: per-list sources + attribution" xr-id="shield.lists.heading">
+    List sources and attribution
+  </message>
+<message name="IDS_XR_SHIELD_LISTS_EMPTY" desc="Lists row when no bundle is loaded" xr-id="shield.lists.empty">
+    No bundle loaded
+  </message>
+<message name="IDS_XR_SHIELD_LIST_NAME" desc="Table column: list name" xr-id="shield.list.name">
+    List
+  </message>
+<message name="IDS_XR_SHIELD_LIST_RULES" desc="Table column: compiled rule count" xr-id="shield.list.rules">
+    Rules
+  </message>
+<message name="IDS_XR_SHIELD_LIST_ATTRIBUTION" desc="Table column: attribution VERBATIM as embedded by the list pipeline" xr-id="shield.list.attribution">
+    Attribution
+  </message>
+<message name="IDS_XR_SHIELD_MEMORY_HEADING" desc="Section heading: memory of our core structures" xr-id="shield.memory.heading">
+    Core structure memory
+  </message>
+<message name="IDS_XR_SHIELD_MEMORY_BYTES" desc="Row label: canonical bytes of the loaded bundle" xr-id="shield.memory.bytes">
+    Bundle canonical bytes
+  </message>
+<message name="IDS_XR_SHIELD_MEMORY_RING" desc="Row label: events held in the per-tab ring" xr-id="shield.memory.ring">
+    Ring events
+  </message>
+<message name="IDS_XR_SHIELD_MEMORY_SCOPES" desc="Row label: exception scopes in the riding set" xr-id="shield.memory.scopes">
+    Exception scopes
+  </message>
 </grit-part>

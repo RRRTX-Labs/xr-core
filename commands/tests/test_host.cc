@@ -57,9 +57,11 @@ int main() {
   std::string err;
   XR_EXPECT_MSG(Load(&ctx, &err), "LoadContext: " + err);
 
-  // Seeded roster: 23 commands (P10-T8 +update.about/-check-now/
-  // -manual-download), 7 tier1, tor.open disabled-by-predicate.
-  XR_EXPECT_EQ(ctx.registry.Size(), 23);
+  // Seeded roster: 26 commands (P10-T8 +update.about/-check-now/
+  // -manual-download; P11-T6 +shield.add-rule/-remove-rule/.page and the
+  // destubbed shield.toggle), 7 tier1, tor.open + shield.page
+  // disabled-by-predicate.
+  XR_EXPECT_EQ(ctx.registry.Size(), 26);
   XR_EXPECT_EQ(ctx.registry.Tier1Count(), 7);
 
   // flag-status.
@@ -70,9 +72,9 @@ int main() {
   // list (all + by group).
   {
     std::string r = HandleMethod("list", Req("{}"), ctx);
-    XR_EXPECT_EQ(OkCount(r), 23);
+    XR_EXPECT_EQ(OkCount(r), 26);
     std::string rg = HandleMethod("list", Req("{\"group\":\"Trust\"}"), ctx);
-    XR_EXPECT_EQ(OkCount(rg), 5);  // 4 dial + shield.toggle
+    XR_EXPECT_EQ(OkCount(rg), 7);  // 4 dial + toggle/add-rule/remove-rule
   }
   // query: tor.open is present but disabled-with-reason (never absent).
   {

@@ -345,5 +345,43 @@ int main() {
     XR_EXPECT(r.rc == 1 && r.out.find("unknown-field:extra") !=
               std::string::npos);
   }
+  // ---- P11-T6: the dev-only debug page — startup channel gate + union ----
+  {
+    // A bad channel value is usage (exit 2; vectors cannot carry that).
+    RunResult r = Run(Frame("page-states", "{}"), "--build-channel bogus");
+    XR_EXPECT(r.rc == 2);
+    // The DEFAULT channel (release) refuses the page typed, exit 0 — the
+    // gate fails CLOSED without the option.
+    r = Run(Frame("debug-page", "{}"));
+    XR_EXPECT(r.rc == 0 &&
+              r.out.find("build-channel-not-dev:release") !=
+                  std::string::npos);
+    // nightly-test is not dev either (the brief: dev builds only).
+    r = Run(Frame("debug-page", "{}"), "--build-channel nightly-test");
+    XR_EXPECT(r.rc == 0 &&
+              r.out.find("build-channel-not-dev:nightly-test") !=
+                  std::string::npos);
+    // page-states serves the union (NOT channel-gated — the state
+    // vocabulary is public; the page bytes are not).
+    r = Run(Frame("page-states", "{}"));
+    XR_EXPECT(r.rc == 0 &&
+              r.out == R"({"states":["normal","engine-dead","engine-poisoned","kill-switch","route-loss"]})");
+    // dev opens the page: the enterprise force-disable WINS over the
+    // caller's kill_switch_on=false and the reason rides VERBATIM.
+    r = Run(Frame("debug-page",
+                  R"({"enterprise":{"force_disabled":true,"reason":"IT 4711"},)"
+                  R"("kill_switch_on":false})"),
+            "--build-channel dev");
+    XR_EXPECT(r.rc == 0 &&
+              r.out.find(R"("page_state":"kill-switch")") !=
+                  std::string::npos &&
+              r.out.find(R"("reason":"IT 4711")") != std::string::npos &&
+              r.out.find(R"("chip":"amber")") != std::string::npos);
+    // A force-disable WITHOUT a reason is a silent suppression: malformed.
+    r = Run(Frame("debug-page", R"({"enterprise":{"force_disabled":true}})"),
+            "--build-channel dev");
+    XR_EXPECT(r.rc == 1 &&
+              r.out.find("missing-enterprise-reason") != std::string::npos);
+  }
   return xrtest::Report("test_shield_host");
 }

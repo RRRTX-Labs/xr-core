@@ -121,8 +121,12 @@ int Usage() {
                "       shield_host '<json-with-method>' [options]\n"
                "       shield_host [options]   # request JSON on stdin\n"
                "options: --flag xr_shield_v1=on|off   (default on)\n"
+               "         --build-channel dev|nightly-test|release\n"
+               "                          (default release)\n"
                "methods: flag-status Status RecentEvents bundle-load\n"
-               "         bundle-check match posture apply\n");
+               "         bundle-check match posture apply\n"
+               "         exception-add exception-remove exception-sweep\n"
+               "         site-toggle event-emit page-states debug-page\n");
   return 2;
 }
 
@@ -369,10 +373,203 @@ int MethodRecentEvents(const JsonValue& args) {
   return 0;
 }
 
+// ---- P11-T6: the dev-only debug page (xr://shield) ------------------------
+// The page-state union IS the posture-reason vocabulary (posture.h closed
+// set): the view (ui/shield/shield.ts) must render EVERY state — pinned on
+// both sides by tools/shield_state_check.py (xr-browser). The page itself is
+// gated by the REAL startup build-channel option (never a comment, never a
+// caller assertion): a non-dev host refuses with a typed reason and renders
+// no page bytes. The channel default is "release" — the gate fails CLOSED.
+const char* const kPageStates[] = {"normal", "engine-dead", "engine-poisoned",
+                                   "kill-switch", "route-loss"};
+
+int MethodPageStates(const JsonValue& args) {
+  std::string bad;
+  if (!OnlyKeys(args, {}, &bad)) {
+    EmitError("kMalformedInput", "unknown-field:" + bad);
+    return 1;
+  }
+  JsonValue::Array arr;
+  for (const char* s : kPageStates) arr.push_back(JsonValue(s));
+  Emit(JsonValue(JsonValue::Object{{"states", JsonValue(std::move(arr))}}));
+  return 0;
+}
+
+int MethodDebugPage(const JsonValue& args, const std::string& channel) {
+  if (channel != "dev") {
+    EmitReject("build-channel-not-dev:" + channel);  // typed refusal, exit 0
+    return 0;
+  }
+  std::string bad;
+  if (!OnlyKeys(args, {"engine_alive", "engine_poisoned", "route_bound",
+                       "kill_switch_on", "bundle", "state", "last_apply",
+                       "ring", "scopes", "enterprise"}, &bad)) {
+    EmitError("kMalformedInput", "unknown-field:" + bad);
+    return 1;
+  }
+  PostureInputs pin;
+  std::string detail;
+  if (!ParsePostureArgs(args, &pin, &detail)) {
+    EmitError("kMalformedInput", detail);
+    return 1;
+  }
+  // The enterprise row rides the request (v1 is stateless). Force-disable
+  // WINS over the caller's kill_switch_on (policy is final; there is no
+  // silent re-enable — nothing here ever clears a switch), and its reason
+  // passes through VERBATIM (the no-silent-suppression law). A
+  // force-disable without a reason IS a silent suppression: malformed.
+  bool force_disabled = false;
+  std::string force_reason;
+  const JsonValue* ev = args.find("enterprise");
+  if (ev != nullptr) {
+    if (!ev->is_object()) {
+      EmitError("kMalformedInput", "enterprise-not-object");
+      return 1;
+    }
+    if (!OnlyKeys(*ev, {"force_disabled", "reason"}, &bad)) {
+      EmitError("kMalformedInput", "unknown-field:" + bad);
+      return 1;
+    }
+    const JsonValue* fd = ev->find("force_disabled");
+    if (fd == nullptr || !fd->is_bool()) {
+      EmitError("kMalformedInput", "missing-force-disabled");
+      return 1;
+    }
+    force_disabled = fd->as_bool();
+    const JsonValue* rs = ev->find("reason");
+    if (force_disabled) {
+      if (rs == nullptr || !rs->is_string() || rs->as_string().empty()) {
+        EmitError("kMalformedInput", "missing-enterprise-reason");
+        return 1;
+      }
+      force_reason = rs->as_string();
+      pin.kill_switch_on = true;  // policy wins over the caller arg
+    } else if (rs != nullptr &&
+               (!rs->is_string() || !rs->as_string().empty())) {
+      EmitError("kMalformedInput", "reason-without-force-disabled");
+      return 1;
+    }
+  }
+  // Optional bundle: the strict bundle-load parse (refusals included — the
+  // page REPORTS refused directives, it never hides them).
+  NormalizedBundle bundle;
+  bool have_bundle = false;
+  if (args.find("bundle") != nullptr) {
+    int rc = LoadBundleArg(args, &bundle);
+    if (rc != 0) return rc == 2 ? 0 : 1;
+    have_bundle = true;
+  }
+  // Optional apply state: echoed as given (a debug surface REPORTS a
+  // pin-violating state honestly; `apply` stays the gatekeeper).
+  ApplyState state;
+  bool have_state = false;
+  const JsonValue* stv = args.find("state");
+  if (stv != nullptr) {
+    JsonValue state_wrapper(JsonValue::Object{{"state", *stv}});
+    if (!ParseApplyState(state_wrapper, &state, &detail)) {
+      EmitError("kMalformedInput", detail);
+      return 1;
+    }
+    have_state = true;
+  }
+  EventRing ring;
+  bool have_ring = false;
+  if (!ParseRingArg(args, &ring, &have_ring, &detail)) {
+    EmitError("kMalformedInput", detail);
+    return 1;
+  }
+  ScopeSet scopes;
+  if (!ParseScopesArg(args, &scopes, &detail)) {
+    EmitError("kMalformedInput", detail);
+    return 1;
+  }
+  JsonValue last_apply(nullptr);
+  const JsonValue* la = args.find("last_apply");
+  if (la != nullptr) {
+    if (!la->is_object()) {
+      EmitError("kMalformedInput", "last-apply-not-object");
+      return 1;
+    }
+    if (!OnlyKeys(*la, {"ts_millis", "result", "duration_ms"}, &bad)) {
+      EmitError("kMalformedInput", "unknown-field:" + bad);
+      return 1;
+    }
+    const JsonValue* ts = la->find("ts_millis");
+    const JsonValue* res = la->find("result");
+    const JsonValue* dur = la->find("duration_ms");
+    if (ts == nullptr || !ts->is_int() || ts->as_int() < 0 ||
+        res == nullptr || !res->is_string() || res->as_string().empty() ||
+        dur == nullptr || !dur->is_int() || dur->as_int() < 0) {
+      EmitError("kMalformedInput", "bad-last-apply");
+      return 1;
+    }
+    last_apply = *la;  // validated; Canonical() sorts the keys
+  }
+  int chip_count = 0;
+  if (have_ring) {
+    for (const auto& e : ring.events)
+      if (e.action == BlockAction::kBlocked) ++chip_count;
+  }
+  JsonValue::Array lists;
+  JsonValue::Array refusals;
+  long long bundle_bytes = 0;
+  if (have_bundle) {
+    for (const auto& l : bundle.lists) {
+      lists.push_back(JsonValue(JsonValue::Object{
+          {"attribution", JsonValue(l.attribution)},
+          {"name", JsonValue(l.name)},
+          {"rules", JsonValue(static_cast<int>(l.rules.size()))}}));
+      bundle_bytes += static_cast<long long>(ListCanonicalBytes(l).size());
+    }
+    for (const auto& r : bundle.refusals) {
+      refusals.push_back(JsonValue(JsonValue::Object{
+          {"count", JsonValue(static_cast<int>(r.count))},
+          {"directive", JsonValue(r.directive)},
+          {"reason", JsonValue(r.reason)}}));
+    }
+  }
+  const Posture p = DecidePosture(pin);
+  Emit(JsonValue(JsonValue::Object{
+      {"bundles", have_state ? ApplyStateToJson(state) : JsonValue(nullptr)},
+      {"channel", JsonValue(channel)},
+      {"chip_count", JsonValue(chip_count)},
+      {"engine", JsonValue(JsonValue::Object{
+                     {"alive", JsonValue(pin.engine_alive)},
+                     {"binding", JsonValue("table-engine-v1")},
+                     {"poisoned", JsonValue(pin.engine_poisoned)},
+                     {"rust_bound", JsonValue(false)},
+                     {"vendored_pin", JsonValue("adblock-0.13.3")}})},
+      {"enterprise", JsonValue(JsonValue::Object{
+                         {"force_disabled", JsonValue(force_disabled)},
+                         {"reason", JsonValue(force_reason)}})},
+      {"last_apply", last_apply},
+      {"lists", JsonValue(lists)},
+      {"memory", JsonValue(JsonValue::Object{
+                     {"bundle_canonical_bytes",
+                      JsonValue(static_cast<int64_t>(bundle_bytes))},
+                     {"ring_events",
+                      JsonValue(have_ring
+                                    ? static_cast<int>(ring.events.size())
+                                    : 0)},
+                     {"scope_count",
+                      JsonValue(static_cast<int>(scopes.scopes.size()))}})},
+      {"page_state", JsonValue(std::string(p.reason))},
+      {"posture", JsonValue(JsonValue::Object{
+                      {"chip", JsonValue(ChipName(p.chip))},
+                      {"mode", JsonValue(PostureModeName(p.mode))},
+                      {"reason", JsonValue(p.reason)}})},
+      {"refused_directives", JsonValue(refusals)},
+  }));
+  return 0;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
   std::string flag = "on";
+  // P11-T6: the REAL build-channel gate for the dev-only debug page. The
+  // default is "release" — a host started without the option fails CLOSED.
+  std::string channel = "release";
   std::vector<std::string> positional;
 
   for (int i = 1; i < argc; ++i) {
@@ -390,6 +587,8 @@ int main(int argc, char** argv) {
                      kv.substr(0, eq).c_str());
         return 2;
       }
+    } else if (a == "--build-channel" && i + 1 < argc) {
+      channel = argv[++i];
     } else if (a.rfind("--", 0) == 0) {
       // no --store-dir in v1: the host is stateless (every state rides in
       // the request); T5's ledger persistence adds it by contract change
@@ -401,6 +600,12 @@ int main(int argc, char** argv) {
   }
   if (flag != "on" && flag != "off") {
     std::fprintf(stderr, "usage error: xr_shield_v1 must be on|off\n");
+    return 2;
+  }
+  if (channel != "dev" && channel != "nightly-test" && channel != "release") {
+    std::fprintf(stderr,
+                 "usage error: --build-channel must be "
+                 "dev|nightly-test|release\n");
     return 2;
   }
 
@@ -452,6 +657,8 @@ int main(int argc, char** argv) {
 
   if (method == "Status") return MethodStatus(args, flag);
   if (method == "RecentEvents") return MethodRecentEvents(args);
+  if (method == "page-states") return MethodPageStates(args);
+  if (method == "debug-page") return MethodDebugPage(args, channel);
 
   if (method == "posture") {
     if (!OnlyKeys(args, {"engine_alive", "engine_poisoned", "route_bound",

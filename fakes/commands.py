@@ -40,7 +40,8 @@ MAX_TIER1 = 9
 BROWSER_RESERVED = ["F11", "CTRL+SHIFT+I", "F12"]
 SYSTEM_RESERVED = ["ALT+F4", "CTRL+ESC"]
 REGISTERED_PREDICATES = ["always", "policy.trust-dial-writable",
-                         "tor.engine-ready", "identity.active"]
+                         "tor.engine-ready", "identity.active",
+                         "build.channel-dev"]
 
 
 def canonical(obj: Any) -> str:
@@ -178,6 +179,13 @@ def evaluate(predicate_id: str, snap: dict[str, Any]) -> tuple[bool, str]:
         if isinstance(ai, str) and ai != "":
             return True, ""
         return False, "no active identity"
+    if predicate_id == "build.channel-dev":
+        caps = snap.get("capabilities")
+        if isinstance(caps, list):
+            for c in caps:
+                if isinstance(c, str) and c == "build.channel-dev":
+                    return True, ""
+        return False, "build channel is not dev (capabilities snapshot)"
     return False, "unknown predicate '" + predicate_id + "' (deny-default)"
 
 

@@ -1185,9 +1185,110 @@ def method_event_emit(args: dict) -> tuple[dict, int]:
                               action, why_code, strings)}, 0
 
 
+# ---- P11-T6: the dev-only debug page (mirror of MethodDebugPage) ----------
+# The page-state union IS the posture-reason vocabulary; the view
+# (ui/shield/shield.ts) renders every state and tools/shield_state_check.py
+# pins the union on both sides. The channel gate is the REAL startup option
+# (--build-channel, default "release"): non-dev refuses typed, exit 0.
+
+PAGE_STATES = ["normal", "engine-dead", "engine-poisoned", "kill-switch",
+               "route-loss"]
+
+
+def method_page_states(args: dict) -> tuple[dict, int]:
+    only_keys(args, [])
+    return {"states": list(PAGE_STATES)}, 0
+
+
+def method_debug_page(args: dict, channel: str) -> tuple[dict, int]:
+    if channel != "dev":
+        raise reject("build-channel-not-dev:" + channel)
+    only_keys(args, ["engine_alive", "engine_poisoned", "route_bound",
+                     "kill_switch_on", "bundle", "state", "last_apply",
+                     "ring", "scopes", "enterprise"])
+    pin = parse_posture_args(args)
+    # Enterprise: force-disable WINS over the caller's kill_switch_on (no
+    # silent re-enable — nothing here ever clears a switch) and the reason
+    # passes through VERBATIM; a force-disable without a reason IS a
+    # silent suppression => malformed.
+    force_disabled = False
+    force_reason = ""
+    if "enterprise" in args:
+        ev = args["enterprise"]
+        if not isinstance(ev, dict):
+            raise fail("kMalformedInput", "enterprise-not-object")
+        only_keys(ev, ["force_disabled", "reason"])
+        fd = ev.get("force_disabled")
+        if not isinstance(fd, bool):
+            raise fail("kMalformedInput", "missing-force-disabled")
+        force_disabled = fd
+        rs = ev.get("reason")
+        if force_disabled:
+            if not isinstance(rs, str) or rs == "":
+                raise fail("kMalformedInput", "missing-enterprise-reason")
+            force_reason = rs
+            pin["kill_switch_on"] = True  # policy wins over the caller arg
+        elif rs is not None and (not isinstance(rs, str) or rs != ""):
+            raise fail("kMalformedInput", "reason-without-force-disabled")
+    bundle = parse_bundle(args["bundle"]) if "bundle" in args else None
+    # The page REPORTS a pin-violating state honestly; `apply` stays the
+    # gatekeeper (no CheckInvariants here, by design).
+    state = parse_state(args["state"]) if "state" in args else None
+    ring = parse_ring(args["ring"]) if "ring" in args else []
+    scopes = scopes_arg(args)
+    last_apply = None
+    if "last_apply" in args:
+        la = args["last_apply"]
+        if not isinstance(la, dict):
+            raise fail("kMalformedInput", "last-apply-not-object")
+        only_keys(la, ["ts_millis", "result", "duration_ms"])
+        ts = la.get("ts_millis")
+        res = la.get("result")
+        dur = la.get("duration_ms")
+        if not is_int(ts) or ts < 0 or not isinstance(res, str) or \
+                res == "" or not is_int(dur) or dur < 0:
+            raise fail("kMalformedInput", "bad-last-apply")
+        last_apply = {"duration_ms": dur, "result": res, "ts_millis": ts}
+    chip_count = sum(1 for e in ring if e["action"] == "kBlocked")
+    lists: list[dict] = []
+    refusals: list[dict] = []
+    bundle_bytes = 0
+    if bundle is not None:
+        for lst in bundle["lists"]:
+            lists.append({"attribution": lst["attribution"],
+                          "name": lst["name"], "rules": len(lst["rules"])})
+            bundle_bytes += len(list_canonical_bytes(lst))
+        for r in bundle["refusals"]:
+            refusals.append({"count": r["count"],
+                             "directive": r["directive"],
+                             "reason": r["reason"]})
+    posture = decide_posture(pin)
+    return {
+        "bundles": state_json(state) if state is not None else None,
+        "channel": channel,
+        "chip_count": chip_count,
+        "engine": {"alive": pin["engine_alive"],
+                   "binding": "table-engine-v1",
+                   "poisoned": pin["engine_poisoned"],
+                   "rust_bound": False,
+                   "vendored_pin": "adblock-0.13.3"},
+        "enterprise": {"force_disabled": force_disabled,
+                       "reason": force_reason},
+        "last_apply": last_apply,
+        "lists": lists,
+        "memory": {"bundle_canonical_bytes": bundle_bytes,
+                   "ring_events": len(ring),
+                   "scope_count": len(scopes)},
+        "page_state": posture["reason"],
+        "posture": posture,
+        "refused_directives": refusals,
+    }, 0
+
+
 METHODS = {"apply": method_apply, "bundle-check": method_bundle_check,
            "bundle-load": method_bundle_load,
            "event-emit": method_event_emit,
+           "page-states": method_page_states,
            "exception-add": method_exception_add,
            "exception-remove": method_exception_remove,
            "exception-sweep": method_exception_sweep, "flag-status": None,
@@ -1198,18 +1299,23 @@ USAGE = ("usage: shield.py <method> ['<json-args>'] [options]\n"
          "       shield.py '<json-with-method>' [options]\n"
          "       shield.py [options]   # request JSON on stdin\n"
          "options: --flag xr_shield_v1=on|off   (default on)\n"
+         "         --build-channel dev|nightly-test|release\n"
+         "                          (default release)\n"
          "methods: flag-status Status RecentEvents bundle-load\n"
          "         bundle-check match posture apply\n"
-         "exception-add exception-remove exception-sweep site-toggle\n"
-         "event-emit\n")
+         "         exception-add exception-remove exception-sweep\n"
+         "         site-toggle event-emit page-states debug-page\n")
 
 
-def call(method: str, args: Any, flag: str = "on") -> tuple[dict, int]:
-    # flag defaults to "on" — the CLI's documented default. The default
-    # matters for xrctl's generic two-arg call path (xr-browser
-    # docs/contracts/tests/test_all_interfaces_parity.py): without it the
-    # shield fake raised TypeError there since T2 (hosted-CI debt,
-    # root-caused and fixed in P11-T5).
+def call(method: str, args: Any, flag: str = "on",
+         channel: str = "release") -> tuple[dict, int]:
+    # flag/channel default to "on"/"release" — the CLI's documented
+    # defaults. The defaults matter for xrctl's generic two-arg call path
+    # (xr-browser docs/contracts/tests/test_all_interfaces_parity.py):
+    # without them the shield fake raised TypeError there since T2
+    # (hosted-CI debt, root-caused and fixed in P11-T5). "release" keeps
+    # the T6 debug page fail-closed for any caller that does not state a
+    # channel.
     if method == "flag-status":
         return method_flag_status(args if isinstance(args, dict) else {}, flag)
     if method == "Status":
@@ -1218,6 +1324,8 @@ def call(method: str, args: Any, flag: str = "on") -> tuple[dict, int]:
         return method_recent_events(args if isinstance(args, dict) else {})
     if not isinstance(args, dict):
         raise fail("kMalformedInput", "args not an object")
+    if method == "debug-page":
+        return method_debug_page(args, channel)
     fn = METHODS.get(method)
     if fn is None:
         raise fail("kUnknownMethod", method)
@@ -1226,6 +1334,7 @@ def call(method: str, args: Any, flag: str = "on") -> tuple[dict, int]:
 
 def main(argv: list[str]) -> int:
     flag = "on"
+    channel = "release"  # P11-T6: fail-closed default for the debug page
     positional: list[str] = []
     i = 1
     while i < len(argv):
@@ -1241,6 +1350,9 @@ def main(argv: list[str]) -> int:
                 print(f"usage error: unknown flag {k}", file=sys.stderr)
                 return 2
             flag = v
+        elif a == "--build-channel" and i + 1 < len(argv):
+            i += 1
+            channel = argv[i]
         elif a.startswith("--"):
             print(f"usage error: unknown option {a}", file=sys.stderr)
             return 2
@@ -1249,6 +1361,10 @@ def main(argv: list[str]) -> int:
         i += 1
     if flag not in ("on", "off"):
         print("usage error: xr_shield_v1 must be on|off", file=sys.stderr)
+        return 2
+    if channel not in ("dev", "nightly-test", "release"):
+        print("usage error: --build-channel must be "
+              "dev|nightly-test|release", file=sys.stderr)
         return 2
 
     method = ""
@@ -1297,7 +1413,7 @@ def main(argv: list[str]) -> int:
                          "error": "kMalformedInput"}))
         return 1
     try:
-        obj, rc = call(method, args, flag)
+        obj, rc = call(method, args, flag, channel)
     except Refusal as ref:
         obj, rc = ref.obj, ref.rc
     print(canonical(obj))

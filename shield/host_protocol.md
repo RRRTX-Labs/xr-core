@@ -3,7 +3,7 @@
 Registered post-freeze in `docs/contracts/registry-post-freeze.md`
 (`shield-host-protocol` row). Written from the dispatch as built
 (`shield/host/shield_host.cc` + `fakes/shield.py`, byte-parity locked by the
-157 golden vectors in `docs/contracts/vectors/shield-v1.json`, replayed
+307 golden vectors in `docs/contracts/vectors/shield-v1.json`, replayed
 against BOTH backends by `tools/shield_vectors_check.py` and pinned from the
 compiled side by `shield/tests/test_golden_vectors.cc`).
 
@@ -71,6 +71,8 @@ quietly growing this table.
 | `exception-sweep` | `{scopes?, now_mono}` | the deterministic expiry job as a method ⇒ `{"scopes":[active],"swept":["<expired ids>"]}`, input order preserved in both arrays. `now_mono` REQUIRED and ≥ 0 (else `kMalformedInput` `missing-now-mono` — no wall clock anywhere; the as-of IS the argument). Expiry boundary is INCLUSIVE: `expiry_mono >= 0 && now_mono >= expiry_mono` ⇒ swept (the T2 SweepAsOf law); `expiry_mono: -1` = never expires, never swept |
 | `site-toggle` | `{scopes?, site, on, expiry_mono?}` | the per-site toggle mechanic ⇒ `{"scopes":[…],"scope_id":"site-toggle:<site>","toggled":"on\|off"}`. `on:true` adds the canonical scope `{scope_id:"site-toggle:<site>", site:<site>, reason:"user-site-toggle", expiry_mono:<arg or -1>}`; `on:false` removes it. Re-presenting the CURRENT state ⇒ `kRejected` `toggle-already-on:<site>` / `toggle-already-off:<site>` (exit 0 — the equal-reoffer precedent). The toggle's id space is SHARED with manual scopes: a hand-added scope with id `site-toggle:<site>` makes `on:true` a refusal (collision law, no namespace magic). `site` non-empty string (else `kMalformedInput` `bad-site`), `on` strict bool (else `bad-toggle`), `expiry_mono` int ≥ -1 (else `bad-expiry`) |
 | `event-emit` | `{context, seq, ts_millis, action, why_code}` required; `{tab_id, rule_id, rule, list_id, bundle_version}` optional | the Activity Ledger emitter ⇒ `{"row": …}` — a living `block-event-v1` document (xr-browser registry-post-freeze.md): the canonical superset row around the FROZEN BlockEvent vocabulary (`action` k-spellings, `request_class`, redacted `target`) plus provenance (`rule_id`/`rule`/`list_id`/`bundle_version`, site-class via `origin`), the caller's monotonic `seq` (no clock — the dispatch.cc ledger-row precedent) and `why_code` from the closed verdict set below. `seq`/`ts_millis` int ≥ 0 (else `missing-seq` / `missing-ts-millis`); `tab_id`/`bundle_version` int ≥ 0 (else `bad-tab-id` / `bad-bundle-version`); `action` ∈ the frozen k-spellings (else `missing-action` / `field-not-string:action` / `bad-action:<name>`); `why_code` ∈ the closed set (else `missing-why-code` / `field-not-string:why_code` / `bad-why-code:<code>`); provenance fields strings (else `field-not-string:<key>`). No `kRejected` class — the emitter has no content-conflict semantics; every bad input is `kMalformedInput` (exit 1) |
+| `page-states` | `{}` | `{"states":["normal","engine-dead","engine-poisoned","kill-switch","route-loss"]}` — the public vocabulary of the debug page's `page_state` field (lockstep with the host `kPageStates`, the view state union and `tools/shield_state_check.py`). NOT channel-gated: the state names are public, the page bytes are not. Unknown keys ⇒ `kMalformedInput` (exit 1) |
+| `debug-page` | `{engine_alive?, engine_poisoned?, kill_switch_on?, route_bound?, enterprise?, bundle?, state?, last_apply?, ring?, scopes?}` | the xr://shield dev-page state document — ONLY when the host was started with `--build-channel dev`; otherwise `{"error":"kRejected","reason":"build-channel-not-dev:<channel>"}` (exit 0 — an honest refusal). Full grammar + the three enterprise laws: the dev-page section below |
 
 ## Error model
 
@@ -143,6 +145,64 @@ in the network engine. Among engine hits, an `allow` rule returns
 immediately (ABP exception semantics); otherwise the first non-allow hit in
 list-then-rule order wins.
 
+## The dev-only debug page (P11-T6)
+
+`--build-channel <dev|release|nightly-test>` is a STARTUP
+option: the default (`release`) fails CLOSED — no option, no page — and
+the refusal is typed, not silent. Any other channel value is a usage
+error (exit 2, stderr). The page is served identically by both backends
+(host + fake; 33 `p-*` vectors pin the byte parity).
+
+`debug-page` (channel `dev`) returns one document — everything the page
+renders, and nothing more:
+
+    {"state": {"page_state","chip","fail_closed","reason","blocked_count"},
+     "engine_alive": bool, "route_bound": bool, "kill_switch_on": bool,
+     "enterprise": {"force_disabled": bool, "reason": string},
+     "bundle": <bundle-load summary shape | null>,
+     "last_apply": {"ts_millis","result","duration_ms"} | null,
+     "scopes": [<exception scope docs>],
+     "ring": [<block-event-v1 rows>],
+     "memory": {"lists": int,"ring": int,"total": int}}
+
+- `state` = the SAME `posture` truth table (route-loss absolute, then
+  engine-dead, engine-poisoned, kill-switch, else normal).
+  `blocked_count` = the count of `kBlocked` rows in the riding `ring`
+  ONLY — a chip NUMBER, never a badge, toast or modal.
+- `bundle` = the riding bundle in `bundle-load` SUMMARY shape (the page
+  never renders full bundle documents; its embedded compiler refusals
+  render as refused-directive rows). A grammar-refused bundle refuses
+  the whole page (the bundle-load `kRejected` law rides through).
+- `ring` rows render as the "why blocked" provenance list; `scopes`
+  render as exception-list rows (a site-toggle row IS the canonical
+  `user-site-toggle` scope — no second grammar).
+- `memory` = honest per-section canonical-JSON byte counts (`lists` sums
+  the per-list canonical bytes).
+
+The enterprise kill path — three laws, all vectorized:
+1. **Policy wins.** `enterprise.force_disabled:true` forces
+   `page_state:"kill-switch"` / amber EVEN WHEN the caller says
+   `kill_switch_on:false` — no silent re-enable.
+2. **The reason passes through VERBATIM** — echoed byte for byte
+   (unicode intact) in `enterprise.reason` for the force-disable note.
+   The caller-supplied kill switch has no reason slot.
+3. **A force-disable without a reason is a silent suppression** ⇒
+   `kMalformedInput` `missing-enterprise-reason` (exit 1). Empty reason
+   ⇒ `empty-enterprise-reason`; a reason with `force_disabled:false` ⇒
+   `reason-without-force-disabled`; a non-string reason with
+   `force_disabled:false` ⇒ `enterprise-reason-not-string`.
+
+Closed refusal vocabulary added by T6: `build-channel-not-dev:<channel>`
+(kRejected, exit 0); the `kMalformedInput` token set (exit 1) adds
+`enterprise-not-object`, `enterprise-unknown-field:<key>`,
+`missing-force-disabled`, `force-disabled-not-bool`,
+`missing-enterprise-reason`, `empty-enterprise-reason`,
+`reason-without-force-disabled`, `enterprise-reason-not-string`,
+`last-apply-not-object`, `last-apply-unknown-field:<key>`,
+`bad-last-apply:<key>`, `ring-not-array`, `scopes-not-array`,
+`state-not-object` on top of the T2–T5 tokens (posture bools, scope
+grammar, ring-row grammar, bundle grammar, `unknown-field:<key>`).
+
 ## Laws honored (same in both backends)
 
 - **TEST-ONLY engine binding:** the host binds the deterministic
@@ -182,6 +242,14 @@ list-then-rule order wins.
   retention and per-identity persistence are browser-side (P13); v1
   pins the row SHAPE + redaction, and the host ring cap (256) and
   chunk budget (64 KiB) tests carry over unchanged.
+- **Dev-only page = a real gate (T6):** the debug page exists only when
+  the host is STARTED with `--build-channel dev`; the default channel
+  refuses typed and fails closed. Enterprise force-disable wins over the
+  caller's kill switch and its reason rides verbatim (no silent
+  re-enable, no silent suppression). The blocked count renders as a chip
+  NUMBER — no badge, toast or modal ever comes from shield state — and
+  the page-state vocabulary stays in lockstep across host, view, roster
+  and strings via `tools/shield_state_check.py`.
 - **Determinism:** no wall clock, no RNG, no environment, no I/O; every
   time input is a caller-supplied monotonic integer (`now_mono`,
   `ts_millis`, `expiry_mono`, `last_apply_mono`).

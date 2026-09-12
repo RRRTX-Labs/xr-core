@@ -73,7 +73,11 @@ monotonic counter (no clock ⇒ deterministic bytes).
 **pinned** P6 snapshot (`PolicyState::Snapshot()` — a versioned copy, not a live
 `Resolve()`). Registered predicates: `always`, `policy.trust-dial-writable`,
 `tor.engine-ready` (disabled placeholder until P31 — **registered, disabled
-WITH a reason, never absent**), `identity.active`. Unknown predicate ⇒
+WITH a reason, never absent**), `identity.active`, `build.channel-dev`
+(P11-T6: the dev-only `xr://shield` page — the capabilities snapshot
+carries the build channel; disabled WITH a reason everywhere else; the
+ENFORCEMENT is the shield host's real `--build-channel` startup gate).
+Unknown predicate ⇒
 **deny-default** (L3, never a guess). TOCTOU law: an in-flight evaluation keeps
 the pinned version's verdict even if the live cache is invalidated mid-flight
 (`commands/tests/test_availability.cc`).

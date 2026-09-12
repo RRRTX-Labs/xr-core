@@ -24,6 +24,7 @@ const std::vector<std::string>& Availability::Registered() {
       "policy.trust-dial-writable",
       "tor.engine-ready",
       "identity.active",
+      "build.channel-dev",
   };
   return kIds;
 }
@@ -60,6 +61,21 @@ AvailabilityVerdict Availability::Evaluate(
     const JsonValue* ai = snapshot.find("active_identity");
     if (ai && ai->is_string() && !ai->as_string().empty()) return Allow();
     return Deny("no active identity");
+  }
+
+  if (predicate_id == "build.channel-dev") {
+    // P11-T6: the xr://shield debug page is a DEV-build surface. The
+    // snapshot's capabilities carry the build channel; anywhere else the
+    // command stays registered, disabled WITH a reason (never absent).
+    // The host-side gate (shield_host --build-channel) is the enforcement;
+    // this predicate is the registry's honest visibility of it.
+    const JsonValue* caps = snapshot.find("capabilities");
+    if (caps && caps->is_array()) {
+      for (const auto& c : caps->as_array())
+        if (c.is_string() && c.as_string() == "build.channel-dev")
+          return Allow();
+    }
+    return Deny("build channel is not dev (capabilities snapshot)");
   }
 
   // Deny-default: an unknown predicate id is never a guess (L3).

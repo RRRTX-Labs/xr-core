@@ -16,6 +16,7 @@ import './settings/network.js';
 import './settings/privacy.js';
 import './settings/identity.js';
 import './about/about.js';
+import './shield/shield.js';
 
 export const XR_UI_VIEWS = [
   'xr-palette',
@@ -26,4 +27,5 @@ export const XR_UI_VIEWS = [
   'xr-settings-privacy',
   'xr-settings-identity',
   'xr-about',
+  'xr-shield',
 ];
