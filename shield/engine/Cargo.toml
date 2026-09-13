@@ -26,11 +26,17 @@ path = "lib.rs"
 # css-validation, debug-info, default, embedded-domain-resolver,
 # full-regex-handling, resource-assembler, single-thread): NO content-blocking
 # (Apple CB format — unused), NO css-validation (cosmetic — the network engine
-# decides nothing cosmetic), NO debug-info. resource-assembler is the T8
+# decides nothing cosmetic), NO debug-info (the gated extra debug APIs are
+# unused; T8's rule recovery rides the RUNTIME debug mode — FilterSet::new(true)
+# keeps raw_line — which needs no cargo feature). resource-assembler is the T8
 # redirect-resource path; the resolver stays embedded (third-party decisions).
 adblock = { path = "../../third_party/rust/adblock/0.13.3", default-features = false, features = ["embedded-domain-resolver", "full-regex-handling", "resource-assembler"] }
 serde_json = { path = "../../third_party/rust/vendor/serde_json-1.0.149" }
 
 [profile.release]
 lto = true
-panic = "abort"  # panics never cross the C ABI; exports catch_unwind first
+# panic stays "unwind" (the default) on purpose: every export wraps its
+# body in catch_unwind and a caught panic flips alive to false — the death
+# observable the posture core fail-opens on (T8). panic="abort" would make
+# catch_unwind a no-op and turn a rule-parse panic into a network-service
+# crash instead of an amber fail-open. Panics still never cross the C ABI.
