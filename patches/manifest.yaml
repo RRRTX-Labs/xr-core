@@ -24,6 +24,12 @@ allowed_roots:
   # is enforced independently by build/webui/patch_roundtrip.py's never-list
   # check, not by relaxing it here.
   - "chrome/browser/ui/"
+  # P11 (DoD-10): the network-service seam root — XR Shield's pre-first-packet
+  # consult lives in services/network (patch 0200). The §12.7 never-list
+  # (content/**, blink/**, third_party/**, v8/**) is enforced independently by
+  # build/webui/shield_seam_roundtrip.py's never-list check; adding this root
+  # does not relax it.
+  - "services/network/"
 patches:
   - id: "0001-brand-ui"
     owner: "@xr/platform"
@@ -50,3 +56,21 @@ patches:
       - chrome/browser/ui/xr/xr_identity_color_bar.h
       - chrome/browser/ui/xr/xr_identity_color_bar.cc
     dir: ui-skeleton/0100-ui-skeleton
+  # P11 (DoD-10): the XR Shield network seam — the pre-first-packet consult in
+  # URLLoader::ScheduleStart, engine injected by //xr glue (xr-core
+  # shield/core/engine.h contract; vendored adblock-rust behind the
+  # xr_shield_engine C ABI). category network_seams (cap 20). 5 files
+  # (3 upstream hooks + 2 XR-owned payload), within DoD-10's <=8-file budget.
+  # Round-trip-proven at the pin by xr-browser
+  # build/webui/shield_seam_roundtrip.py (real fetch, byte-exact revert,
+  # anchor-perturbation negative — every run_checks + governance run).
+  - id: "0200-shield-network-seam"
+    owner: "@xr/platform"
+    category: network_seams
+    files:
+      - services/network/BUILD.gn
+      - services/network/url_loader.cc
+      - services/network/network_context.cc
+      - services/network/xr/xr_shield_gate.h
+      - services/network/xr/xr_shield_gate.cc
+    dir: network-seams/0200-shield-network-seam
