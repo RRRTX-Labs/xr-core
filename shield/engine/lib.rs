@@ -12,9 +12,9 @@
 // offline). There is no local cargo build; the signatures below were
 // written against the vendored 0.13.3 source
 // (engine.rs:136 new_with_filter_set, engine.rs:254 check_network_request,
-// lists.rs:230 FilterSet::new(debug), lists.rs:278 add_filter(ParseOptions),
-// request.rs:207 Request::new, blocker.rs:98 check → BlockerResult) and are
-// compiled for the first time on the hosted lane. T8's parity job
+// lists.rs:230 FilterSet::new(debug), lists.rs:240 add_filter_list —
+// add_filter is #[cfg(test)]-only (run 34758097067 taught that);
+// request.rs:207 Request::new, blocker.rs:98 check → BlockerResult). T8's parity job
 // (xr-browser tools/shield_parity.py, >=1,500-case corpus, ±2% agreement /
 // FP <=0.5%) is the gate that turns "mirrors" into "measured".
 //
@@ -87,10 +87,8 @@ struct RuleMeta {
     /// header action code for block-class hits: block 0 / redirect 2 /
     /// replace 3 (allow compiles as @@ and reports 1 via the exception).
     action_code: u8,
-    /// resource name for redirect hits ("" otherwise); stored as CString
-    /// so hit_out can borrow it for the engine's lifetime (the header's
-    /// borrow contract: valid until the next match call or free — this
-    /// outlives both).
+    /// resource name for redirect hits ("" otherwise); CString so hit_out
+    /// borrows it for the engine's lifetime (header borrow contract).
     resource: CString,
 }
 
@@ -102,8 +100,7 @@ pub struct XrShieldEngine {
     rule_table: Vec<(u32, u32)>,
     /// side table parallel to rule_table: the v1 option/action law.
     meta: Vec<RuleMeta>,
-    /// debug raw_line -> rule_table index (rule identity recovery).
-    filter_index: HashMap<String, u32>,
+    filter_index: HashMap<String, u32>, // debug raw_line -> rule index
     /// Atomic so a caught panic in any export can flip death through a
     /// shared reference (the header's alive() observable).
     alive: AtomicBool,
@@ -164,7 +161,10 @@ fn build(bundle_json: *const c_char) -> Result<Box<XrShieldEngine>, &'static CSt
             let filter =
                 rule.get("filter").and_then(|v| v.as_str()).unwrap_or("");
             if let Some(f) = rule_to_filter(kind, action, filter) {
-                set.add_filter(&f, opts);
+                // add_filter_list: the public API (add_filter is
+                // #[cfg(test)]-only — run 34758097067 taught that). One
+                // filter per call keeps insertion order = rule_table.
+                set.add_filter_list(format!("{f}\n"), opts);
                 let idx = rule_table.len() as u32;
                 rule_table.push((li as u32, ri as u32));
                 let resource = rule
@@ -234,6 +234,11 @@ pub extern "C" fn xr_shield_engine_alive(engine: *const XrShieldEngine) -> c_int
     .unwrap_or(false) as c_int
 }
 
+/// NUL-terminated C string -> &str ("" on NULL or non-utf8: total).
+unsafe fn cstr<'a>(p: *const c_char) -> &'a str {
+    if p.is_null() { "" } else { CStr::from_ptr(p).to_str().unwrap_or_default() }
+}
+
 /// The decision core, isolated so a panic anywhere inside flips alive.
 /// Returns 1 with *hit_out filled on a rule hit, 0 on no opinion.
 unsafe fn match_inner(
@@ -249,13 +254,6 @@ unsafe fn match_inner(
     if match_url.is_null() {
         return 0;
     }
-    let cstr = |p: *const c_char| -> &str {
-        if p.is_null() {
-            ""
-        } else {
-            CStr::from_ptr(p).to_str().unwrap_or_default()
-        }
-    };
     let url = cstr(match_url);
     let host = cstr(host);
     let rd = cstr(registrable_domain);
