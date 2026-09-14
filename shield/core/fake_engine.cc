@@ -45,19 +45,33 @@ long long FindSeg(const std::string& t, const std::string& seg, size_t from) {
   return -1;
 }
 
+// ASCII lowercase — the v1 match surface is case-insensitive (D-9,
+// fake_engine.h; the vendored engine matches url_lower_cased).
+std::string AsciiLower(const std::string& s) {
+  std::string out = s;
+  for (char& c : out) {
+    if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
+  }
+  return out;
+}
+
 }  // namespace
 
 bool MatchSegmentsV1(const std::vector<std::string>& segs,
                      const std::string& target, bool left_anchor,
                      bool right_anchor) {
   if (segs.empty()) return false;
-  // a trailing wildcard ("...*|" shape) voids the right anchor
-  bool ra = right_anchor && !segs.back().empty();
+  // a trailing wildcard ("...*|" shape) is STRIPPED and the right anchor
+  // KEPT (D-8: adblock-rust network.rs:785 "Remove trailing '*'" runs
+  // after IS_RIGHT_ANCHOR is set at :702-705 — "va.js*|" == "va.js|").
+  size_t n = segs.size();
+  bool ra = right_anchor;
+  if (ra && n > 1 && segs.back().empty()) --n;
   if (ra) {
     // the last segment must END the target: find the earliest start whose
     // match ends exactly at target.size(), then fit the earlier segments
     // before it (their earliest ends are minimal, so one pass decides).
-    const std::string& last = segs.back();
+    const std::string& last = segs[n - 1];
     long long anchor_start = -1;
     for (size_t s = 0; s <= target.size(); ++s) {
       if (MatchSegAt(target, last, s) == static_cast<long long>(target.size())) {
@@ -67,7 +81,7 @@ bool MatchSegmentsV1(const std::vector<std::string>& segs,
     }
     if (anchor_start < 0) return false;
     size_t pos = 0;
-    for (size_t i = 0; i + 1 < segs.size(); ++i) {
+    for (size_t i = 0; i + 1 < n; ++i) {
       const std::string& seg = segs[i];
       long long e = (i == 0 && left_anchor)
                         ? MatchSegAt(target, seg, pos)
@@ -78,7 +92,7 @@ bool MatchSegmentsV1(const std::vector<std::string>& segs,
     return true;
   }
   size_t pos = 0;
-  for (size_t i = 0; i < segs.size(); ++i) {
+  for (size_t i = 0; i < n; ++i) {
     const std::string& seg = segs[i];
     long long e = (i == 0 && left_anchor) ? MatchSegAt(target, seg, pos)
                                           : FindSeg(target, seg, pos);
@@ -89,8 +103,13 @@ bool MatchSegmentsV1(const std::vector<std::string>& segs,
 }
 
 bool FilterMatchV1(const ParsedFilter& f, const UrlParts& parts) {
-  const std::string match_url =
-      parts.scheme + "://" + parts.host + parts.path;
+  // D-9: the vendored engine lowercases the WHOLE match surface when the
+  // filter carries no $match-case (request.rs get_url -> url_lower_cased);
+  // v1 never compiles $match-case (bundle.cc refuses '$'), so the URL side
+  // lowercases here and ParseFilter lowercases the filter side. SplitUrl
+  // already lowercases scheme+host; the path is the new half.
+  const std::string path = AsciiLower(parts.path);
+  const std::string match_url = parts.scheme + "://" + parts.host + path;
   if (!f.domain_anchor) {
     return MatchSegmentsV1(f.segments, match_url, f.left_anchor,
                            f.right_anchor);
@@ -108,15 +127,19 @@ bool FilterMatchV1(const ParsedFilter& f, const UrlParts& parts) {
   if (!host_ok) return false;
   std::string rest = cut == std::string::npos ? "" : seg0.substr(cut);
   if (f.right_anchor && rest.empty() && f.segments.size() == 1) {
-    // "||d|" — the bare domain: SplitUrl canonicalizes no-path to "/"
-    return parts.path == "/";
+    // "||d|" — the bare domain: the vendored engine reads the trailing
+    // '|' as a HOST-END anchor (D-7: adblock-rust
+    // check_pattern_hostname_right_anchor_filter, empty-selector branch —
+    // hostname equality/suffix decides, the path is never consulted).
+    // host_ok above IS exactly that hostname decision.
+    return true;
   }
   std::vector<std::string> segs{rest};
   for (size_t i = 1; i < f.segments.size(); ++i)
     segs.push_back(f.segments[i]);
   // rest matches left-anchored against the PATH (the host part is already
   // consumed by the dot-boundary check above)
-  return MatchSegmentsV1(segs, parts.path, /*left_anchor=*/true,
+  return MatchSegmentsV1(segs, path, /*left_anchor=*/true,
                          f.right_anchor);
 }
 

@@ -242,6 +242,7 @@ def parse_filter(f: Any) -> dict:
         raise bad("unsupported-directive:interior-pipe")
     if body == "":
         raise bad("empty-filter")
+    body = ascii_lower(body)  # D-9: the v1 grammar is case-insensitive
     segments: list[str] = []
     cur = ""
     for c in body:
@@ -748,9 +749,15 @@ def match_segments(segs: list[str], target: str, left_anchor: bool,
                    right_anchor: bool) -> bool:
     if not segs:
         return False
-    ra = right_anchor and segs[-1] != ""
+    # D-8: a trailing wildcard is STRIPPED and the right anchor KEPT
+    # ("va.js*|" == "va.js|" — the vendored engine removes the trailing
+    # '*' after setting IS_RIGHT_ANCHOR).
+    n = len(segs)
+    ra = right_anchor
+    if ra and n > 1 and segs[-1] == "":
+        n -= 1
     if ra:
-        last = segs[-1]
+        last = segs[n - 1]
         anchor_start = -1
         for s in range(len(target) + 1):
             if match_seg_at(target, last, s) == len(target):
@@ -759,7 +766,7 @@ def match_segments(segs: list[str], target: str, left_anchor: bool,
         if anchor_start < 0:
             return False
         pos = 0
-        for i, seg in enumerate(segs[:-1]):
+        for i, seg in enumerate(segs[:n - 1]):
             e = match_seg_at(target, seg, pos) if (i == 0 and left_anchor) \
                 else find_seg(target, seg, pos)
             if e < 0 or e > anchor_start:
@@ -767,7 +774,7 @@ def match_segments(segs: list[str], target: str, left_anchor: bool,
             pos = e
         return True
     pos = 0
-    for i, seg in enumerate(segs):
+    for i, seg in enumerate(segs[:n]):
         e = match_seg_at(target, seg, pos) if (i == 0 and left_anchor) \
             else find_seg(target, seg, pos)
         if e < 0:
@@ -777,7 +784,12 @@ def match_segments(segs: list[str], target: str, left_anchor: bool,
 
 
 def filter_match(pf: dict, parts: dict) -> bool:
-    match_url = f"{parts['scheme']}://{parts['host']}{parts['path']}"
+    # D-9: the vendored engine lowercases the WHOLE match surface absent
+    # $match-case (refused at compile), so the path lowercases here;
+    # parse_filter lowercases the filter side. split_url already
+    # lowercases scheme+host.
+    path = ascii_lower(parts["path"])
+    match_url = f"{parts['scheme']}://{parts['host']}{path}"
     if not pf["domain_anchor"]:
         return match_segments(pf["segments"], match_url, pf["left_anchor"],
                               pf["right_anchor"])
@@ -795,9 +807,9 @@ def filter_match(pf: dict, parts: dict) -> bool:
         return False
     rest = seg0[cut:]
     if pf["right_anchor"] and rest == "" and len(pf["segments"]) == 1:
-        return parts["path"] == "/"  # "||d|" — the bare domain
+        return True  # "||d|" — HOST-END anchor (D-7): host_ok decided it
     segs = [rest] + pf["segments"][1:]
-    return match_segments(segs, parts["path"], True, pf["right_anchor"])
+    return match_segments(segs, path, True, pf["right_anchor"])
 
 
 def table_match(bundle: dict, ctx: dict) -> dict | None:

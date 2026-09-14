@@ -135,7 +135,14 @@ bad `--flag k=v`).
 `*` wildcard (ordered segment containment, earliest-start greedy — complete
 for containment, no backtracking needed) · `^` separator class (matches one
 of `/:` or end-of-string; the match surface is `scheme://host/path`,
-lowercased, port stripped, query+fragment stripped) · literals. Everything
+WHOLLY lowercased — filter text lowercases at parse, so matching is
+case-insensitive end to end — port stripped, query+fragment stripped) ·
+literals. Two anchor laws follow the vendored network engine (P11-T8
+parity alignment; xr-browser docs/shield/parity-divergences.md D-7/D-8):
+`||d|` (bare domain + right anchor) is a HOST-END anchor — the hostname
+equality/dot-boundary-suffix decision IS the whole match, the path is
+never consulted; and a trailing wildcard before a right anchor is
+STRIPPED with the anchor KEPT (`p*|` ≡ `p|`). Everything
 else (`$options` in filter text, `/regex/`, `!` comments, `#` cosmetic
 syntax, `@` syntax, interior pipes) is a REFUSAL token — the compiler's
 refusal table owns the text syntax; the engine never guesses. `domains` /

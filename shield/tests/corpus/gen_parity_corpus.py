@@ -47,8 +47,12 @@ def split_url(url: str) -> dict:
     return {"scheme": scheme, "host": host, "path": path}
 
 
+def alower(s: str) -> str:
+    return "".join(chr(ord(c) + 32) if "A" <= c <= "Z" else c for c in s)
+
+
 def parse_filter(f: str) -> dict:
-    body = f
+    body = alower(f)  # D-9: the v1 grammar is case-insensitive
     domain_anchor = left_anchor = right_anchor = False
     if body.startswith("||"):
         domain_anchor, body = True, body[2:]
@@ -97,8 +101,13 @@ def find_seg(t: str, seg: str, frm: int) -> int:
 def match_segments(segs: list[str], target: str, la: bool, ra: bool) -> bool:
     if not segs:
         return False
-    if ra and segs[-1] != "":
-        last = segs[-1]
+    # D-8: a trailing wildcard is STRIPPED and the right anchor KEPT
+    # ("va.js*|" == "va.js|").
+    n = len(segs)
+    if ra and n > 1 and segs[-1] == "":
+        n -= 1
+    if ra:
+        last = segs[n - 1]
         anchor = -1
         for s in range(len(target) + 1):
             if match_seg_at(target, last, s) == len(target):
@@ -107,7 +116,7 @@ def match_segments(segs: list[str], target: str, la: bool, ra: bool) -> bool:
         if anchor < 0:
             return False
         pos = 0
-        for i, seg in enumerate(segs[:-1]):
+        for i, seg in enumerate(segs[:n - 1]):
             e = match_seg_at(target, seg, pos) if (i == 0 and la) \
                 else find_seg(target, seg, pos)
             if e < 0 or e > anchor:
@@ -115,7 +124,7 @@ def match_segments(segs: list[str], target: str, la: bool, ra: bool) -> bool:
             pos = e
         return True
     pos = 0
-    for i, seg in enumerate(segs):
+    for i, seg in enumerate(segs[:n]):
         e = match_seg_at(target, seg, pos) if (i == 0 and la) \
             else find_seg(target, seg, pos)
         if e < 0:
@@ -125,7 +134,8 @@ def match_segments(segs: list[str], target: str, la: bool, ra: bool) -> bool:
 
 
 def filter_match(pf: dict, parts: dict) -> bool:
-    surface = f"{parts['scheme']}://{parts['host']}{parts['path']}"
+    path = alower(parts["path"])  # D-9: wholly-lowercased match surface
+    surface = f"{parts['scheme']}://{parts['host']}{path}"
     if not pf["domain_anchor"]:
         return match_segments(pf["segments"], surface, pf["left_anchor"],
                               pf["right_anchor"])
@@ -142,8 +152,10 @@ def filter_match(pf: dict, parts: dict) -> bool:
         return False
     rest = seg0[cut:]
     if pf["right_anchor"] and rest == "" and len(pf["segments"]) == 1:
-        return parts["path"] == "/"  # "||d|" — the bare domain
-    return match_segments([rest] + pf["segments"][1:], parts["path"], True,
+        # "||d|" — HOST-END anchor (D-7): the hostname equality/suffix
+        # decision above IS the whole match
+        return True
+    return match_segments([rest] + pf["segments"][1:], path, True,
                           pf["right_anchor"])
 
 

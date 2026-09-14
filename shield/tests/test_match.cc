@@ -147,10 +147,24 @@ int main() {
     XR_EXPECT(ParseFilter("||d.example^deep", &pf, &d));
     XR_EXPECT(SplitUrl("https://d.example/deep", &p) && FilterMatchV1(pf, p));
     XR_EXPECT(SplitUrl("https://d.example/xdeep", &p) && !FilterMatchV1(pf, p));
-    // "||d|" — the bare-domain filter
+    // "||d|" — the bare-domain filter: HOST-END anchor (D-7) — the
+    // hostname decision alone matches; the path is never consulted.
     XR_EXPECT(ParseFilter("||d.example|", &pf, &d));
     XR_EXPECT(SplitUrl("https://d.example", &p) && FilterMatchV1(pf, p));
-    XR_EXPECT(SplitUrl("https://d.example/x", &p) && !FilterMatchV1(pf, p));
+    XR_EXPECT(SplitUrl("https://d.example/x", &p) && FilterMatchV1(pf, p));
+    XR_EXPECT(SplitUrl("https://s.d.example/x", &p) && FilterMatchV1(pf, p));
+    XR_EXPECT(SplitUrl("https://d.example.evil/x", &p) && !FilterMatchV1(pf, p));
+    // a trailing wildcard strips and KEEPS the right anchor (D-8):
+    // "va.js*|" behaves as "va.js|".
+    XR_EXPECT(ParseFilter("va.js*|", &pf, &d));
+    XR_EXPECT(SplitUrl("https://x.example/a/va.js", &p) && FilterMatchV1(pf, p));
+    XR_EXPECT(SplitUrl("https://x.example/a/va.js/b", &p) &&
+              !FilterMatchV1(pf, p));
+    // case-insensitive surface (D-9): filter side lowercases at parse,
+    // URL side at match.
+    XR_EXPECT(ParseFilter("||p.example/JS/ad.JS", &pf, &d));
+    XR_EXPECT(SplitUrl("https://p.example/js/ad.js", &p) && FilterMatchV1(pf, p));
+    XR_EXPECT(SplitUrl("https://P.EXAMPLE/Js/Ad.Js", &p) && FilterMatchV1(pf, p));
   }
   // ---- decision ORDER: posture beats everything ----
   {

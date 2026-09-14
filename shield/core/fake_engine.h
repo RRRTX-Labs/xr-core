@@ -10,13 +10,19 @@
 // Rust swap (T8 parity) measurable instead of hopeful.
 //
 // v1 match semantics (closed, documented, deterministic):
-//   * match surface: scheme://host/path, lowercased, port stripped,
-//     query+fragment stripped (the same redaction events use);
+//   * match surface: scheme://host/path, WHOLLY lowercased (D-9: the
+//     vendored engine matches get_url(case_sensitive=false) —
+//     url_lower_cased; v1 refuses $match-case at bundle compile), port
+//     stripped, query+fragment stripped (the same redaction events use);
+//     filter text lowercases at parse (bundle.cc ParseFilter);
 //   * "||d[rest]": host == d or host ends with ".d" (dot boundary); rest
-//     then matches left-anchored against path; "||d|" requires path "/";
+//     then matches left-anchored against path; "||d|" is a HOST-END
+//     anchor (D-7, vendored check_pattern_hostname_right_anchor_filter):
+//     the hostname decision alone matches — the path is not consulted;
 //   * "|p": p left-anchored at position 0 of the match surface;
 //   * "p|": the last segment must END the match surface; a trailing "*"
-//     voids the right anchor;
+//     is STRIPPED and the right anchor KEPT (D-8, vendored network.rs
+//     "Remove trailing '*'" post-dates the anchor mask): "va*|" == "va|";
 //   * "*": ordered segment containment, earliest-start per segment (the
 //     earliest start maximizes the remainder, so leftmost-greedy is
 //     complete for ordered containment — no backtracking needed);

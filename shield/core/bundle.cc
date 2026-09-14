@@ -7,6 +7,9 @@
 // mirrors it byte-for-byte and the golden vectors pin both.
 #include "shield/core/bundle.h"
 
+#include <algorithm>
+#include <cctype>
+
 #include "common/core/sha256.h"
 
 namespace xr::shield {
@@ -83,6 +86,11 @@ bool ParseFilter(const std::string& filter, ParsedFilter* out,
     return false;
   }
   std::string body = filter;
+  // D-9: the v1 grammar is case-insensitive — the vendored engine
+  // lowercases filter text absent $match-case, and '$' is refused above
+  // (docs/shield/parity-divergences.md).
+  std::transform(body.begin(), body.end(), body.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
   if (body.rfind("||", 0) == 0) {
     out->domain_anchor = true;
     body = body.substr(2);
