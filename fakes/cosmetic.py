@@ -176,6 +176,21 @@ def validate_rule(rule: Any, index: int, seen_ids: set[str]) -> str | None:
     return None
 
 
+def _refused(reason: str, rule_index: int) -> dict[str, Any]:
+    """A refusal, in the SAME shape as an acceptance.
+
+    The C++ host always emits all six summary fields (the C++ JsonValue has no
+    notion of an omitted key, and the fake's json.dumps would otherwise drop
+    the ones set to a falsy default). Byte parity is the contract, so the fake
+    must emit the zeroed fields too — otherwise every refusal case diverges and
+    the parity checker reddens on 40 cases at once.
+    """
+    return ok({
+        "applied": 0, "enabled": 0, "refused": reason,
+        "rule_index": rule_index, "producer_refusals": 0, "page_modifying": 0,
+    })
+
+
 def validate_blob(blob: Any, expected_scope: dict[str, str] | None = None
                   ) -> dict[str, Any]:
     """Validate a whole blob. Returns an ok() with a summary or a refusal.
@@ -187,26 +202,26 @@ def validate_blob(blob: Any, expected_scope: dict[str, str] | None = None
     if not isinstance(blob, dict):
         return err("kMalformedInput")
     if blob.get("schema") != SCHEMA_ID:
-        return ok({"applied": 0, "refused": "schema-mismatch", "rule_index": -1})
+        return _refused("schema-mismatch", -1)
     if blob.get("schema_version") != SCHEMA_VERSION:
-        return ok({"applied": 0, "refused": "schema-mismatch", "rule_index": -1})
+        return _refused("schema-mismatch", -1)
     scope = blob.get("scope")
     if not isinstance(scope, dict):
         return err("kMalformedInput")
     if scope.get("identity_class") not in IDENTITY_CLASSES:
-        return ok({"applied": 0, "refused": "scope-mismatch", "rule_index": -1})
+        return _refused("scope-mismatch", -1)
     if not isinstance(scope.get("site"), str) or not scope.get("site"):
-        return ok({"applied": 0, "refused": "scope-mismatch", "rule_index": -1})
+        return _refused("scope-mismatch", -1)
     if expected_scope is not None and scope != expected_scope:
         # A blob for one site must not apply in another. The embedder is not
         # consulted: see scope_key.h.
-        return ok({"applied": 0, "refused": "scope-mismatch", "rule_index": -1})
+        return _refused("scope-mismatch", -1)
 
     rules = blob.get("rules")
     if not isinstance(rules, list):
         return err("kMalformedInput")
     if len(rules) > MAX_RULES:
-        return ok({"applied": 0, "refused": "too-many-rules", "rule_index": -1})
+        return _refused("too-many-rules", -1)
 
     # The producer's own refusals must name reasons we recognize. An unknown
     # reason means producer and consumer disagree about the contract, and
@@ -215,14 +230,14 @@ def validate_blob(blob: Any, expected_scope: dict[str, str] | None = None
         if not isinstance(entry, dict):
             return err("kMalformedInput")
         if entry.get("reason") not in REFUSAL_REASONS:
-            return ok({"applied": 0, "refused": "unknown-refusal-reason",
-                       "rule_index": int(entry.get("rule_index", -1))})
+            return _refused("unknown-refusal-reason",
+                            int(entry.get("rule_index", -1)))
 
     seen_ids: set[str] = set()
     for i, rule in enumerate(rules):
         reason = validate_rule(rule, i, seen_ids)
         if reason:
-            return ok({"applied": 0, "refused": reason, "rule_index": i})
+            return _refused(reason, i)
 
     enabled = sum(1 for r in rules
                   if isinstance(r, dict) and r.get("enabled", True))

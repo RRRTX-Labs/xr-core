@@ -28,20 +28,33 @@ ENV := XR_BROWSER_ROOT=$(XR_BROWSER_ROOT)
 .DEFAULT_GOAL := build
 
 COMMON_OBJS := \
+  $(BUILD)/common/core/json.o \
+  $(BUILD)/common/core/json_parse.o \
   $(BUILD)/common/core/sha256.o
 
 CORE_OBJS := \
   $(BUILD)/renderer/cosmetic/core/selector.o \
   $(BUILD)/renderer/cosmetic/core/pseudo.o \
-  $(BUILD)/renderer/cosmetic/core/scope_key.o
+  $(BUILD)/renderer/cosmetic/core/scope_key.o \
+  $(BUILD)/renderer/cosmetic/core/style.o \
+  $(BUILD)/renderer/cosmetic/core/keyset.o \
+  $(BUILD)/renderer/cosmetic/core/degrade.o \
+  $(BUILD)/renderer/cosmetic/core/blob.o
+
+HOST_OBJS := $(BUILD)/renderer/cosmetic/host/cosmetic_host.o
 
 CORE_OBJS += $(COMMON_OBJS)
 
-TESTS := test_selector test_pseudo test_scope_key
+TESTS := test_selector test_pseudo test_scope_key test_style \
+         test_keyset test_degrade test_blob_strict
 
 .PHONY: build test clean
 
 $(BUILD)/renderer/cosmetic/core/%.o: ../../../renderer/cosmetic/core/%.cc
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+$(BUILD)/renderer/cosmetic/host/%.o: ../../../renderer/cosmetic/host/%.cc
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
@@ -58,11 +71,19 @@ $(BUILD)/test_sha256_kat: ../../../common/tests/test_sha256_kat.cc $(COMMON_OBJS
 # harness.h is a prerequisite, not just an include: without it listed, make
 # has no rule that can produce the target's header dependency and reports "No
 # rule to make target" instead of compiling.
+# The cosmetic host: the C++ backend the golden vectors replay against, byte
+# for byte, alongside fakes/cosmetic.py. It links the CORE only — no engine, no
+# DOM, no browser. Depends on the .o rather than the .cc so make has a rule for
+# every prerequisite.
+$(BUILD)/cosmetic_host: $(HOST_OBJS) $(CORE_OBJS)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $(HOST_OBJS) $(CORE_OBJS) -o $@
+
 $(BUILD)/test_%: test_%.cc harness.h $(CORE_OBJS)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) $< $(CORE_OBJS) -o $@
 
-build: $(TESTS:%=$(BUILD)/%) $(BUILD)/test_sha256_kat
+build: $(TESTS:%=$(BUILD)/%) $(BUILD)/test_sha256_kat $(BUILD)/cosmetic_host
 
 test: build
 	@rc=0; for t in $(TESTS) test_sha256_kat; do \
