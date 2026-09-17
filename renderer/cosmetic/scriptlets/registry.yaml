@@ -1,0 +1,227 @@
+# registry.yaml — the P12 scriptlet registry (uBO-compatible subset).
+#
+# VALIDATION ONLY. Nothing in this file executes in this phase:
+# xr_shield_scriptlets defaults to false, no interpreter is wired into the host
+# path, and the ABPF validator REFUSES $ext-... directives rather than accepting
+# and ignoring them (renderer/cosmetic/abpf/abpf.cc). Accepting a scriptlet
+# directive would imply it runs, and an implied capability nobody can see is how
+# a phase ships more than it claims to.
+#
+# The registry exists so that (a) the admitted set is ours and closed rather than
+# "whatever the vendored engine happens to accept", (b) each entry carries the
+# capability note a reviewer needs to judge it, and (c) the degrade suite can
+# prove each one is disable-able individually and that disabling it leaves the
+# page structure intact.
+#
+# tools/scriptlet_registry_check.py enforces per entry: a capability note, a
+# degrade-test case, a refusal-path case, a doc line, and NO main-world
+# capability. A missing one is a FAIL, not a warning.
+#
+# `source` cites path:line@vendored in the sealed adblock-rust tree so a future
+# reader can check the claim instead of trusting it.
+
+schema_version: 1
+execution: "off"        # xr_shield_scriptlets default; asserted by the checker
+main_world_permitted: false
+
+scriptlets:
+  - name: abort-on-property-read
+    arity: 1
+    capability: property-read
+    page_modifying: false
+    source: "src/scriptlets/abort_on_property_read.rs:18-44@vendored"
+    abpf_instruction: "$ext-abp-abort-on-property-read"
+    note: >-
+      Throws on a named property read so a script's ad call fails. Does not
+      modify the DOM and does not need main-world access: it is a property
+      trap on the object the page already handed us. Degrade case
+      sd-abort-on-property-read; refusal case sr-abort-bad-arity.
+    degrade_case: sd-abort-on-property-read
+    refusal_case: sr-abort-bad-arity
+    doc_line: "docs/renderer/scriptlets.md#abort-on-property-read"
+
+  - name: abort-on-property-write
+    arity: 1
+    capability: property-write
+    page_modifying: false
+    source: "src/scriptlets/abort_on_property_write.rs:16-39@vendored"
+    abpf_instruction: "$ext-abp-abort-on-property-write"
+    note: >-
+      The write-side trap. Same capability class as the read variant and the
+      same reason it needs no main world. Degrade case
+      sd-abort-on-property-write; refusal case sr-write-bad-arity.
+    degrade_case: sd-abort-on-property-write
+    refusal_case: sr-write-bad-arity
+    doc_line: "docs/renderer/scriptlets.md#abort-on-property-write"
+
+  - name: set-constant
+    arity: 2
+    capability: property-write
+    page_modifying: false
+    source: "src/scriptlets/set_constant.rs:20-52@vendored"
+    abpf_instruction: "$ext-abp-set-constant"
+    note: >-
+      Pins a property to a constant. Bounded by arity 2 (path, value): a
+      scriptlet that took an arbitrary expression would be an interpreter, and
+      an interpreter in the renderer is a code-execution channel. Degrade case
+      sd-set-constant; refusal case sr-set-constant-bad-arity.
+    degrade_case: sd-set-constant
+    refusal_case: sr-set-constant-bad-arity
+    doc_line: "docs/renderer/scriptlets.md#set-constant"
+
+  - name: remove-attr
+    arity: 2
+    capability: dom-attribute
+    page_modifying: true
+    source: "src/scriptlets/remove_attr.rs:22-58@vendored"
+    abpf_instruction: "$ext-abp-remove-attr"
+    note: >-
+      PAGE-MODIFYING: removes attributes, which is how a soft wall's
+      `overflow:hidden` on <body> gets lifted. Labelled page-modifying in the
+      event schema so the Observatory does not report it as a blocked request.
+      Attribute NAMES are taken from a closed set, never a selector built from
+      page content. Degrade case sd-remove-attr; refusal case
+      sr-remove-attr-bad-arity.
+    degrade_case: sd-remove-attr
+    refusal_case: sr-remove-attr-bad-arity
+    doc_line: "docs/renderer/scriptlets.md#remove-attr"
+
+  - name: remove-class
+    arity: 2
+    capability: dom-attribute
+    page_modifying: true
+    source: "src/scriptlets/remove_class.rs:19-47@vendored"
+    abpf_instruction: "$ext-abp-remove-class"
+    note: >-
+      PAGE-MODIFYING: strips classes so a wall's styling stops applying. The
+      DOM structure is unchanged — only the class attribute is — which is what
+      the degrade suite asserts on the model. Degrade case sd-remove-class;
+      refusal case sr-remove-class-bad-arity.
+    degrade_case: sd-remove-class
+    refusal_case: sr-remove-class-bad-arity
+    doc_line: "docs/renderer/scriptlets.md#remove-class"
+
+  - name: set-attr
+    arity: 3
+    capability: dom-attribute
+    page_modifying: true
+    source: "src/scriptlets/set_attr.rs:21-55@vendored"
+    abpf_instruction: "$ext-abp-set-attr"
+    note: >-
+      PAGE-MODIFYING: sets an attribute to a bounded literal. The value length
+      is capped, because an unbounded value is a way to inject markup through
+      an attribute. Degrade case sd-set-attr; refusal case sr-set-attr-bad-arity.
+    degrade_case: sd-set-attr
+    refusal_case: sr-set-attr-bad-arity
+    doc_line: "docs/renderer/scriptlets.md#set-attr"
+
+  - name: json-prune
+    arity: 2
+    capability: property-write
+    page_modifying: false
+    source: "src/scriptlets/json_prune.rs:24-61@vendored"
+    abpf_instruction: "$ext-abp-json-prune"
+    note: >-
+      Removes keys from a parsed JSON response before the page reads it. Depth
+      is bounded (kMaxJsonDepth) so a hostile document cannot make the walk
+      unbounded. Degrade case sd-json-prune; refusal case sr-json-prune-bad-arity.
+    degrade_case: sd-json-prune
+    refusal_case: sr-json-prune-bad-arity
+    doc_line: "docs/renderer/scriptlets.md#json-prune"
+
+  - name: no-setTimeout-if
+    arity: 2
+    capability: timer
+    page_modifying: false
+    source: "src/scriptlets/no_set_timeout_if.rs:26-64@vendored"
+    abpf_instruction: "$ext-abp-no-setTimeout-if"
+    note: >-
+      Suppresses a setTimeout whose callback matches a bounded pattern. The
+      pattern is a literal substring, NOT a regular expression: a regex engine
+      driven by page-controlled input is a ReDoS channel, and the brief's
+      degrade law is that cosmetic must never make a page slower. Degrade case
+      sd-no-setTimeout-if; refusal case sr-no-settimeout-bad-arity.
+    degrade_case: sd-no-setTimeout-if
+    refusal_case: sr-no-settimeout-bad-arity
+    doc_line: "docs/renderer/scriptlets.md#no-setTimeout-if"
+
+  - name: prevent-setTimeout
+    arity: 2
+    capability: timer
+    page_modifying: false
+    source: "src/scriptlets/prevent_set_timeout.rs:25-60@vendored"
+    abpf_instruction: "$ext-abp-prevent-setTimeout"
+    note: >-
+      The alias uBO lists use. Same capability and the same literal-substring
+      restriction as no-setTimeout-if. Degrade case sd-prevent-setTimeout;
+      refusal case sr-prevent-settimeout-bad-arity.
+    degrade_case: sd-prevent-setTimeout
+    refusal_case: sr-prevent-settimeout-bad-arity
+    doc_line: "docs/renderer/scriptlets.md#prevent-setTimeout"
+
+  - name: noeval
+    arity: 0
+    capability: eval-guard
+    page_modifying: false
+    source: "src/scriptlets/noeval.rs:14-33@vendored"
+    abpf_instruction: "$ext-abp-noeval"
+    note: >-
+      Neutralises eval on the page's own realm object. Arity 0: it takes no
+      argument, so there is no page-controlled input to bound. Degrade case
+      sd-noeval; refusal case sr-noeval-bad-arity (any argument is refused).
+    degrade_case: sd-noeval
+    refusal_case: sr-noeval-bad-arity
+    doc_line: "docs/renderer/scriptlets.md#noeval"
+
+  - name: nowebrtc
+    arity: 0
+    capability: api-guard
+    page_modifying: false
+    source: "src/scriptlets/nowebrtc.rs:12-30@vendored"
+    abpf_instruction: "$ext-abp-nowebrtc"
+    note: >-
+      Disables RTCPeerConnection, the local-IP leak channel. Arity 0. Degrade
+      case sd-nowebrtc; refusal case sr-nowebrtc-bad-arity.
+    degrade_case: sd-nowebrtc
+    refusal_case: sr-nowebrtc-bad-arity
+    doc_line: "docs/renderer/scriptlets.md#nowebrtc"
+
+  - name: cookie-remover
+    arity: 1
+    capability: storage
+    page_modifying: true
+    source: "src/scriptlets/cookie_remover.rs:23-57@vendored"
+    abpf_instruction: "$ext-abp-cookie-remover"
+    note: >-
+      PAGE-MODIFYING: deletes cookies matching a bounded name pattern. Storage
+      access is the reason this one is behind the flag twice over — it can
+      break a site's login, which is a user-visible failure and not a cosmetic
+      one. Degrade case sd-cookie-remover; refusal case sr-cookie-bad-arity.
+    degrade_case: sd-cookie-remover
+    refusal_case: sr-cookie-bad-arity
+    doc_line: "docs/renderer/scriptlets.md#cookie-remover"
+
+# Refused, and recorded here so the refusal is visible rather than implicit.
+# Each is refused for a named reason; a registry that simply omitted them would
+# leave a future reader guessing whether the omission was a decision or an
+# oversight.
+refused:
+  - name: eval-defuser
+    reason: >-
+      Requires main-world execution to replace the page's own eval binding.
+      main_world_permitted is false in this phase, so admitting it would be a
+      claim the implementation cannot back.
+  - name: set-attr-defuser
+    reason: >-
+      Takes a selector built from page content. A selector derived from the
+      document is an injection channel; every admitted attribute scriptlet
+      takes its names from a closed set instead.
+  - name: trusted-types
+    reason: >-
+      Installs a Trusted Types policy on the page's realm, which is main-world
+      state the renderer must not own.
+  - name: prevent-fetch
+    reason: >-
+      Intercepts network requests. That is the network layer's job (P5/P6), and
+      a cosmetic scriptlet performing a network action would put request
+      interception in the renderer where no policy object governs it.
