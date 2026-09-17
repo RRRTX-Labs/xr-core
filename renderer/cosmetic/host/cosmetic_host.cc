@@ -451,9 +451,17 @@ int HostMain(int argc, char** argv) {
                 Error("kMalformedInput", "method must be a string").Canonical().c_str());
     return 1;
   }
+  // The parity frame is `{"args":{…},"method":"…"}` — the same envelope
+  // shield_host and update_host accept, so the golden vectors can feed one
+  // canonical frame to both backends. A flat request (fields at the top level,
+  // no `args`) is accepted too, because that is what a caller in-process has.
+  // Both forms resolve to the same object, so the two cannot disagree about
+  // what a case means.
+  const JsonValue* args = parsed.value.find("args");
+  const JsonValue& req =
+      (args != nullptr && args->is_object()) ? *args : parsed.value;
   int exit_code = 0;
-  std::string out = Dispatch(method, parsed.value, cosmetic, scriptlets,
-                             &exit_code);
+  std::string out = Dispatch(method, req, cosmetic, scriptlets, &exit_code);
   std::printf("%s\n", out.c_str());
   return exit_code;
 }
