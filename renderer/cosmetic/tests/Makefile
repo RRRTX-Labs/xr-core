@@ -39,16 +39,21 @@ CORE_OBJS := \
   $(BUILD)/renderer/cosmetic/core/style.o \
   $(BUILD)/renderer/cosmetic/core/keyset.o \
   $(BUILD)/renderer/cosmetic/core/degrade.o \
-  $(BUILD)/renderer/cosmetic/core/blob.o
+  $(BUILD)/renderer/cosmetic/core/blob.o \
+  $(BUILD)/renderer/cosmetic/abpf/abpf.o
 
 HOST_OBJS := $(BUILD)/renderer/cosmetic/host/cosmetic_host.o
 
 CORE_OBJS += $(COMMON_OBJS)
 
 TESTS := test_selector test_pseudo test_scope_key test_style \
-         test_keyset test_degrade test_blob_strict
+         test_keyset test_degrade test_blob_strict test_abpf
 
 .PHONY: build test clean
+
+$(BUILD)/renderer/cosmetic/abpf/%.o: ../../../renderer/cosmetic/abpf/%.cc
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 $(BUILD)/renderer/cosmetic/core/%.o: ../../../renderer/cosmetic/core/%.cc
 	@mkdir -p $(dir $@)
