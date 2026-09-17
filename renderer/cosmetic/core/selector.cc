@@ -381,10 +381,19 @@ SelectorError ParseSelector(const std::string& text, Selector* out) {
           ++i;
         }
         if (depth != 0) return SelectorError::kUnbalancedParen;
-        if (pc.args.size() >= kMaxPseudoArgs) {
-          return SelectorError::kTooManyPseudoArgs;
+        // An EMPTY argument list is not an argument. `:remove()` is the
+        // documented form of the removal pseudo (REMOVE_TOKEN ":remove()" in
+        // the vendored reference at src/filters/cosmetic.rs:52-55) and takes
+        // no argument; recording "" here made `args` non-empty, so the arity
+        // check below refused the one spelling the table cites. A bare
+        // pseudo written with empty parens is the same thing as the bare
+        // pseudo, which is what a list author means by writing it.
+        if (!arg.empty()) {
+          if (pc.args.size() >= kMaxPseudoArgs) {
+            return SelectorError::kTooManyPseudoArgs;
+          }
+          pc.args.push_back(std::move(arg));
         }
-        pc.args.push_back(std::move(arg));
       }
       // `*` + a functional pseudo (`*:has(...)`) selects the whole document and
       // is refused: a cosmetic rule that can match everything is a page-wide

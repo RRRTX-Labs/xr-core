@@ -65,7 +65,7 @@ BLOB_REASONS = {
 STYLE_REASONS = {
     "empty-style-map", "too-many-declarations", "unknown-css-property",
     "empty-style-value", "style-value-too-long", "bang-important-refused",
-    "url-function-refused", "non-ascii-control",
+    "url-function-refused", "control-char-refused",
 }
 REFUSAL_REASONS = PARSER_REASONS | BLOB_REASONS | STYLE_REASONS
 
@@ -105,8 +105,75 @@ ADMITTED_PROPERTIES = {
     "clip-path",
 }
 
+# Mirrors kPseudoTable in core/pseudo.cc: name -> (admitted, takes_arg,
+# arg_is_selector). Arity is enforced from THIS table, not from the
+# parser's guesses: a functional pseudo used bare, or a bare one used
+# functionally, is a malformed rule. Without it the fake accepted
+# `:remove()` with an argument and `:has` without one.
+PSEUDO_TABLE = {
+    "has-text": (True, True, False),
+    "matches-attr": (False, True, False),
+    "matches-css": (False, True, False),
+    "matches-css-before": (False, True, False),
+    "matches-css-after": (False, True, False),
+    "matches-path": (True, True, False),
+    "min-text-length": (True, True, False),
+    "upward": (True, True, False),
+    "xpath": (False, True, False),
+    "has": (True, True, True),
+    "not": (True, True, True),
+    "is": (True, True, True),
+    "nth-ancestor": (False, True, False),
+    "if": (False, True, False),
+    "if-not": (False, True, False),
+    "remove": (True, False, False),
+}
+
+# Mirrors CanonicalizePseudoAlias() in core/pseudo.cc.
+# Mirrors IsAdmittedNativePseudo() in core/pseudo.cc VERBATIM (extracted, not
+# retyped). The engine passes ANY unknown pseudo-class through as
+# AnythingElse, so "the engine accepts it" proves nothing — this
+# allowlist is what makes the admitted set ours. A pseudo in this set
+# takes no argument unless the procedural table says otherwise.
+# Native pseudos that take an argument in CSS.
+_NATIVE_TAKES_ARG = {"nth-child", "nth-last-child", "nth-of-type",
+                     "nth-last-of-type", "lang", "not", "is", "has"}
+
+NATIVE_PSEUDOS = {
+    "first-child",
+    "last-child",
+    "only-child",
+    "first-of-type",
+    "last-of-type",
+    "only-of-type",
+    "nth-child",
+    "nth-last-child",
+    "nth-of-type",
+    "nth-last-of-type",
+    "empty",
+    "root",
+    "checked",
+    "disabled",
+    "enabled",
+    "link",
+    "visited",
+    "hover",
+    "focus",
+    "target",
+    "lang",
+    "not",
+    "is",
+    "has",
+}
+
+PSEUDO_ALIASES = {
+}
+
 MAX_RULES = 4096
-MAX_SELECTOR_LEN = 512
+MAX_SELECTOR_LEN = 512   # kMaxSelectorLen
+MAX_COMPOUNDS = 24       # kMaxCompounds — sequences separated by combinators
+MAX_ATTR_SELECTORS = 6   # kMaxAttrSelectors
+MAX_IDENT_LEN = 128      # kMaxIdentLen
 MAX_STYLE_VALUE_LEN = 256
 MAX_DECLARATIONS = 16
 
@@ -120,57 +187,69 @@ DANGEROUS_SUBSTRINGS = (
     ("javascript:", "url-function-refused"),
 )
 
-# Mirrors kDegradeTable in core/degrade.cc: condition -> (outcome, page_effect,
-# reported, reason). Exposed through degrade-apply so the debug page and the
+# Mirrors kDegradeTable in core/degrade.cc VERBATIM — these strings were
+# extracted from the compiled host, not retyped, because a page_effect
+# that drifts from the table is a debug page that lies about what the
+# user is looking at. condition -> (outcome, page_effect, reported,
+# reason). Exposed through degrade-apply so the debug page and the
 # tests read the SAME table rather than restating it.
 DEGRADE_TABLE = {
-    "flag-off": ("inert", "The feature is present and does nothing. No call "
-                 "site is active, so the off state is identical to today's "
-                 "product.", False, ""),
-    "scriptlets-off": ("generic-set-only", "Cosmetic filtering applies; no "
-                       "scriptlet runs. The registry is printed as inert on "
-                       "the debug page.", True, "scriptlets-off"),
-    "blob-invalid": ("drop-blob", "The whole blob is discarded and the page "
-                     "renders unstyled for this frame.", True, "blob-invalid"),
-    "blob-missing": ("no-work", "No blob for this scope key, so nothing is "
-                     "emitted and no observer is installed.", True,
-                     "blob-missing"),
-    "scope-mismatch": ("drop-blob", "The blob is for another scope and is "
-                       "discarded rather than applied.", True,
-                       "scope-mismatch"),
-    "rule-unparsable": ("drop-blob", "One unparsable rule rejects the whole "
-                        "blob. The alternative — dropping the bad rule and "
-                        "applying the rest — would let a list author learn "
-                        "which payloads survived, which is a probing "
-                        "channel.", True, "rule-unparsable"),
-    "rule-unknown-pseudo": ("drop-blob", "A rule uses a pseudo this engine "
-                            "does not implement; the blob is discarded rather "
-                            "than partially applied.", True,
-                            "rule-unknown-pseudo"),
-    "rule-too-expensive": ("drop-rule", "The single rule is dropped and the "
-                           "rest apply. This is the ONLY condition that drops "
-                           "one rule, because here the rule is valid and the "
-                           "cost is a property of the page.", True,
-                           "rule-too-expensive"),
-    "shields-down": ("generic-set-only", "Shields are down for this site, so "
-                       "only the generic set applies. The generic set is not "
-                       "exception-able at the policy level, because a "
-                       "shields-down must not leave the page half-styled.",
-                       True, "shields-down"),
-    "empty-rule-set": ("no-work", "No rules, no work: nothing is emitted and "
-                       "no observer is installed.", True, "empty-rule-set"),
-    "dom-mutation-storm": ("throttle", "Observer callbacks are throttled for "
-                           "this frame rather than dropped, so a busy page "
-                           "still converges.", True, "dom-mutation-storm"),
-    "engine-unavailable": ("page-unstyled", "The page renders unstyled. This "
-                             "is a deliberate divergence from the network "
-                             "layer: refusing to hide an ad must never refuse "
-                             "to render a page.", True, "engine-unavailable"),
-    "main-world-required": ("inert", "The rule needs main-world execution, "
-                            "which this phase does not provide.", True,
-                            "main-world-required"),
-    "generic-set-only": ("generic-set-only", "Only the generic set applies.",
-                         True, "generic-set-only"),
+    'flag-off': (
+        'inert',
+        'The page renders exactly as it does today: no style is emitted, no observer is installed, no call site is active.',
+        False, ''),
+    'scriptlets-off': (
+        'inert',
+        "Cosmetic hiding still applies; scriptlets do nothing. The debug page reports the registry as 'inert: flag off' verbatim.",
+        False, ''),
+    'blob-invalid': (
+        'drop-blob',
+        'The whole blob is dropped and the page renders unstyled. NOT the half-styled state that dropping only the bad rule would produce.',
+        True, 'blob-invalid'),
+    'blob-missing': (
+        'generic-set-only',
+        'The always-on generic hide set still applies; site-specific rules do not. The page renders with only the conservative junk selectors hidden.',
+        True, 'blob-missing'),
+    'scope-mismatch': (
+        'drop-blob',
+        "The blob is not applied at all. A blob for site A in a frame on site B would leak one identity's rule set into another, so this is a hard drop and not a partial apply.",
+        True, 'scope-mismatch'),
+    'rule-unparsable': (
+        'drop-blob',
+        'One unparsable rule rejects the whole blob. The alternative — dropping the bad rule and applying the rest — would let a list author learn which payloads survived, which is a probing channel.',
+        True, 'rule-unparsable'),
+    'rule-unknown-pseudo': (
+        'drop-blob',
+        'As above. A pseudo-class outside the allowlist means the producer and the renderer disagree about the contract.',
+        True, 'unknown-pseudo-class'),
+    'rule-too-expensive': (
+        'drop-rule',
+        'THIS is the one condition that drops a single rule rather than the blob, because the rule is valid and the cost is a property of the page rather than of the rule. The remaining rules still apply.',
+        True, 'rule-too-expensive'),
+    'shields-down': (
+        'generic-set-only',
+        'Site-specific rules are off. The generic set STILL applies, because a shields-down must not leave the page half-styled — the user asked for less filtering, not for a broken layout.',
+        False, ''),
+    'empty-rule-set': (
+        'no-work',
+        "Zero rules means zero emitted style and no mutation observer installed. This is what makes the default-off state byte-identical to today's product, and it is asserted rather than assumed.",
+        False, ''),
+    'dom-mutation-storm': (
+        'throttle',
+        'The page keeps rendering; cosmetic matching slows to the budget. A mutation storm must never make the page jank, so the cosmetic work yields rather than competing with layout.',
+        True, 'dom-mutation-storm'),
+    'engine-unavailable': (
+        'page-unstyled',
+        "The page renders unstyled. Fail-OPEN is correct here: refusing to hide an ad must never refuse to render a page. This is the deliberate opposite of the network layer's fail-CLOSED rule.",
+        True, 'engine-unavailable'),
+    'main-world-required': (
+        'drop-rule',
+        'A scriptlet that would need a main-world handle is refused outright — the handle is never set — and the rest of the registry still works.',
+        True, 'main-world-required'),
+    'generic-set-only': (
+        'generic-set-only',
+        'Only the conservative generic set applies. This is the floor: the least the feature ever does when everything else is unavailable.',
+        False, ''),
 }
 
 
@@ -205,32 +284,154 @@ def validate_selector(text: str) -> str | None:
         return "empty-selector"
     if len(text) > MAX_SELECTOR_LEN:
         return "selector-too-long"
-    # Refusal ORDER mirrors the C++ walk: specific before generic.
+    # Refusal ORDER mirrors the C++ walk exactly, because refusal order is
+    # observable: the same input must produce the same typed reason on both
+    # backends or the parity checker reddens.
     if text.lstrip().startswith("@"):
         return "at-rule-refused"
     for needle, reason in DANGEROUS_SUBSTRINGS:
         if _contains_no_case(text, needle):
             return reason
-    if "<!--" in text or "-->" in text or "<" in text or ">" in text and \
-            ">" not in text.replace("->", ""):
-        # Markup scan. `>` alone is a child combinator and is fine; the test is
-        # for a tag or a comment.
-        if "<!--" in text or "-->" in text or "<" in text:
-            return "markup-refused"
-    if "!" in text:
+    if "<!--" in text or "-->" in text or "<" in text:
+        return "markup-refused"
+    # The literal `!important`, not any `!`. ScanDangerousSubstrings() tests for
+    # the substring "!important"; a bare `!` falls through to the walk, which
+    # reports kDisallowedChar because `!` is not in the grammar. Refusing every
+    # `!` here would report the wrong reason for `.a!` and would also refuse a
+    # selector the C++ refuses for a different reason — same verdict, wrong
+    # diagnosis, and a red vector.
+    if _contains_no_case(text, "!important"):
         return "bang-important-refused"
+    # One rule, one selector: a comma-separated LIST is refused rather than
+    # split, so a rule can never widen its own scope after compilation. This
+    # refuses `:is(.a,.b)` too, deliberately — the alternative is a selector
+    # whose scope depends on how the engine splits it.
+    if "," in text:
+        return "selector-list-refused"
+    if "\\" in text:
+        return "escape-sequence-refused"
+    # A structural break the walk cannot continue through. The C++ parser
+    # reports kDisallowedChar here rather than a balance error, because it hits
+    # the offending character while walking and never gets to count: `div:(.ad`
+    # is a pseudo-class with no name, and `*.bogus(` is a `(` with no pseudo
+    # before it. `div:has(` DOES have a name, so it falls through to the balance
+    # check and reports unbalanced-paren. Reporting "unbalanced" for all three
+    # would describe the symptom instead of where the walk stopped.
+    if _has_structural_break(text):
+        return "disallowed-char"
     if text.count("(") != text.count(")"):
         return "unbalanced-paren"
     if text.count("[") != text.count("]"):
         return "unbalanced-bracket"
-    if text.endswith(","):
-        return "selector-list-refused"
-    if "\\" in text:
-        return "escape-sequence-refused"
-    # `*:has(...)` — a rule that can match the whole document.
-    stripped = text.strip()
-    if stripped.startswith("*:") or stripped.startswith("*["):
+    # Characters outside the grammar, mirroring the C++ walk rather than
+    # guessing a set. IsIdentChar() admits alnum, `_`, `-` and bytes >= 0x80;
+    # everything else must be a structural character the grammar uses in the
+    # position it appears. `$`, `^`, `*` and `|` are attribute OPERATORS and are
+    # only legal immediately before `=` — which is why `a[href$="x"]` parses and
+    # `a[href$]` does not. Getting this wrong in either direction is a parity
+    # failure, and a too-wide set is the worse one: it would accept a selector
+    # the renderer refuses at document-start.
+    for idx, ch in enumerate(text):
+        if ch.isalnum() or ord(ch) >= 0x80 or ch in _PLAIN_STRUCTURAL:
+            continue
+        if ch == "\\":
+            continue  # refused earlier by the escape check
+        if ch in "$^*|":
+            # An attribute operator: legal only immediately before `=`.
+            if idx + 1 < len(text) and text[idx + 1] == "=":
+                continue
+            return "disallowed-char"
+        if ch in "?!&;%":
+            # Legal inside a bracketed attribute value or a pseudo argument,
+            # where the walk has already accepted the opener and reads the value
+            # verbatim — the C++ accepts `:has-text(a?b)` and
+            # `:matches-path(/a?b&c)` for exactly this reason. The test is
+            # whether an opener is still OPEN at this index.
+            before = text[:idx]
+            if before.count("(") > before.count(")") or \
+                    before.count("[") > before.count("]"):
+                continue
+            return "disallowed-char"
+        return "disallowed-char"
+    # Combinator structure. The C++ walk keeps ONE flag meaning "a combinator
+    # has been recorded for this position", so two in a row, one at the start,
+    # or one at the end are each a distinct refusal.
+    toks = [t for t in _TOKEN_RE.split(text.strip())]
+    compounds_list = [t for t in toks[0::2]]
+    combinators = [t for t in toks[1::2]]
+    if any(c in (">", "+", "~") for c in combinators[:1]) and not compounds_list[0]:
+        return "leading-combinator"
+    if compounds_list and not compounds_list[-1] and combinators:
+        return "trailing-combinator"
+    for i, comp in enumerate(compounds_list):
+        if not comp and i not in (0, len(compounds_list) - 1):
+            return "double-combinator"
+    # The structural bounds, in the order the C++ walk hits them.
+    stripped0 = text.strip()
+    compounds = len([t for t in _TOKEN_RE.split(stripped0) if t and
+                     t not in (">", "+", "~")])
+    if compounds > MAX_COMPOUNDS:
+        return "too-many-compounds"
+    if text.count("[") > MAX_ATTR_SELECTORS:
+        return "too-many-attr-selectors"
+    for m in _IDENT_RE.finditer(text):
+        if len(m.group(0)) > MAX_IDENT_LEN:
+            return "ident-too-long"
+    if stripped0.startswith("*:") or stripped0.startswith("*["):
         return "universal-with-pseudo"
+    # Admission and arity, from the table. A pseudo outside the admitted set is
+    # refused with the parser's own vocabulary; the table's kRefused* reasons
+    # are the WHY, recorded in the blob's refusal note rather than here.
+    depth = 0
+    i = 0
+    while i < len(text):
+        c = text[i]
+        if c in "([":
+            depth += 1
+        elif c in ")]":
+            depth -= 1
+        elif c == ":" and depth == 0:
+            j = i + 1
+            while j < len(text) and (text[j].isalnum() or text[j] in "-_"):
+                j += 1
+            # Lowercased before lookup, matching the parser: it folds the
+            # pseudo name to lower case so `DIV:HAS(.a)` is the same rule as
+            # `div:has(.a)`, while the TAG keeps its case (CSS tag names are
+            # case-insensitive in HTML but the canonical form preserves what
+            # was written). Looking up the name as-written made every
+            # upper-case pseudo an "unknown pseudo class".
+            raw_name = text[i + 1:j].lower()
+            name = PSEUDO_ALIASES.get(raw_name, raw_name)
+            # An EMPTY argument list is not an argument, matching the C++ walk:
+            # `:remove()` is the documented spelling and takes none, so `:has()`
+            # is refused (it takes one) while `:remove()` is not.
+            has_arg = False
+            if j < len(text) and text[j] == "(":
+                close = text.find(")", j)
+                has_arg = close != -1 and text[j + 1:close].strip() != ""
+            info = PSEUDO_TABLE.get(name)
+            if info is None:
+                # Not in the procedural table: it must be in the native CSS
+                # allowlist, or it is refused. Two closed tables decide, and
+                # anything in neither is refused rather than forwarded.
+                if name not in NATIVE_PSEUDOS:
+                    return "unknown-pseudo-class"
+                # A native pseudo takes an argument only where CSS says so
+                # (the nth-* family and :lang). The rest are bare.
+                takes_arg = name in _NATIVE_TAKES_ARG
+                if takes_arg != has_arg:
+                    return "disallowed-pseudo-arg"
+            else:
+                if not info[0]:
+                    return "unknown-pseudo-class"
+                _, takes_arg, _ = info
+                if takes_arg and not has_arg:
+                    return "disallowed-pseudo-arg"
+                if not takes_arg and has_arg:
+                    return "disallowed-pseudo-arg"
+            i = j
+            continue
+        i += 1
     return None
 
 
@@ -256,6 +457,190 @@ def validate_style(style: Any) -> str | None:
 import re as _re
 
 _TOKEN_RE = _re.compile(r"\s*([>+~])\s*")
+# A pseudo-class name: ':' followed by an identifier. Bracket-aware scanning is
+# not needed here because an attribute selector's value cannot contain a bare
+# ':' that this would mis-read — and if one ever can, the vectors will say so.
+_PSEUDO_RE = _re.compile(r":(-?[A-Za-z_][A-Za-z0-9_-]*)")
+# An identifier: a tag, class or id name. Bounded by kMaxIdentLen.
+_IDENT_RE = _re.compile(r"[A-Za-z_][A-Za-z0-9_-]*")
+# The structural characters the grammar admits, as a set literal so the quote
+# and backslash members do not need escaping inside a string.
+# `:` for pseudo-classes and `,` for the one-selector check (which has already
+# run by this point, but a comma inside an attribute value is legitimate and
+# must not be reported as a bad character).
+# `/` appears inside `:matches-path(/blog)`, `?` and `&` inside query strings a
+# path matcher may carry, `;` inside an attribute value, and `!` is refused
+# earlier by the bang check so listing it here is harmless.
+# Structural characters legal anywhere they appear. Built as a set so the
+# quote member needs no escaping inside a literal.
+# `-` and `_` are IsIdentChar members and are already accepted by the
+# `isalnum()` test above for ASCII, but `-` is NOT alnum, so it must be listed.
+_PLAIN_STRUCTURAL = set("-_#.[]()>+~~*:,/= \t") | {'"'}
+
+
+
+def _has_structural_break(text: str) -> bool:
+    """True where the C++ walk stops with kDisallowedChar.
+
+    Mirrors the cases the parser cannot continue through: a pseudo-class or
+    attribute selector that opens and never gets a name/closer, and an
+    unterminated bracket. Deliberately narrow — anything the walk CAN continue
+    through is left to the balance and bounds checks below, so this does not
+    become a second parser that disagrees with the first.
+    """
+    i = 0
+    depth_paren = 0
+    depth_bracket = 0
+    while i < len(text):
+        c = text[i]
+        if c == "(":
+            # A functional pseudo must precede it: an identifier that starts at
+            # a `:`. `div:has(` qualifies and falls through to the balance
+            # check; `*.bogus(` does not — `bogus` is a class-less identifier
+            # with no colon, so the walk has nowhere to put the `(` and reports
+            # kDisallowedChar.
+            j = i - 1
+            name_end = j
+            while j >= 0 and (text[j].isalnum() or text[j] in "-_"):
+                j -= 1
+            # The name must be NON-EMPTY: `div:(.ad` has a colon but nothing
+            # between it and the paren, which is a pseudo-class with no name.
+            if j < 0 or text[j] != ":" or name_end == j:
+                return True
+            depth_paren += 1
+        elif c == ")":
+            depth_paren -= 1
+            if depth_paren < 0:
+                return True
+        elif c == ":":
+            # A pseudo-class with no name. `div:` ends the string there and
+            # `div:5` has a digit where an identifier must start; the C++ walk
+            # calls ReadIdent, gets nothing, and reports kDisallowedChar rather
+            # than an unknown pseudo — there is no name to look up.
+            j = i + 1
+            if j >= len(text) or not (text[j].isalpha() or text[j] in "-_"):
+                return True
+        elif c == ".":
+            # An empty class name. `div..ad` has two dots in a row, so the
+            # second one starts a class with no name; ReadIdent returns empty
+            # and the walk reports kDisallowedChar.
+            j = i + 1
+            if j >= len(text) or not (text[j].isalnum() or text[j] in "-_"):
+                return True
+        elif c == "[":
+            # An attribute selector whose NAME is missing or malformed is a bad
+            # character — `[.ad` opens a bracket and immediately hits a `.`,
+            # which cannot start an attribute name. One whose name is fine but
+            # which never closes is an unbalanced bracket (`div[`, `div[abc`),
+            # and the balance check below reports it. Telling these apart is
+            # the difference between "you wrote a character that is not in the
+            # grammar" and "you forgot to close a bracket".
+            j = i + 1
+            # End of input right after `[` is an unclosed bracket, not a bad
+            # character: there is nothing there to be one. A character that
+            # cannot start an attribute name (`[.ad`) IS a bad character.
+            if j < len(text) and not (text[j].isalnum() or
+                                      text[j] in "-_"):
+                return True
+            depth_bracket += 1
+        elif c == "]":
+            depth_bracket -= 1
+            if depth_bracket < 0:
+                return True
+        i += 1
+    # An unclosed bracket is NOT a structural break: the C++ walk reads the
+    # attribute name, finds no `]`, and reports kUnbalancedBracket. Returning
+    # True here made `div[` and `div[abc` report disallowed-char instead. Only
+    # a MALFORMED opener (a `[` followed by something that cannot start a name)
+    # is a bad character, and that is caught inside the loop above.
+    return False
+
+
+
+def _split_combinators(text: str) -> tuple[list[str], list[str]]:
+    """Split a selector into compounds and the combinators between them.
+
+    A bare space IS the descendant combinator, so it produces an empty token on
+    the left-hand side of nothing — `_TOKEN_RE.split` alone would swallow it and
+    report one compound where the C++ parser sees two. Bracket depth is tracked
+    so a space inside `:has-text(a b)` is not mistaken for a combinator.
+    """
+    compounds: list[str] = []
+    combinators: list[str] = []
+    cur = ""
+    depth = 0
+    i = 0
+    while i < len(text):
+        c = text[i]
+        if c in "([":
+            depth += 1
+        elif c in ")]":
+            depth -= 1
+        if depth == 0:
+            if c in ">+~":
+                compounds.append(cur)
+                combinators.append(c)
+                cur = ""
+                i += 1
+                while i < len(text) and text[i].isspace():
+                    i += 1
+                continue
+            if c.isspace():
+                j = i
+                while j < len(text) and text[j].isspace():
+                    j += 1
+                # Whitespace AROUND an explicit combinator belongs to that
+                # combinator, not to a descendant one: in `div > .ad` the spaces
+                # either side of `>` are separators, and the C++ parser records
+                # a single kChild. Emitting a descendant token for the leading
+                # space produced `div    > .ad`. Trailing whitespace with
+                # nothing after it is likewise not a combinator.
+                if j < len(text) and text[j] not in ">+~":
+                    compounds.append(cur)
+                    combinators.append("")  # the descendant combinator
+                    cur = ""
+                    i = j
+                    continue
+                i = j
+                continue
+        cur += c
+        i += 1
+    compounds.append(cur)
+    return compounds, combinators
+
+
+
+def _canonical_attr(piece: str) -> str:
+    """Canonical form of an attribute selector or a pseudo, verbatim except for
+    the quoting rule AppendCompound() applies.
+
+    AppendCompound() emits `[name OP "value"]` — it ALWAYS quotes a value when
+    the operator is not kExists, and appends ` i` for the case-insensitive flag.
+    A list may write `div[class*=advert]` with no quotes; the canonical form has
+    them. Getting this wrong would make the dedup key differ between the quoted
+    and unquoted spellings of one rule, so a list shipping both would pay twice
+    for one hide.
+    """
+    if not piece.startswith("[") or not piece.endswith("]"):
+        return piece  # a pseudo: emitted verbatim
+    body = piece[1:-1]
+    # Split at the operator.
+    for op in ("^=", "$=", "*=", "~=", "|=", "="):
+        idx = body.find(op)
+        if idx == -1:
+            continue
+        name = body[:idx].strip()
+        tail = body[idx + len(op):].strip()
+        flags = ""
+        if tail.endswith(" i") or tail.endswith(" I"):
+            flags = " i"
+            tail = tail[:-2].strip()
+        value = tail.strip()
+        if len(value) >= 2 and value[0] == '"' and value[-1] == '"':
+            value = value[1:-1]
+        return f'[{name}{op}"{value}"{flags}]'
+    # kExists: no operator, no quotes.
+    return f"[{body.strip()}]"
 
 
 def _canonical_compound(compound: str) -> str:
@@ -268,6 +653,10 @@ def _canonical_compound(compound: str) -> str:
         out.append("*")
         i += 1
     tag = ""
+    # `[` must terminate the tag, or an attribute selector gets swallowed into
+    # it and never reaches _canonical_attr() — which is why `div[class*=
+    # promoted]` canonicalized without the quotes AppendCompound() adds. The
+    # tag scan and the piece scan must agree on where a tag ends.
     while i < len(compound) and compound[i] not in "#.:[":
         tag += compound[i]
         i += 1
@@ -285,19 +674,59 @@ def _canonical_compound(compound: str) -> str:
             (ids if c == "#" else classes).append(name)
             i = j
         else:
-            # An attribute or pseudo: bracket-balanced copy, verbatim.
-            depth = 0
-            j = i
-            while j < len(compound):
-                if compound[j] in "([":
-                    depth += 1
-                elif compound[j] in ")]":
-                    depth -= 1
-                elif compound[j] in "#.:" and depth == 0:
-                    break
-                j += 1
-            rest.append(compound[i:j])
-            i = j
+            # An attribute or pseudo: bracket-balanced copy, verbatim. The scan
+            # starts at i+1 and the delimiter test only fires at depth 0 — the
+            # earlier version started at i, so a leading ':' matched its own
+            # break condition, produced an empty slice, and never advanced i:
+            # an infinite loop on any pseudo-class. `div:has-text(x)` hung the
+            # fake outright, which the vector generator caught because it
+            # compares exit codes and a hung process has neither.
+            # An attribute selector ends at ITS OWN closing bracket, not at a
+            # balanced depth: `[class*=promoted]:has(img)` must stop after the
+            # `]`, or the piece swallows the pseudo and _canonical_attr() sees
+            # `[class*=promoted]:has(img)` — which has no operator-then-value
+            # shape it recognises, so it returned the text unchanged and the
+            # quotes AppendCompound() adds were never applied.
+            if compound[i] == "[":
+                j = i + 1
+                while j < len(compound) and compound[j] != "]":
+                    j += 1
+                j = min(j + 1, len(compound))
+            else:
+                depth = 0
+                j = i + 1
+                while j < len(compound):
+                    if compound[j] == "(":
+                        depth += 1
+                    elif compound[j] == ")":
+                        depth -= 1
+                        if depth == 0:
+                            j += 1
+                            break
+                    elif compound[j] in "#.:" and depth == 0:
+                        break
+                    j += 1
+            piece = compound[i:j]
+            # Lowercase the pseudo NAME in the canonical form. AppendCompound()
+            # writes the name as the parser stored it, and the parser folded it
+            # to lower case, so `DIV:HAS(.a)` canonicalizes to `DIV:has(.a)` —
+            # the tag keeps its case and the pseudo does not. Leaving the name
+            # as-written made the dedup key differ between `:HAS` and `:has`,
+            # which are the same rule.
+            if piece.startswith(":"):
+                close = piece.find("(")
+                if close == -1:
+                    piece = piece.lower()
+                else:
+                    piece = piece[:close].lower() + piece[close:]
+            # Drop empty parens, matching AppendCompound(): it emits `:name` and
+            # only adds `(args)` when the parsed pseudo HAS args, so `:remove()`
+            # canonicalizes to `:remove`. Leaving the parens in made the dedup
+            # key differ between the two spellings of one rule.
+            if piece.endswith("()"):
+                piece = piece[:-2]
+            rest.append(_canonical_attr(piece))
+            i = max(j, i + 1)
     for name in sorted(ids):
         out.append("#" + name)
     for name in sorted(classes):
@@ -309,14 +738,20 @@ def _canonical_compound(compound: str) -> str:
 def canonicalize_selector(text: str) -> str:
     """The dedup key. Mirrors CanonicalizeSelector() in core/keyset.cc:
     compounds joined by " <combinator> ", each compound canonicalized."""
-    parts = _TOKEN_RE.split(text.strip())
-    # split() with a capture group yields [compound, tok, compound, tok, ...]
+    # CombinatorToken() in core/keyset.cc maps kDescendant to " " (a single
+    # space), and CanonicalizeSelector() puts a space on EACH side of the token.
+    # So a descendant combinator renders as THREE spaces, not one — an odd
+    # looking output that is nonetheless the pinned format, and a fake that
+    # "tidied" it to one space would diverge on every descendant selector.
+    compounds, combinators = _split_combinators(text.strip())
     out: list[str] = []
-    for i, part in enumerate(parts):
-        if i % 2 == 1:
-            out.append(f" {part} ")
-        elif part:
-            out.append(_canonical_compound(part))
+    for i, comp in enumerate(compounds):
+        if i > 0:
+            token = combinators[i - 1] if i - 1 < len(combinators) else " "
+            if not token:
+                token = " "  # the descendant combinator
+            out.append(f" {token} ")
+        out.append(_canonical_compound(comp))
     return "".join(out)
 
 
@@ -332,7 +767,7 @@ def _rule_dedup_key(rule: dict[str, Any]) -> str:
 def compile_key_set(rules: list[Any]) -> tuple[str | None, dict[str, Any]]:
     """Mirror of CompileKeySet(). Returns (reason, result)."""
     if not rules:
-        return "empty-key-set", {}
+        return "empty-rule-set", {}
     if len(rules) > MAX_RULES:
         return "too-many-rules", {}
     seen_ids: set[str] = set()
@@ -345,7 +780,11 @@ def compile_key_set(rules: list[Any]) -> tuple[str | None, dict[str, Any]]:
             return "rule-rejected", {}
         rid = rule.get("id")
         if not isinstance(rid, str) or not rid:
-            return "duplicate-rule-id", {}
+            # The C++ names an empty id distinctly from a repeated one: the
+            # enum is kDuplicateId in both cases but `reason` differs, and a
+            # list author fixing "duplicate-rule-id" on a rule whose id is
+            # merely blank would look for the wrong thing.
+            return "empty-rule-id", {}
         if rid in seen_ids:
             return "duplicate-rule-id", {}
         seen_ids.add(rid)
@@ -357,7 +796,10 @@ def compile_key_set(rules: list[Any]) -> tuple[str | None, dict[str, Any]]:
             return reason, {}
         action = rule.get("action")
         if action not in ACTIONS:
-            return "rule-rejected", {}
+            # The C++ reports the SPECIFIC sub-reason in `reason` while the enum
+            # stays kRuleRejected, so the fake must too — a caller that only
+            # ever sees "rule-rejected" cannot tell a list author what to fix.
+            return "unknown-action", {}
         own_style = rule.get("style") or {}
         if action == "style":
             sreason = validate_style(own_style)
@@ -545,11 +987,19 @@ def selector_parse(args: dict[str, Any]) -> dict[str, Any]:
     # Compound count: split on combinators, mirroring the AST closely enough
     # for the vectors.
     canon = canonicalize_selector(sel)
-    compounds = 1
-    for tok in canon.split(" "):
-        if tok in (">", "+", "~"):
-            compounds += 1
-    return {"canonical": canon, "compounds": compounds, "pseudos": []}
+    # Count from the SAME tokenizer the canonical form is built with. Counting
+    # by splitting the canonical string on spaces is wrong twice over: a
+    # descendant combinator renders as three spaces, and an explicit one is
+    # surrounded by them, so the split produces empty tokens that are not
+    # compounds.
+    compounds = len(_split_combinators(sel.strip())[0])
+    # Pseudo-class NAMES, in source order, across every compound. A list that
+    # reports the count but not the names cannot be checked against the
+    # admitted set, which is the whole point of reporting them.
+    pseudos: list[str] = []
+    for m in _PSEUDO_RE.finditer(canon):
+        pseudos.append(m.group(1))
+    return {"canonical": canon, "compounds": compounds, "pseudos": pseudos}
 
 
 def scope_key(args: dict[str, Any]) -> dict[str, Any]:

@@ -15,6 +15,7 @@
 // selector that parses to nothing, or a refusal count of zero, is a failure,
 // not a pass.
 
+#include "renderer/cosmetic/core/keyset.h"  // CanonicalizeSelector
 #include "renderer/cosmetic/core/selector.h"
 
 #include <string>
@@ -255,6 +256,38 @@ void TestErrorNamesAreDistinct() {
 
 }  // namespace
 
+void TestEmptyPseudoArgIsNotAnArg() {
+  // REGRESSION (P12-T1, found by the golden-vector generator).
+  //
+  // `:remove()` is the documented spelling of the removal pseudo — the vendored
+  // reference's REMOVE_TOKEN is literally ":remove()" (see the citation on the
+  // `remove` row of kPseudoTable). The parser pushed the empty string as an
+  // argument, so `args` was non-empty and the arity check refused the ONE
+  // spelling the table cites. A refusal that looks principled ("a bare pseudo
+  // used functionally is malformed") and is actually a bug is the worst kind:
+  // the enum value existed, the check ran, and the only way to notice was to
+  // run the documented form through the parser.
+  xrc::Selector s;
+  XR_EXPECT_EQ(xrc::ParseSelector("div:remove()", &s), xrc::SelectorError::kOk);
+  XR_EXPECT_EQ(xrc::ParseSelector("div:remove", &s), xrc::SelectorError::kOk);
+  // Both spellings canonicalize identically, so they dedup as one rule.
+  xrc::Selector a, b;
+  xrc::ParseSelector("div:remove()", &a);
+  xrc::ParseSelector("div:remove", &b);
+  XR_EXPECT_STREQ(xrc::CanonicalizeSelector(a), xrc::CanonicalizeSelector(b));
+  // But an ACTUAL argument to a pseudo that takes none is still refused.
+  XR_EXPECT_EQ(xrc::ParseSelector("div:remove(1)", &s),
+               xrc::SelectorError::kDisallowedPseudoArg);
+  // And a pseudo that DOES take an argument still requires one.
+  XR_EXPECT_EQ(xrc::ParseSelector("div:has", &s),
+               xrc::SelectorError::kDisallowedPseudoArg);
+  XR_EXPECT_EQ(xrc::ParseSelector("div:has(.ad)", &s), xrc::SelectorError::kOk);
+  // An empty-arg functional pseudo that takes an arg is refused, not treated
+  // as bare: `:has()` is not `:has`.
+  XR_EXPECT_EQ(xrc::ParseSelector("div:has()", &s),
+               xrc::SelectorError::kDisallowedPseudoArg);
+}
+
 int main() {
   TestBasicCompounds();
   TestCombinators();
@@ -271,5 +304,6 @@ int main() {
                 "the suite refused fewer than 15 inputs — a refusal branch is "
                 "probably unexercised");
   std::printf("  selector: %d accepted, %d refused\n", g_accepted, g_refused);
+  TestEmptyPseudoArgIsNotAnArg();
   return xrtest::Report("test_selector");
 }

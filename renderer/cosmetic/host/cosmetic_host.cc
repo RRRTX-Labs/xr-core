@@ -209,6 +209,40 @@ JsonValue BlobBuild(const JsonValue& in) {
     b.rules.push_back(std::move(r));
     ++index;
   }
+  // The producer's own refusals travel with the blob. Dropping them here would
+  // make the consumer's coverage number wrong: it would report "0 refusals"
+  // for a list that refused half its rules, which is the difference between an
+  // honest coverage figure and a flattering one. Each reason is checked
+  // against the closed vocabulary so a producer cannot smuggle an invented one
+  // past the consumer.
+  const JsonValue* refusals = in.find("refusals");
+  if (refusals != nullptr) {
+    if (!refusals->is_array()) {
+      return Error("kMalformedInput", "refusals must be an array");
+    }
+    int64_t rindex = 0;
+    for (const JsonValue& rj : refusals->as_array()) {
+      if (!rj.is_object()) {
+        return Reject("unknown-refusal-reason",
+                      "refusal " + std::to_string(rindex) +
+                          " is not an object");
+      }
+      BlobRefusal r;
+      const JsonValue* ix = rj.find("rule_index");
+      if (ix != nullptr && ix->is_int()) r.rule_index = ix->as_int();
+      std::string reason;
+      if (!GetString(rj, "reason", &reason) || reason.empty()) {
+        return Reject("unknown-refusal-reason",
+                      "refusal " + std::to_string(rindex) + " has no reason");
+      }
+      if (!KnownRefusalReasons().count(reason)) {
+        return Reject("unknown-refusal-reason", reason);
+      }
+      r.reason = reason;
+      b.refusals.push_back(std::move(r));
+      ++rindex;
+    }
+  }
   b.sha256 = BlobDigest(b);
   // Return the canonical blob text so the producer can store or sign it. The
   // digest is included, so this is the exact byte string blob-check will verify.

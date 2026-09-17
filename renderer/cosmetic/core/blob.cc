@@ -41,36 +41,6 @@ const std::set<std::string>& RefusalKeys() {
   return s;
 }
 
-// The closed refusal vocabulary, shared with the selector parser and with
-// fakes/cosmetic.py. A producer naming a reason outside this set means producer
-// and consumer disagree about the contract, and guessing is how a validator
-// becomes permissive.
-const std::set<std::string>& KnownRefusalReasons() {
-  static const std::set<std::string> s = [] {
-    std::set<std::string> out = {
-        "schema-mismatch", "scope-mismatch", "sha256-mismatch",
-        "rule-too-large", "too-many-rules", "duplicate-rule-id",
-        "unknown-refusal-reason", "no-executable-content"};
-    const SelectorError all[] = {
-        SelectorError::kEmpty, SelectorError::kTooLong,
-        SelectorError::kTooManyCompounds, SelectorError::kTooManyAttrSelectors,
-        SelectorError::kTooManyPseudoArgs, SelectorError::kIdentTooLong,
-        SelectorError::kUnbalancedParen, SelectorError::kUnbalancedBracket,
-        SelectorError::kEmptyCompound, SelectorError::kLeadingCombinator,
-        SelectorError::kTrailingCombinator, SelectorError::kDoubleCombinator,
-        SelectorError::kTrailingComma, SelectorError::kDisallowedChar,
-        SelectorError::kBangImportant, SelectorError::kAtRule,
-        SelectorError::kCdataOrMarkup, SelectorError::kUrlFunction,
-        SelectorError::kExpressionFunction, SelectorError::kUnknownPseudoClass,
-        SelectorError::kDisallowedPseudoArg,
-        SelectorError::kUniversalWithPseudo,
-        SelectorError::kCommentUnterminated, SelectorError::kEscapeSequence};
-    for (SelectorError e : all) out.insert(SelectorErrorName(e));
-    return out;
-  }();
-  return s;
-}
-
 bool HasOnlyKnownKeys(const JsonValue& obj, const std::set<std::string>& known) {
   for (const auto& [k, v] : obj.as_object()) {
     (void)v;
@@ -403,6 +373,37 @@ BlobError ParseBlob(const std::string& json, const BlobScope* frame_scope,
 
   out->valid = true;
   return BlobError::kOk;
+}
+
+
+// The closed refusal vocabulary, shared with the selector parser and with
+// fakes/cosmetic.py. A producer naming a reason outside this set means producer
+// and consumer disagree about the contract, and guessing is how a validator
+// becomes permissive.
+const std::set<std::string>& KnownRefusalReasons() {
+  static const std::set<std::string> s = [] {
+    std::set<std::string> out = {
+        "schema-mismatch", "scope-mismatch", "sha256-mismatch",
+        "rule-too-large", "too-many-rules", "duplicate-rule-id",
+        "unknown-refusal-reason", "no-executable-content"};
+    const SelectorError all[] = {
+        SelectorError::kEmpty, SelectorError::kTooLong,
+        SelectorError::kTooManyCompounds, SelectorError::kTooManyAttrSelectors,
+        SelectorError::kTooManyPseudoArgs, SelectorError::kIdentTooLong,
+        SelectorError::kUnbalancedParen, SelectorError::kUnbalancedBracket,
+        SelectorError::kEmptyCompound, SelectorError::kLeadingCombinator,
+        SelectorError::kTrailingCombinator, SelectorError::kDoubleCombinator,
+        SelectorError::kTrailingComma, SelectorError::kDisallowedChar,
+        SelectorError::kBangImportant, SelectorError::kAtRule,
+        SelectorError::kCdataOrMarkup, SelectorError::kUrlFunction,
+        SelectorError::kExpressionFunction, SelectorError::kUnknownPseudoClass,
+        SelectorError::kDisallowedPseudoArg,
+        SelectorError::kUniversalWithPseudo,
+        SelectorError::kCommentUnterminated, SelectorError::kEscapeSequence};
+    for (SelectorError e : all) out.insert(SelectorErrorName(e));
+    return out;
+  }();
+  return s;
 }
 
 }  // namespace xr::cosmetic

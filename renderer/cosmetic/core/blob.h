@@ -25,6 +25,7 @@
 //      Migration is an amendment-RFC act, not something a parser does quietly.
 #pragma once
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -110,5 +111,11 @@ std::string BlobDigest(const CosmeticBlob& blob);
 
 // Serializes a whole blob INCLUDING its digest field, canonically.
 std::string BlobToCanonicalJson(const CosmeticBlob& blob);
+
+// The closed refusal vocabulary a producer may name in a blob's `refusals`
+// array. Exported so cosmetic_host validates against the SAME set blob.cc does:
+// a host that kept its own copy would be a second vocabulary that drifts, and
+// the drift would show up as a list that builds and then fails to load.
+const std::set<std::string>& KnownRefusalReasons();
 
 }  // namespace xr::cosmetic
