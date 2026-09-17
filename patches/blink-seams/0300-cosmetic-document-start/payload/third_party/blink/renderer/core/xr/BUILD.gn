@@ -1,0 +1,37 @@
+# Copyright 2026 RRRTX Labs
+# Use of this source code is governed by the MPL-2.0 license that can be
+# found in the LICENSE file.
+#
+# P12 cosmetic seam payload (patch 0300).
+#
+# ENABLE_XR_COSMETIC is a C PREPROCESSOR macro, not a GN variable. GN's
+# `defined()` tests scope variables, so an `if (defined(ENABLE_XR_COSMETIC))`
+# guard here would test a variable nobody ever sets and silently read as dead
+# code — which is how this file was first written. The switch that owns this
+# feature is the xr_shield_cosmetic_v1 build arg (build/gn/argsets/flags.yaml,
+# kind: xr, default false); the macro is derived from it, per target, below and
+# in third_party/blink/renderer/core/BUILD.gn, which needs it for the `#if` at
+# the document.cc call site.
+#
+# NOT COMPILE-VERIFIED: gn and ninja are absent from the environment this was
+# written in. The patch this file belongs to is proven to APPLY and REVERT at
+# the pin by xr-browser/build/webui/cosmetic_seam_roundtrip.py; that tool does
+# not run gn, so GN-level validity of this file is unproven and is flagged in
+# the P12 evidence row rather than asserted.
+
+if (xr_shield_cosmetic_v1) {
+  source_set("xr_cosmetic_seam") {
+    sources = [
+      "xr_cosmetic_seam.cc",
+      "xr_cosmetic_seam.h",
+    ]
+
+    defines = [ "ENABLE_XR_COSMETIC=1" ]
+
+    # xr-core's cosmetic decision layer: std-only C++20, no Blink includes.
+    # The renderer-side ENGINE binding is deliberately NOT wired in this phase —
+    # only the decision layer is, because shipping an engine binding that has
+    # never been compiled would be a claim this phase cannot support.
+    deps = [ "//xr/renderer/cosmetic:core" ]
+  }
+}

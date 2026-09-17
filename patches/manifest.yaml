@@ -30,6 +30,18 @@ allowed_roots:
   # build/webui/shield_seam_roundtrip.py's never-list check; adding this root
   # does not relax it.
   - "services/network/"
+  # P12 (T1): the renderer cosmetic seam root. The document-start hook lives in
+  # third_party/blink/renderer/core (patch 0300), which is the plan's renderer
+  # seam — "hide-and-fix the ads the network layer can't ... at document-start".
+  #
+  # blink/** IS on the §12.7 never-list, so this row is worth reading carefully:
+  # adding it here does NOT relax the never-list. The never-list is enforced
+  # independently by build/webui/cosmetic_seam_roundtrip.py (the same way
+  # shield_seam_roundtrip.py enforces it for the P11 network root), and the
+  # category cap below (blink_seams: 25) bounds the file count. What this row
+  # does is let the manifest ACCOUNT for the seam, because a patch that is not
+  # in the manifest is invisible to the budget ledger and to the guard lint.
+  - "third_party/blink/renderer/core/"
 patches:
   - id: "0001-brand-ui"
     owner: "@xr/platform"
@@ -74,3 +86,36 @@ patches:
       - services/network/xr/xr_shield_gate.h
       - services/network/xr/xr_shield_gate.cc
     dir: network-seams/0200-shield-network-seam
+  # P12 (T1): the cosmetic document-start seam. category blink_seams (cap 25).
+  # 5 files: 2 upstream hooks (core/BUILD.gn, dom/document.cc) + 3 XR-owned
+  # payload sources under core/xr/. tools/patch_manifest_check.py (xr-browser)
+  # asserts this list EQUALS the paths the patch touches, so the ledger cannot
+  # drift from the diff — and asserts the count against the cap below.
+  #
+  # The hook is Document::WillInsertBody (document.cc:4112 at the pin), not a
+  # function invented for the diff: build/webui/cosmetic_seam_roundtrip.py
+  # re-derives this patch from the pinned upstream bytes and refuses to emit it
+  # unless every anchor exists exactly once there. Its first draft hooked
+  # `Document::ParseRootElementBeforeChildren`, which is not in Chromium 152 at
+  # all; the round-trip reported "anchor not found" and the hook moved.
+  #
+  # EVERY call site is inside `#if defined(ENABLE_XR_COSMETIC)`, and
+  # tools/blink_guard_lint.py parses the hunk text to require it — an unguarded
+  # hook would mean the seam is compiled into every build including the ones
+  # where the feature is off, so the flag would gate the CALL but not the CODE.
+  #
+  # NO CHROMIUM BUILD IS CLAIMED. gn and ninja are absent from the environment
+  # this was written in, so the payload has never been compiled against Blink.
+  # What is proven is the patch's round-trip at the pin (apply -> revert
+  # byte-exact -> anchor perturbation -> budget growth) by
+  # build/webui/cosmetic_seam_roundtrip.py, and the guard pattern by the lint.
+  - id: "0300-cosmetic-document-start"
+    owner: "@xr/platform"
+    category: blink_seams
+    files:
+      - third_party/blink/renderer/core/BUILD.gn
+      - third_party/blink/renderer/core/dom/document.cc
+      - third_party/blink/renderer/core/xr/BUILD.gn
+      - third_party/blink/renderer/core/xr/xr_cosmetic_seam.h
+      - third_party/blink/renderer/core/xr/xr_cosmetic_seam.cc
+    dir: blink-seams/0300-cosmetic-document-start

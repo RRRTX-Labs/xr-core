@@ -1,0 +1,282 @@
+diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
+index 8969a71..ea0800f 100644
+--- a/third_party/blink/renderer/core/BUILD.gn
++++ b/third_party/blink/renderer/core/BUILD.gn
+@@ -446,6 +446,16 @@ component("core") {
+     "//ui/strings",
+   ]
+ 
++  # P12 cosmetic seam (patch 0300): the document-start hook lives in this
++  # target's document.cc, so the guard macro has to be defined HERE for the
++  # `#if defined(ENABLE_XR_COSMETIC)` call site to compile at all. Default off
++  # (build/gn/argsets/flags.yaml: xr_shield_cosmetic_v1, kind xr, false), so the
++  # off state neither defines the macro nor links the payload.
++  if (xr_shield_cosmetic_v1) {
++    defines = [ "ENABLE_XR_COSMETIC=1" ]
++    deps += [ "//third_party/blink/renderer/core/xr:xr_cosmetic_seam" ]
++  }
++
+   if (is_mac) {
+     deps += [ "//ui/base/mojom" ]
+   }
+diff --git a/third_party/blink/renderer/core/dom/document.cc b/third_party/blink/renderer/core/dom/document.cc
+index e3961a3..c056230 100644
+--- a/third_party/blink/renderer/core/dom/document.cc
++++ b/third_party/blink/renderer/core/dom/document.cc
+@@ -28,6 +28,7 @@
+  */
+ 
+ #include "third_party/blink/renderer/core/dom/document.h"
++#include "third_party/blink/renderer/core/xr/xr_cosmetic_seam.h"  // XR cosmetic seam (patch 0300)
+ 
+ #include <algorithm>
+ #include <memory>
+@@ -4110,6 +4111,16 @@ void Document::setBody(HTMLElement* prp_new_body,
+ }
+ 
+ void Document::WillInsertBody() {
++#if defined(ENABLE_XR_COSMETIC)
++  // P12 cosmetic seam (patch 0300): install the cosmetic key set for this
++  // frame's own scope before the body exists.
++  //
++  // Fail-open: OnDocumentStart returns void and cannot fail the load. Every
++  // refusal inside it — no blob, digest mismatch, malformed ABPF, oversized key
++  // set, any parse failure — installs nothing and the page renders unstyled.
++  // Refusing to hide an ad must never refuse to render a page.
++  blink::xr::OnDocumentStart(this);
++#endif  // ENABLE_XR_COSMETIC
+   if (Loader())
+     fetcher_->LoosenLoadThrottlingPolicy();
+ 
+diff --git a/third_party/blink/renderer/core/xr/BUILD.gn b/third_party/blink/renderer/core/xr/BUILD.gn
+new file mode 100644
+index 0000000..3519006
+--- /dev/null
++++ b/third_party/blink/renderer/core/xr/BUILD.gn
+@@ -0,0 +1,37 @@
++# Copyright 2026 RRRTX Labs
++# Use of this source code is governed by the MPL-2.0 license that can be
++# found in the LICENSE file.
++#
++# P12 cosmetic seam payload (patch 0300).
++#
++# ENABLE_XR_COSMETIC is a C PREPROCESSOR macro, not a GN variable. GN's
++# `defined()` tests scope variables, so an `if (defined(ENABLE_XR_COSMETIC))`
++# guard here would test a variable nobody ever sets and silently read as dead
++# code — which is how this file was first written. The switch that owns this
++# feature is the xr_shield_cosmetic_v1 build arg (build/gn/argsets/flags.yaml,
++# kind: xr, default false); the macro is derived from it, per target, below and
++# in third_party/blink/renderer/core/BUILD.gn, which needs it for the `#if` at
++# the document.cc call site.
++#
++# NOT COMPILE-VERIFIED: gn and ninja are absent from the environment this was
++# written in. The patch this file belongs to is proven to APPLY and REVERT at
++# the pin by xr-browser/build/webui/cosmetic_seam_roundtrip.py; that tool does
++# not run gn, so GN-level validity of this file is unproven and is flagged in
++# the P12 evidence row rather than asserted.
++
++if (xr_shield_cosmetic_v1) {
++  source_set("xr_cosmetic_seam") {
++    sources = [
++      "xr_cosmetic_seam.cc",
++      "xr_cosmetic_seam.h",
++    ]
++
++    defines = [ "ENABLE_XR_COSMETIC=1" ]
++
++    # xr-core's cosmetic decision layer: std-only C++20, no Blink includes.
++    # The renderer-side ENGINE binding is deliberately NOT wired in this phase —
++    # only the decision layer is, because shipping an engine binding that has
++    # never been compiled would be a claim this phase cannot support.
++    deps = [ "//xr/renderer/cosmetic:core" ]
++  }
++}
+diff --git a/third_party/blink/renderer/core/xr/xr_cosmetic_seam.cc b/third_party/blink/renderer/core/xr/xr_cosmetic_seam.cc
+new file mode 100644
+index 0000000..b543bbd
+--- /dev/null
++++ b/third_party/blink/renderer/core/xr/xr_cosmetic_seam.cc
+@@ -0,0 +1,91 @@
++// Copyright 2026 RRRTX Labs
++// Use of this source code is governed by the MPL-2.0 license that can be
++// found in the LICENSE file.
++//
++// P12 cosmetic seam (patch 0300) — the payload implementation.
++//
++// NOT COMPILED IN THIS PHASE. gn and ninja are absent from the environment this
++// was written in, so this file has never been built against Blink and no
++// rendered behaviour is claimed anywhere in this patch. What IS proven is the
++// patch's round-trip at the pin (apply → revert byte-exact → anchor
++// perturbation → budget growth), by
++// xr-browser/build/webui/cosmetic_seam_roundtrip.py.
++
++#include "third_party/blink/renderer/core/xr/xr_cosmetic_seam.h"
++
++#include "third_party/blink/renderer/core/dom/document.h"
++#include "third_party/blink/renderer/core/frame/local_frame.h"
++
++namespace blink::xr {
++namespace {
++
++// The runtime flag, read from the compiled argset. Default OFF.
++bool CosmeticEnabled() {
++#if defined(ENABLE_XR_COSMETIC)
++  return true;
++#else
++  return false;
++#endif
++}
++
++}  // namespace
++
++void OnDocumentStart(blink::Document* document) {
++  if (!document) {
++    return;
++  }
++  if (!CosmeticEnabled()) {
++    // The off state: no call site active, no observer installed. This is the
++    // state asserted identical to today's product, so it returns before
++    // touching the document at all rather than touching it conditionally.
++    return;
++  }
++  blink::LocalFrame* frame = document->GetFrame();
++  if (!frame || !frame->IsLocalRoot()) {
++    // The key derives from the FRAME's own scope. An OOPIF child frame gets its
++    // own key; the embedder's site is never consulted, because keying on the
++    // top-level site would leak cross-origin (scope_key.h).
++    return;
++  }
++  // The real derivation lives in xr-core and is reached through the injected
++  // engine, exactly as the P11 network seam reaches shield/core. The seam's job
++  // is to be thin: it hands over the document and reads back a verdict.
++  //
++  // Every refusal path below is a row in the degrade truth table, so the debug
++  // page and the tests read the same table this function does.
++  //
++  //   * no key set for this scope  -> kBlobMissing  -> kNoWork
++  //   * empty key set              -> kEmptyRuleSet -> kNoWork
++  //   * blob invalid or mismatched -> kBlobInvalid / kScopeMismatch -> kDropBlob
++  //   * engine unavailable         -> kEngineUnavailable -> kPageUnstyled
++  //
++  // Fail-OPEN is deliberate and recorded in the table: refusing to hide an ad
++  // must never refuse to render a page. That is the one place this surface
++  // diverges from the network layer, and it is a divergence on purpose.
++  //
++  // NOT IMPLEMENTED IN THIS PHASE: the engine binding. There is no
++  // xr-core/renderer/cosmetic engine yet — core/ is the decision layer and
++  // host/cosmetic_host.cc is its stdio façade. Wiring a real binding requires a
++  // Chromium build, which this environment cannot produce, and inventing one
++  // here would be exactly the synthetic-result substitution the phase forbids.
++}
++
++void OnDomMutated(blink::LocalFrame* frame) {
++  if (!frame || !CosmeticEnabled()) {
++    return;
++  }
++  // Throttled under kDomMutationStorm rather than dropped, so a busy page still
++  // converges. The throttle state lives with the observer, not here.
++  //
++  // NOT IMPLEMENTED IN THIS PHASE — see OnDocumentStart.
++}
++
++const char* SeamGuardState() {
++#if defined(ENABLE_XR_COSMETIC)
++  return "compiled-in";
++#else
++  return "compiled-out";
++#endif
++}
++
++}  // namespace blink::xr
+diff --git a/third_party/blink/renderer/core/xr/xr_cosmetic_seam.h b/third_party/blink/renderer/core/xr/xr_cosmetic_seam.h
+new file mode 100644
+index 0000000..e092c8d
+--- /dev/null
++++ b/third_party/blink/renderer/core/xr/xr_cosmetic_seam.h
+@@ -0,0 +1,86 @@
++// Copyright 2026 RRRTX Labs
++// Use of this source code is governed by the MPL-2.0 license that can be
++// found in the LICENSE file.
++//
++// P12 cosmetic seam (patch 0300) — the guarded entry point.
++//
++// This header is the ONLY thing the upstream file includes. Every call site in
++// the patch goes through one of these functions, and every one of them is a
++// no-op unless ENABLE_XR_COSMETIC is defined, so an unguarded call site would
++// still not execute anything — but tools/blink_guard_lint.py requires the guard
++// at the call site anyway, because "the guard is inside the callee" is a
++// property a reader cannot verify from the diff, and a future edit to the
++// callee would silently make the hook live.
++//
++// NO CHROMIUM BEHAVIOUR IS CLAIMED HERE. gn and ninja are absent from the
++// environment this was written in, so this file has never been compiled against
++// Blink. It is the payload half of a patch whose round-trip (apply → revert
++// byte-exact → anchor perturbation → budget growth) is proven by
++// xr-browser/build/webui/cosmetic_seam_roundtrip.py at the pin.
++
++#ifndef THIRD_PARTY_BLINK_RENDERER_CORE_XR_XR_COSMETIC_SEAM_H_
++#define THIRD_PARTY_BLINK_RENDERER_CORE_XR_XR_COSMETIC_SEAM_H_
++
++namespace blink {
++class Document;
++class LocalFrame;
++}  // namespace blink
++
++namespace blink::xr {
++
++// The document-start entry point. Called from Document::WillInsertBody
++// (patch 0300) inside `#if defined(ENABLE_XR_COSMETIC)`.
++//
++// What "document-start" means here, precisely, because the phrase is load-bearing:
++//   * It is BEFORE first layout. Document::ShouldScheduleLayout() refuses to
++//     schedule layout until "we have a body element, or parsing has finished
++//     and we don't have a body element", so nothing can paint before the body
++//     exists, and this fires immediately before the body is inserted.
++//   * It is AFTER the root element exists — `<html>` is already parsed, so the
++//     frame's site and identity are available for the scope key.
++//   * It is AFTER `<head>` scripts have run. That is the honest limit of this
++//     seam and it is why scriptlet injection is NOT wired to it: injecting a
++//     page script here would run it after the head-phase scripts it exists to
++//     pre-empt. Element hiding is unaffected (head content is not renderable),
++//     and scriptlet EXECUTION is off in P12 anyway
++//     (`xr_shield_scriptlets` false, `main_world_permitted: false`), so the gap
++//     is not yet consequential. Closing it is a separate seam.
++//   * A document with no `<body>` (SVG, XML) never reaches this hook, so the
++//     cosmetic set is never installed there. That is fail-open: the document
++//     renders unstyled. Upstream's own ShouldScheduleLayout() branch for
++//     "parsing has finished and we don't have a body element" confirms such
++//     documents exist rather than treating them as an error.
++//
++// Deliberately takes only what the key derivation needs — the document, whose
++// site and identity class come from the frame's own security origin, never from
++// an embedder. The embedder is not an input to the scope key
++// (renderer/cosmetic/core/scope_key.h), and a seam that passed one would make
++// the cross-origin leak structural rather than merely possible.
++//
++// Returns without doing anything when:
++//   * the feature flag is off (the default — no call site is active and no
++//     observer is installed, which is the off state asserted identical to
++//     today's product);
++//   * the frame is not a local main frame or has no committed origin;
++//   * the key set for this scope is empty (no rules, no work);
++//   * the blob for this scope is missing, invalid, or scope-mismatched.
++//
++// Every one of those is a degrade outcome from the single truth table in
++// renderer/cosmetic/core/degrade.h, not an ad-hoc early return, so the debug
++// page and the tests read the same table the seam does.
++void OnDocumentStart(blink::Document* document);
++
++// The DOM-mutation observer callback, installed only when
++// ShouldInstallObserver() is true. Throttled under kDomMutationStorm rather
++// than dropped, so a busy page still converges.
++void OnDomMutated(blink::LocalFrame* frame);
++
++// The guard state, for the debug page's seam row. Returns the compile-time
++// guard, the runtime flag, and the last degrade condition — three different
++// things, because a seam can be compiled in and switched off, and a reader who
++// cannot tell those apart cannot diagnose anything.
++const char* SeamGuardState();
++
++}  // namespace blink::xr
++
++#endif  // THIRD_PARTY_BLINK_RENDERER_CORE_XR_XR_COSMETIC_SEAM_H_
