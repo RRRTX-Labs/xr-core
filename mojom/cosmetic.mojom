@@ -1,0 +1,80 @@
+// Copyright 2026 RRRTX Labs
+// Use of this source code is governed by the MPL-2.0 license that can be
+// found in the LICENSE file.
+//
+// Contract: xr.mojom.Cosmetic (P12-T2, plan §8 line 749): one renderer-side
+//           hook — on document creation the browser requests the compiled
+//           cosmetic key-set for the frame and applies hide rules at
+//           document-start; rule compilation stays in the network service,
+//           which sends the compiled-for-this-page subset. Budget notes on
+//           each method pin the sizes from core/keyset.h and core/scope_key.h
+//           so the contract and the budget cannot drift.
+// Version: kContractVersion (xr_types.mojom). Migration note:
+//          xr-browser/docs/contracts/xr-schema-v1.md.
+// Fixtures: xr-browser/docs/contracts/vectors/cosmetic-v1.json.
+// Fake: xr-core/fakes/cosmetic.py (host_protocol.md parity).
+
+module xr.mojom;
+
+import "xr_common.mojom";
+import "xr_types.mojom";
+
+const int32 kContractVersion = 1;  // per-file freeze stamp (see xr_types).
+
+// RESPECT the per-frame key: the cache slot is (identity, site, trust).
+// Bounded at the boundary by core/scope_key.h (site <=256, identity <=128).
+struct CosmeticScope {
+  string frame_site;        // the FRAME's registrable domain (NOT the top site)
+  string frame_identity;    // the identity owning this frame's partition
+  string trust;             // anonymous | authenticated | enterprise
+  string navigation;        // initial | cross-document | same-document
+  string url_class;         // a coarse document class, never the full URL
+  string embedder_site;     // REFUSED when non-empty (see ScopeError)
+};
+
+// Hit counts for the Observatory panel: page_modifying (remove) rules are
+// reported SEPARATELY so the UI never labels an injected element as a
+// blocked request.
+struct CosmeticCounters {
+  uint32 compiled_selectors;
+  uint32 duplicates_removed;   // semantic dedup: canonical selector+action
+  uint32 page_modifying;       // `remove` actions only
+  uint32 producer_refusals;    // rules the producer refused at compile time
+  string blob_cache_occupancy; // "NOT-RUN (network-service side)" — never invented
+};
+
+// Typed result. The closed refusal vocabulary is the union of
+// SelectorError / KeySetError / BlobError / ScopeError names — no interface
+// returns a string error + int code pair. kRejected carries which.
+enum CosmeticError {
+  kOk = 0,
+  kEmbedderRefused = 1,   // scope-key saw a non-empty embedder_site
+  kRejected = 2,          // see `reason` (closed vocabulary), `at` = index
+  kFailClosed = 3,        // safety default engaged (no key => no rules)
+};
+
+union CosmeticResult {
+  string canonical;             // selector-parse canonical render
+  string scope_hex;             // scope-key hex sha256 (opaque to callers)
+  string selectors_blob;        // blob-build: the exact canonical blob bytes
+  string selectors_sha256;      // blob-build/blob-check digest (single SHA-256)
+  CosmeticCounters counters;    // key-set / blob-check accounting
+};
+
+interface Cosmetic {
+  // Request the compiled cosmetic key-set for the frame's own scope. The
+  // browser-side cache is keyed (identity, site, trust) and returns the
+  // compiled-for-this-page subset; the renderer applies it at document-start
+  // and never compiles a blob itself.
+  // budget: kMaxKeySetRules 4096 / kMaxKeySetBytes 1 MiB per site
+  GetCompiledRuleSet(CosmeticScope scope) => (CosmeticResult result);
+
+  // The per-page rule blob cache in the network service: put = store a
+  // compiled blob for the scope (identity-aware key), evict = drop one or a
+  // whole identity partition, occupy-bytes = current cache occupancy.
+  // budget: blob <= kMaxKeySetBytes 1 MiB; occupancy returned as-as-is
+  CacheCompiledBlob(CosmeticScope scope, string blob) => (Ack ack);
+  EvictCompiledBlob(CosmeticScope scope) => (Ack ack);
+  EvictIdentityPartition(string frame_identity, string trust) => (Ack ack);
+  CacheOccupancyBytes() => (uint32 bytes);
+};

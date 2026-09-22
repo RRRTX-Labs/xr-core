@@ -18,6 +18,7 @@ import("//mojo/public/tools/bindings/mojom.gni")
 mojom("mojom") {
   sources = [
     "activity_log.mojom",
+    "cosmetic.mojom",
     "downloads.mojom",
     "guard.mojom",
     "identity.mojom",

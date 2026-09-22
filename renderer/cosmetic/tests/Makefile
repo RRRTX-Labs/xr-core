@@ -47,7 +47,8 @@ HOST_OBJS := $(BUILD)/renderer/cosmetic/host/cosmetic_host.o
 CORE_OBJS += $(COMMON_OBJS)
 
 TESTS := test_selector test_pseudo test_scope_key test_style \
-         test_keyset test_degrade test_blob_strict test_abpf
+         test_keyset test_degrade test_blob_strict test_abpf \
+         test_cosmetic_fuzz
 
 .PHONY: build test clean
 
