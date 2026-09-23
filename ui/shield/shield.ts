@@ -79,11 +79,35 @@ export interface ShieldRefusalRow {
   count?: number;
 }
 
+/** The P12-T6 cosmetic riding row. Every field is a closed vocabulary the
+ * shield host echoes verbatim — this view never derives a cosmetic state
+ * (it REPORTS what cosmetic_host said, incl. the "NOT-RUN (network-service side)"
+ * blob-cache occupancy and the verbatim scriptlet registry state, so page
+ * and host cannot drift). */
+export interface CosmeticRow {
+  flag?: 'on' | 'off';
+  generic_set_version?: string;
+  key_set_rules?: number;
+  blob_cache_occupancy?: string;
+  scriptlet_registry_state?: string;
+  refused_selectors?: number;
+  refused_pseudos?: number;
+  degrade_events?: number;
+  seam_guard_state?: 'armed' | 'inert' | 'hook-dead';
+}
+
+export const COSMETIC_SEAM_GUARD_STATES = [
+  'armed',
+  'inert',
+  'hook-dead',
+] as const;
+
 export interface ShieldPage {
   page_state?: ShieldPageState;
   channel?: string;
   chip_count?: number;
   posture?: { mode?: string; chip?: string; reason?: string };
+  cosmetic?: CosmeticRow | null;
   engine?: {
     alive?: boolean;
     poisoned?: boolean;
@@ -251,8 +275,71 @@ export class XrShield extends LitElement {
             <dd>${String(p.memory?.scope_count ?? 0)}</dd>
           </div>
         </dl>
+
+        <h2>${s('IDS_XR_SHIELD_COSMETIC_HEADING')}</h2>
+        ${p.cosmetic
+          ? html`<dl class="xr-shield-rows">
+              <div class="xr-shield-row">
+                <dt>${s('IDS_XR_SHIELD_COSMETIC_FLAG')}</dt>
+                <dd>${p.cosmetic.flag ?? '—'}</dd>
+              </div>
+              <div class="xr-shield-row">
+                <dt>${s('IDS_XR_SHIELD_COSMETIC_GENERIC_SET')}</dt>
+                <dd>${p.cosmetic.generic_set_version ?? '—'}</dd>
+              </div>
+              <div class="xr-shield-row">
+                <dt>${s('IDS_XR_SHIELD_COSMETIC_KEY_SET_RULES')}</dt>
+                <dd>${String(p.cosmetic.key_set_rules ?? 0)}</dd>
+              </div>
+              <div class="xr-shield-row">
+                <dt>${s('IDS_XR_SHIELD_COSMETIC_BLOB_OCCUPANCY')}</dt>
+                <dd>${p.cosmetic.blob_cache_occupancy ?? '—'}</dd>
+              </div>
+              <div class="xr-shield-row">
+                <dt>${s('IDS_XR_SHIELD_COSMETIC_SCRIPTLETS')}</dt>
+                <dd>${p.cosmetic.scriptlet_registry_state ?? '—'}</dd>
+              </div>
+              <div class="xr-shield-row">
+                <dt>${s('IDS_XR_SHIELD_COSMETIC_REFUSED')}</dt>
+                <dd>
+                  ${s('IDS_XR_SHIELD_COSMETIC_REFUSED_ROW', {
+                    SELECTORS: String(p.cosmetic.refused_selectors ?? 0),
+                    PSEUDOS: String(p.cosmetic.refused_pseudos ?? 0),
+                  })}
+                </dd>
+              </div>
+              <div class="xr-shield-row">
+                <dt>${s('IDS_XR_SHIELD_COSMETIC_DEGRADE')}</dt>
+                <dd>${String(p.cosmetic.degrade_events ?? 0)}</dd>
+              </div>
+              <div class="xr-shield-row">
+                <dt>${s('IDS_XR_SHIELD_COSMETIC_SEAM_GUARD')}</dt>
+                <dd>${this.seamGuardText(s, p.cosmetic.seam_guard_state)}</dd>
+              </div>
+            </dl>`
+          : html`<p class="xr-shield-cosmetic-empty">
+              ${s('IDS_XR_SHIELD_COSMETIC_EMPTY')}
+            </p>`}
       </section>
     `;
+  }
+
+  private seamGuardText(
+    s: (id: string, p?: Record<string, string>) => string,
+    guard?: 'armed' | 'inert' | 'hook-dead',
+  ): string {
+    switch (guard) {
+      case 'armed':
+        return s('IDS_XR_SHIELD_COSMETIC_GUARD_ARMED');
+      case 'inert':
+        return s('IDS_XR_SHIELD_COSMETIC_GUARD_INERT');
+      case 'hook-dead':
+        return s('IDS_XR_SHIELD_COSMETIC_GUARD_HOOK_DEAD');
+      default:
+        // an unknown guard state from the host renders honestly, never
+        // guessed (the stateText law)
+        return guard ?? '';
+    }
   }
 
   private stateText(

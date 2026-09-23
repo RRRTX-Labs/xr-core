@@ -187,6 +187,11 @@ JsonValue MakeLedgerRow(const RequestContext& ctx, const LedgerRowParams& p) {
       {"identity", JsonValue(ctx.identity.value)},
       {"list_id", JsonValue(p.list_id)},
       {"origin", JsonValue(origin)},
+      // P12-T6: an injected/removed element (cosmetic `remove`, a soft-wall
+      // scriptlet) is NOT a blocked request — the Observatory renders the
+      // row's page_modifying flag so the honest categorization is data, not
+      // copy. Network-block provenance rows carry false.
+      {"page_modifying", JsonValue(p.page_modifying)},
       {"request_class", JsonValue(RequestClassName(ctx.request_class))},
       {"rule", JsonValue(p.rule)},
       {"rule_id", JsonValue(p.rule_id)},

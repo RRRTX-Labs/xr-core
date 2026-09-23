@@ -70,7 +70,7 @@ quietly growing this table.
 | `exception-remove` | `{scopes?, scope_id}` | remove by id ⇒ `{"scopes":[survivors]}`. The id not present ⇒ `kRejected` `unknown-scope-id:<id>` (exit 0 — removing a non-existent exception is a refusal, never a silent no-op); missing/empty/non-string `scope_id` ⇒ `kMalformedInput` `bad-scope-id` |
 | `exception-sweep` | `{scopes?, now_mono}` | the deterministic expiry job as a method ⇒ `{"scopes":[active],"swept":["<expired ids>"]}`, input order preserved in both arrays. `now_mono` REQUIRED and ≥ 0 (else `kMalformedInput` `missing-now-mono` — no wall clock anywhere; the as-of IS the argument). Expiry boundary is INCLUSIVE: `expiry_mono >= 0 && now_mono >= expiry_mono` ⇒ swept (the T2 SweepAsOf law); `expiry_mono: -1` = never expires, never swept |
 | `site-toggle` | `{scopes?, site, on, expiry_mono?}` | the per-site toggle mechanic ⇒ `{"scopes":[…],"scope_id":"site-toggle:<site>","toggled":"on\|off"}`. `on:true` adds the canonical scope `{scope_id:"site-toggle:<site>", site:<site>, reason:"user-site-toggle", expiry_mono:<arg or -1>}`; `on:false` removes it. Re-presenting the CURRENT state ⇒ `kRejected` `toggle-already-on:<site>` / `toggle-already-off:<site>` (exit 0 — the equal-reoffer precedent). The toggle's id space is SHARED with manual scopes: a hand-added scope with id `site-toggle:<site>` makes `on:true` a refusal (collision law, no namespace magic). `site` non-empty string (else `kMalformedInput` `bad-site`), `on` strict bool (else `bad-toggle`), `expiry_mono` int ≥ -1 (else `bad-expiry`) |
-| `event-emit` | `{context, seq, ts_millis, action, why_code}` required; `{tab_id, rule_id, rule, list_id, bundle_version}` optional | the Activity Ledger emitter ⇒ `{"row": …}` — a living `block-event-v1` document (xr-browser registry-post-freeze.md): the canonical superset row around the FROZEN BlockEvent vocabulary (`action` k-spellings, `request_class`, redacted `target`) plus provenance (`rule_id`/`rule`/`list_id`/`bundle_version`, site-class via `origin`), the caller's monotonic `seq` (no clock — the dispatch.cc ledger-row precedent) and `why_code` from the closed verdict set below. `seq`/`ts_millis` int ≥ 0 (else `missing-seq` / `missing-ts-millis`); `tab_id`/`bundle_version` int ≥ 0 (else `bad-tab-id` / `bad-bundle-version`); `action` ∈ the frozen k-spellings (else `missing-action` / `field-not-string:action` / `bad-action:<name>`); `why_code` ∈ the closed set (else `missing-why-code` / `field-not-string:why_code` / `bad-why-code:<code>`); provenance fields strings (else `field-not-string:<key>`). No `kRejected` class — the emitter has no content-conflict semantics; every bad input is `kMalformedInput` (exit 1) |
+| `event-emit` | `{context, seq, ts_millis, action, why_code}` required; `{tab_id, rule_id, rule, list_id, bundle_version}` optional; `page_modifying` (bool, default false) marks an injected/removed element as a page modification, never a block | the Activity Ledger emitter ⇒ `{"row": …}` — a living `block-event-v1` document (xr-browser registry-post-freeze.md): the canonical superset row around the FROZEN BlockEvent vocabulary (`action` k-spellings, `request_class`, redacted `target`) plus provenance (`rule_id`/`rule`/`list_id`/`bundle_version`, site-class via `origin`), the caller's monotonic `seq` (no clock — the dispatch.cc ledger-row precedent) and `why_code` from the closed verdict set below. `seq`/`ts_millis` int ≥ 0 (else `missing-seq` / `missing-ts-millis`); `tab_id`/`bundle_version` int ≥ 0 (else `bad-tab-id` / `bad-bundle-version`); `action` ∈ the frozen k-spellings (else `missing-action` / `field-not-string:action` / `bad-action:<name>`); `why_code` ∈ the closed set (else `missing-why-code` / `field-not-string:why_code` / `bad-why-code:<code>`); `page_modifying` a bool if present (else `page-modifying-not-bool`); provenance fields strings (else `field-not-string:<key>`). No `kRejected` class — the emitter has no content-conflict semantics; every bad input is `kMalformedInput` (exit 1) |
 | `page-states` | `{}` | `{"states":["normal","engine-dead","engine-poisoned","kill-switch","route-loss"]}` — the public vocabulary of the debug page's `page_state` field (lockstep with the host `kPageStates`, the view state union and `tools/shield_state_check.py`). NOT channel-gated: the state names are public, the page bytes are not. Unknown keys ⇒ `kMalformedInput` (exit 1) |
 | `debug-page` | `{engine_alive?, engine_poisoned?, kill_switch_on?, route_bound?, enterprise?, bundle?, state?, last_apply?, ring?, scopes?}` | the xr://shield dev-page state document — ONLY when the host was started with `--build-channel dev`; otherwise `{"error":"kRejected","reason":"build-channel-not-dev:<channel>"}` (exit 0 — an honest refusal). Full grammar + the three enterprise laws: the dev-page section below |
 
@@ -113,7 +113,10 @@ bad `--flag k=v`).
 - `verdict.why_code`: `rule-blocked` · `rule-allowed` · `rule-redirected` ·
   `rule-replaced` · `no-match` · `no-bundle` · `exception-scope` ·
   `engine-dead-fail-open` · `engine-poisoned-fail-open` · `kill-switch` ·
-  `route-loss-fail-closed`.
+  `route-loss-fail-closed` · `cosmetic-injected-element` ·
+  `rule-page-modifying` (the two P12-T6 page-modifying codes: an
+  injected/removed element is a page modification, not a block — the
+  Observatory labels it honestly via the row's page_modifying flag).
 - `posture.mode`/`chip`/`reason`: `normal|fail-open|fail-closed` ·
   `green|amber|red` · `normal|engine-dead|engine-poisoned|kill-switch|route-loss`.
 - `request_class` (FROZEN, xr_types.mojom): `kNavigation` `kSubresource`
@@ -127,7 +130,9 @@ bad `--flag k=v`).
   `contract_version` = 1; `action` reuses the frozen k-spellings and
   `why_code` reuses the closed verdict set above — no second naming.
   A row may record ANY verdict (every decision is an event, plan
-  §data), not only blocks.
+  §data), not only blocks. `page_modifying` (P12-T6, bool, default
+  false) marks an injected/removed element so the Observatory reports it
+  as a page modification, never as a blocked request.
 
 ## Filter grammar v1 (network rules)
 

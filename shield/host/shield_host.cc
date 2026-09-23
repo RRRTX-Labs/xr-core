@@ -403,7 +403,7 @@ int MethodDebugPage(const JsonValue& args, const std::string& channel) {
   std::string bad;
   if (!OnlyKeys(args, {"engine_alive", "engine_poisoned", "route_bound",
                        "kill_switch_on", "bundle", "state", "last_apply",
-                       "ring", "scopes", "enterprise"}, &bad)) {
+                       "ring", "scopes", "enterprise", "cosmetic"}, &bad)) {
     EmitError("kMalformedInput", "unknown-field:" + bad);
     return 1;
   }
@@ -505,6 +505,83 @@ int MethodDebugPage(const JsonValue& args, const std::string& channel) {
     }
     last_apply = *la;  // validated; Canonical() sorts the keys
   }
+  // P12-T6: the cosmetic riding row. The shield page is stateless (every row
+  // rides in the request), so cosmetic's state is ECHOED as given — the page
+  // REPORTS, never derives. The seam-guard state is a closed vocabulary (the
+  // guard lint proves the hook sits behind ENABLE_XR_COSMETIC; the degrade
+  // table owns the runtime half), so an out-of-vocabulary value is
+  // kMalformedInput rather than a guessed default.
+  JsonValue::Object cosmetic;
+  const JsonValue* cv6 = args.find("cosmetic");
+  if (cv6 != nullptr) {
+    if (!cv6->is_object()) {
+      EmitError("kMalformedInput", "cosmetic-not-object");
+      return 1;
+    }
+    if (!OnlyKeys(*cv6,
+                  {"flag", "generic_set_version", "key_set_rules",
+                   "blob_cache_occupancy", "scriptlet_registry_state",
+                   "refused_selectors", "refused_pseudos", "degrade_events",
+                   "seam_guard_state"},
+                  &bad)) {
+      EmitError("kMalformedInput", "unknown-field:" + bad);
+      return 1;
+    }
+    const JsonValue* fv = cv6->find("flag");
+    if (fv == nullptr || !fv->is_string() ||
+        (fv->as_string() != "on" && fv->as_string() != "off")) {
+      EmitError("kMalformedInput", "bad-cosmetic-flag");
+      return 1;
+    }
+    const JsonValue* gv = cv6->find("generic_set_version");
+    if (gv == nullptr || !gv->is_string() || gv->as_string().empty()) {
+      EmitError("kMalformedInput", "missing-generic-set-version");
+      return 1;
+    }
+    const JsonValue* kv = cv6->find("key_set_rules");
+    if (kv == nullptr || !kv->is_int() || kv->as_int() < 0) {
+      EmitError("kMalformedInput", "bad-key-set-rules");
+      return 1;
+    }
+    const JsonValue* oc = cv6->find("blob_cache_occupancy");
+    if (oc == nullptr || !oc->is_string()) {
+      EmitError("kMalformedInput", "bad-blob-cache-occupancy");
+      return 1;
+    }
+    const JsonValue* rg = cv6->find("scriptlet_registry_state");
+    if (rg == nullptr || !rg->is_string()) {
+      EmitError("kMalformedInput", "bad-scriptlet-registry-state");
+      return 1;
+    }
+    // counts: int ≥ 0, never hidden (the page reports refusals honestly).
+    for (const char* key : {"refused_selectors", "refused_pseudos",
+                            "degrade_events"}) {
+      const JsonValue* c = cv6->find(key);
+      if (c == nullptr || !c->is_int() || c->as_int() < 0) {
+        EmitError("kMalformedInput", std::string("bad-") + key);
+        return 1;
+      }
+    }
+    const JsonValue* sg = cv6->find("seam_guard_state");
+    if (sg == nullptr || !sg->is_string()) {
+      EmitError("kMalformedInput", "bad-seam-guard-state");
+      return 1;
+    }
+    const std::string sgs = sg->as_string();
+    if (sgs != "armed" && sgs != "inert" && sgs != "hook-dead") {
+      EmitError("kMalformedInput", "bad-seam-guard-state");
+      return 1;
+    }
+    cosmetic["degrade_events"] = *cv6->find("degrade_events");
+    cosmetic["flag"] = *fv;
+    cosmetic["generic_set_version"] = *gv;
+    cosmetic["key_set_rules"] = *kv;
+    cosmetic["blob_cache_occupancy"] = *oc;
+    cosmetic["refused_pseudos"] = *cv6->find("refused_pseudos");
+    cosmetic["refused_selectors"] = *cv6->find("refused_selectors");
+    cosmetic["scriptlet_registry_state"] = *rg;
+    cosmetic["seam_guard_state"] = *sg;
+  }
   int chip_count = 0;
   if (have_ring) {
     for (const auto& e : ring.events)
@@ -533,6 +610,8 @@ int MethodDebugPage(const JsonValue& args, const std::string& channel) {
       {"bundles", have_state ? ApplyStateToJson(state) : JsonValue(nullptr)},
       {"channel", JsonValue(channel)},
       {"chip_count", JsonValue(chip_count)},
+      {"cosmetic", cv6 != nullptr ? JsonValue(cosmetic)
+                                  : JsonValue(nullptr)},
       {"engine", JsonValue(JsonValue::Object{
                      {"alive", JsonValue(pin.engine_alive)},
                      {"binding", JsonValue("table-engine-v1")},
@@ -1021,7 +1100,7 @@ int main(int argc, char** argv) {
   if (method == "event-emit") {
     if (!OnlyKeys(args, {"context", "tab_id", "ts_millis", "seq", "action",
                          "rule_id", "rule", "list_id", "bundle_version",
-                         "why_code"}, &bad)) {
+                         "why_code", "page_modifying"}, &bad)) {
       EmitError("kMalformedInput", "unknown-field:" + bad);
       return 1;
     }
@@ -1098,7 +1177,10 @@ int main(int argc, char** argv) {
     static const char* kWhyCodes[] = {
         "rule-blocked", "rule-allowed", "rule-redirected", "rule-replaced",
         "no-match", "no-bundle", "exception-scope", "engine-dead-fail-open",
-        "engine-poisoned-fail-open", "kill-switch", "route-loss-fail-closed"};
+        "engine-poisoned-fail-open", "kill-switch", "route-loss-fail-closed",
+        // P12-T6: the cosmetic/scriptlet page-modifying class — "why
+        // blocked"/"shields down" cover cosmetic too (plan §12 UX).
+        "cosmetic-injected-element", "rule-page-modifying"};
     bool why_known = false;
     for (const char* w : kWhyCodes) {
       if (wv->as_string() == w) {
@@ -1111,6 +1193,14 @@ int main(int argc, char** argv) {
       return 1;
     }
     p.why_code = wv->as_string();
+    const JsonValue* pm = args.find("page_modifying");
+    if (pm != nullptr) {
+      if (!pm->is_bool()) {
+        EmitError("kMalformedInput", "page-modifying-not-bool");
+        return 1;
+      }
+      p.page_modifying = pm->as_bool();
+    }
     for (const char* key : {"rule_id", "rule", "list_id"}) {
       const JsonValue* v = args.find(key);
       if (v == nullptr) continue;

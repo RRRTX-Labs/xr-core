@@ -107,6 +107,9 @@ struct LedgerRowParams {
   std::string rule;              // filter text — "why blocked" provenance
   std::string list_id;           // "" = not list-derived
   std::string why_code;          // closed verdict vocabulary (host_protocol)
+  bool page_modifying = false;   // P12-T6: an injected/removed element is
+                                 // not a blocked request — labelled so the
+                                 // Observatory reports it honestly
   BlockAction action = BlockAction::kBlocked;
 };
 

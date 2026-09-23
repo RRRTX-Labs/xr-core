@@ -424,7 +424,49 @@
 <message name="IDS_XR_SHIELD_MEMORY_RING" desc="Row label: events held in the per-tab ring" xr-id="shield.memory.ring">
     Ring events
   </message>
-<message name="IDS_XR_SHIELD_MEMORY_SCOPES" desc="Row label: exception scopes in the riding set" xr-id="shield.memory.scopes">
+  <message name="IDS_XR_SHIELD_MEMORY_SCOPES" desc="Row label: exception scopes in the riding set" xr-id="shield.memory.scopes">
     Exception scopes
+  </message>
+  <message name="IDS_XR_SHIELD_COSMETIC_HEADING" desc="Section heading: the P12 cosmetic filtering rows (reported verbatim, never derived)" xr-id="shield.cosmetic.heading">
+    Cosmetic filtering
+  </message>
+  <message name="IDS_XR_SHIELD_COSMETIC_FLAG" desc="Row label: the xr_shield_cosmetic_v1 flag state" xr-id="shield.cosmetic.flag">
+    Cosmetic flag
+  </message>
+  <message name="IDS_XR_SHIELD_COSMETIC_GENERIC_SET" desc="Row label: the shipped generic hide-set schema version" xr-id="shield.cosmetic.generic.set">
+    Generic hide set
+  </message>
+  <message name="IDS_XR_SHIELD_COSMETIC_KEY_SET_RULES" desc="Row label: per-site key-set rule count" xr-id="shield.cosmetic.key.set.rules">
+    Key-set rules
+  </message>
+  <message name="IDS_XR_SHIELD_COSMETIC_BLOB_OCCUPANCY" desc="Row label: blob-cache occupancy (reported verbatim, incl. the NOT-RUN value)" xr-id="shield.cosmetic.blob.occupancy">
+    Blob-cache occupancy
+  </message>
+  <message name="IDS_XR_SHIELD_COSMETIC_SCRIPTLETS" desc="Row label: the scriptlet registry state (verbatim from the host)" xr-id="shield.cosmetic.scriptlets">
+    Scriptlets
+  </message>
+  <message name="IDS_XR_SHIELD_COSMETIC_REFUSED" desc="Row label: refused selector/pseudo counts" xr-id="shield.cosmetic.refused">
+    Refused rules
+  </message>
+  <message name="IDS_XR_SHIELD_COSMETIC_REFUSED_ROW" desc="Refused-rule counts; {SELECTORS}/{PSEUDOS} are the two refused classes" xr-id="shield.cosmetic.refused.row">
+    <ph name="SELECTORS">{SELECTORS}<ex>4</ex></ph> selectors, <ph name="PSEUDOS">{PSEUDOS}<ex>1</ex></ph> pseudo-classes
+  </message>
+  <message name="IDS_XR_SHIELD_COSMETIC_DEGRADE" desc="Row label: observed degrade events" xr-id="shield.cosmetic.degrade">
+    Degrade events
+  </message>
+  <message name="IDS_XR_SHIELD_COSMETIC_SEAM_GUARD" desc="Row label: the document-start seam guard state (armed/inert/hook-dead)" xr-id="shield.cosmetic.seam.guard">
+    Seam guard
+  </message>
+  <message name="IDS_XR_SHIELD_COSMETIC_GUARD_ARMED" desc="Seam guard state: the hook is behind the compile-time guard and live" xr-id="shield.cosmetic.guard.armed">
+    Armed — hook behind the compile-time guard
+  </message>
+  <message name="IDS_XR_SHIELD_COSMETIC_GUARD_INERT" desc="Seam guard state: feature flag off, hook idle" xr-id="shield.cosmetic.guard.inert">
+    Inert — flag off, hook idle
+  </message>
+  <message name="IDS_XR_SHIELD_COSMETIC_GUARD_HOOK_DEAD" desc="Seam guard state: hook death degrades to cosmetic off, never a blank page" xr-id="shield.cosmetic.guard.hook.dead">
+    Hook dead — cosmetic off, page renders unstyled
+  </message>
+  <message name="IDS_XR_SHIELD_COSMETIC_EMPTY" desc="Empty state: no cosmetic riding row in the debug payload" xr-id="shield.cosmetic.empty">
+    No cosmetic state in this payload
   </message>
 </grit-part>

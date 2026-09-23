@@ -1128,12 +1128,13 @@ ROW_ACTIONS = ("kBlocked", "kAllowed", "kRedirected", "kUpgraded")
 WHY_CODES = ("rule-blocked", "rule-allowed", "rule-redirected",
              "rule-replaced", "no-match", "no-bundle", "exception-scope",
              "engine-dead-fail-open", "engine-poisoned-fail-open",
-             "kill-switch", "route-loss-fail-closed")
+             "kill-switch", "route-loss-fail-closed",
+             "cosmetic-injected-element", "rule-page-modifying")
 
 
 def ledger_row(ctx: dict, seq: int, ts_millis: int, tab_id: int,
                bundle_version: int, action: str, why_code: str,
-               strings: dict) -> dict:
+               strings: dict, page_modifying: bool = False) -> dict:
     """Mirror of MakeLedgerRow (events.cc): canonical living row, redaction
     at creation (ctx["parts"] -> scheme://host/path, never query/fragment).
     """
@@ -1143,6 +1144,7 @@ def ledger_row(ctx: dict, seq: int, ts_millis: int, tab_id: int,
             "list_id": strings.get("list_id", ""),
             "origin": {"registrable_domain": ctx["origin"]["registrable_domain"],
                        "scheme": ctx["origin"]["scheme"]},
+            "page_modifying": page_modifying,
             "request_class": ctx["request_class"],
             "rule": strings.get("rule", ""),
             "rule_id": strings.get("rule_id", ""), "seq": seq,
@@ -1153,7 +1155,7 @@ def ledger_row(ctx: dict, seq: int, ts_millis: int, tab_id: int,
 def method_event_emit(args: dict) -> tuple[dict, int]:
     only_keys(args, ["context", "tab_id", "ts_millis", "seq", "action",
                      "rule_id", "rule", "list_id", "bundle_version",
-                     "why_code"])
+                     "why_code", "page_modifying"])
     if "context" not in args:
         raise fail("kMalformedInput", "missing-context")
     ctx = parse_context(args["context"])
@@ -1187,6 +1189,11 @@ def method_event_emit(args: dict) -> tuple[dict, int]:
         raise fail("kMalformedInput", "field-not-string:why_code")
     if why_code not in WHY_CODES:
         raise fail("kMalformedInput", f"bad-why-code:{why_code}")
+    page_modifying = False
+    if "page_modifying" in args:
+        if not isinstance(args["page_modifying"], bool):
+            raise fail("kMalformedInput", "page-modifying-not-bool")
+        page_modifying = args["page_modifying"]
     strings: dict = {}
     for key in ("rule_id", "rule", "list_id"):
         if key in args:
@@ -1194,7 +1201,8 @@ def method_event_emit(args: dict) -> tuple[dict, int]:
                 raise fail("kMalformedInput", f"field-not-string:{key}")
             strings[key] = args[key]
     return {"row": ledger_row(ctx, seq, ts_millis, tab_id, bundle_version,
-                              action, why_code, strings)}, 0
+                              action, why_code, strings,
+                              page_modifying)}, 0
 
 
 # ---- P11-T6: the dev-only debug page (mirror of MethodDebugPage) ----------
@@ -1217,7 +1225,7 @@ def method_debug_page(args: dict, channel: str) -> tuple[dict, int]:
         raise reject("build-channel-not-dev:" + channel)
     only_keys(args, ["engine_alive", "engine_poisoned", "route_bound",
                      "kill_switch_on", "bundle", "state", "last_apply",
-                     "ring", "scopes", "enterprise"])
+                     "ring", "scopes", "enterprise", "cosmetic"])
     pin = parse_posture_args(args)
     # Enterprise: force-disable WINS over the caller's kill_switch_on (no
     # silent re-enable — nothing here ever clears a switch) and the reason
@@ -1243,6 +1251,46 @@ def method_debug_page(args: dict, channel: str) -> tuple[dict, int]:
         elif rs is not None and (not isinstance(rs, str) or rs != ""):
             raise fail("kMalformedInput", "reason-without-force-disabled")
     bundle = parse_bundle(args["bundle"]) if "bundle" in args else None
+    # P12-T6: the cosmetic riding row (stateless echo, closed vocabularies).
+    cosmetic = None
+    if "cosmetic" in args:
+        cv = args["cosmetic"]
+        if not isinstance(cv, dict):
+            raise fail("kMalformedInput", "cosmetic-not-object")
+        only_keys(cv, ["flag", "generic_set_version", "key_set_rules",
+                       "blob_cache_occupancy", "scriptlet_registry_state",
+                       "refused_selectors", "refused_pseudos", "degrade_events",
+                       "seam_guard_state"])
+        fv = cv.get("flag")
+        if not isinstance(fv, str) or fv not in ("on", "off"):
+            raise fail("kMalformedInput", "bad-cosmetic-flag")
+        gv = cv.get("generic_set_version")
+        if not isinstance(gv, str) or gv == "":
+            raise fail("kMalformedInput", "missing-generic-set-version")
+        kv = cv.get("key_set_rules")
+        if not is_int(kv) or kv < 0:
+            raise fail("kMalformedInput", "bad-key-set-rules")
+        oc = cv.get("blob_cache_occupancy")
+        if not isinstance(oc, str):
+            raise fail("kMalformedInput", "bad-blob-cache-occupancy")
+        rg = cv.get("scriptlet_registry_state")
+        if not isinstance(rg, str):
+            raise fail("kMalformedInput", "bad-scriptlet-registry-state")
+        for key in ("refused_selectors", "refused_pseudos", "degrade_events"):
+            c = cv.get(key)
+            if not is_int(c) or c < 0:
+                raise fail("kMalformedInput", f"bad-{key}")
+        sg = cv.get("seam_guard_state")
+        if not isinstance(sg, str) or sg not in ("armed", "inert",
+                                                 "hook-dead"):
+            raise fail("kMalformedInput", "bad-seam-guard-state")
+        cosmetic = {"degrade_events": cv["degrade_events"], "flag": fv,
+                    "generic_set_version": gv, "key_set_rules": kv,
+                    "blob_cache_occupancy": oc,
+                    "refused_pseudos": cv["refused_pseudos"],
+                    "refused_selectors": cv["refused_selectors"],
+                    "scriptlet_registry_state": rg,
+                    "seam_guard_state": sg}
     # The page REPORTS a pin-violating state honestly; `apply` stays the
     # gatekeeper (no CheckInvariants here, by design).
     state = parse_state(args["state"]) if "state" in args else None
@@ -1279,6 +1327,7 @@ def method_debug_page(args: dict, channel: str) -> tuple[dict, int]:
         "bundles": state_json(state) if state is not None else None,
         "channel": channel,
         "chip_count": chip_count,
+        "cosmetic": cosmetic,
         "engine": {"alive": pin["engine_alive"],
                    "binding": "table-engine-v1",
                    "poisoned": pin["engine_poisoned"],
