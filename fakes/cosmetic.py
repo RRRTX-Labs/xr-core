@@ -941,7 +941,12 @@ def check_blob(args: dict[str, Any]) -> dict[str, Any]:
                 not isinstance(frame.get("identity_class"), str):
             return _error("kMalformedInput",
                           "frame_scope needs site and identity_class")
-        if scope != frame:
+        # Only the two scope keys bind. The embedder is "not an input to this
+        # comparison anywhere" (core/scope_key.h); the C++ host reads exactly
+        # site + identity_class from frame_scope, so an extra key (e.g.
+        # embedder_site) must not turn this into a refusal — parity law.
+        if scope.get("site") != frame.get("site") or \
+                scope.get("identity_class") != frame.get("identity_class"):
             return _rejected("scope-mismatch")
     for entry in blob.get("refusals") or []:
         if not isinstance(entry, dict):
