@@ -469,4 +469,16 @@
   <message name="IDS_XR_SHIELD_COSMETIC_EMPTY" desc="Empty state: no cosmetic riding row in the debug payload" xr-id="shield.cosmetic.empty">
     No cosmetic state in this payload
   </message>
+  <message name="IDS_XR_PANEL_HEADING" desc="Heading of the accountability panel (P13-T1: one panel, right-docked, keyboard-first)" xr-id="panel.heading">
+    Panel
+  </message>
+  <message name="IDS_XR_PANEL_CLOSE" desc="Close control of the panel frame (also Escape; the opener regains focus)" xr-id="panel.close">
+    Close
+  </message>
+  <message name="IDS_XR_PANEL_TABS" desc="Accessible name of the panel's tab strip (tabs are registered declaratively by subsystems)" xr-id="panel.tabs">
+    Panel tabs
+  </message>
+  <message name="IDS_XR_PANEL_EMPTY" desc="Empty state: the panel is open and no subsystem has registered a tab yet" xr-id="panel.empty">
+    No tab has registered yet
+  </message>
 </grit-part>

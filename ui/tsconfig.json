@@ -27,6 +27,7 @@
     "shortcut-editor/*.ts",
     "help-index/*.ts",
     "settings-shell/*.ts",
-    "settings/*.ts"
+    "settings/*.ts",
+    "panel/*.ts"
   ]
 }
