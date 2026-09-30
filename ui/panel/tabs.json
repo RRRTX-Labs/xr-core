@@ -1,0 +1,43 @@
+{
+  "schema": "xr-panel-tabs",
+  "schema_version": 1,
+  "contract": "docs/contracts/panel-tab-registration-v1.md",
+  "note": "P13-C-P0.1: the panel's DECLARED TAB INVENTORY. This file is what makes the §10 coverage law's unit a tab instead of a file (docs/contracts/coverage-allowlist.yaml carries the 'why'). A subsystem may only register a tab whose id is declared here; ui/panel/tab-registry.ts refuses anything else with the typed error 'unknown-tab-id' rather than dropping it. The inventory is additive-only: removing an id is a contract change, not an edit. Order is first-class because two tabs claiming the same order is a validation failure, not a tie-breaker.",
+  "reserved_orders": {
+    "note": "Orders are spaced by 10 so a later subsystem can insert between two tabs without renumbering (renumbering would break every bookmarked deep link). The frame renders in ascending order; the strip is a tablist, not a sort.",
+    "min": 10,
+    "max": 990
+  },
+  "tabs": [
+    {
+      "id": "site",
+      "title_msgid": "panel.tab.site",
+      "order": 10,
+      "requires_identity_scope": true
+    },
+    {
+      "id": "observatory",
+      "title_msgid": "panel.tab.observatory",
+      "order": 20,
+      "requires_identity_scope": true
+    },
+    {
+      "id": "breakage",
+      "title_msgid": "panel.tab.breakage",
+      "order": 30,
+      "requires_identity_scope": true
+    },
+    {
+      "id": "update",
+      "title_msgid": "panel.tab.update",
+      "order": 40,
+      "requires_identity_scope": false
+    },
+    {
+      "id": "sent",
+      "title_msgid": "panel.tab.sent",
+      "order": 50,
+      "requires_identity_scope": false
+    }
+  ]
+}

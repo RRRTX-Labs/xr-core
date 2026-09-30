@@ -481,4 +481,19 @@
   <message name="IDS_XR_PANEL_EMPTY" desc="Empty state: the panel is open and no subsystem has registered a tab yet" xr-id="panel.empty">
     No tab has registered yet
   </message>
+<message name="IDS_XR_PANEL_TAB_SITE" desc="Panel tab title: the current site — TLS state, trust dial, per-site scopes, isolation card, blocked-by-category" xr-id="panel.tab.site">
+    Site
+  </message>
+<message name="IDS_XR_PANEL_TAB_OBSERVATORY" desc="Panel tab title: the tracker observatory — the activity ledger as a filterable list with a redaction-contracted export" xr-id="panel.tab.observatory">
+    Observatory
+  </message>
+<message name="IDS_XR_PANEL_TAB_BREAKAGE" desc="Panel tab title: report a broken site — the redacted breakage report and its what-would-be-sent preview" xr-id="panel.tab.breakage">
+    Report a broken site
+  </message>
+<message name="IDS_XR_PANEL_TAB_UPDATE" desc="Panel tab title: update state — what version is available on the tier-1 channel and nothing about acting on it automatically" xr-id="panel.tab.update">
+    Updates
+  </message>
+<message name="IDS_XR_PANEL_TAB_SENT" desc="Panel tab title: the what-would-be-sent viewer — exactly the serializer's field set, in the order it is written" xr-id="panel.tab.sent">
+    What would be sent
+  </message>
 </grit-part>
