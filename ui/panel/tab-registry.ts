@@ -34,7 +34,11 @@
 // change to `panel-tab-registration-v1` (docs/contracts/), not a runtime call.
 //
 // Strings: the registry carries message IDS only (title_msgid). It renders no
-// text and owns no copy — l10n_extract's raw-string lint holds here trivially.
+// text and owns no copy. Every `detail` below is a MACHINE TOKEN, not prose:
+// l10n_extract's R4 rule forbids space-bearing literals anywhere in ui/** (they
+// are indistinguishable from user-visible copy at rest), so a diagnostic is
+// `duplicate-order:<owner>:<id>` that a test and a grep can both match, and
+// never a sentence that reads like UI text.
 // No DOM, no I/O: this module is pure data so node:test can prove it without a
 // browser (the rendered halves are NOT-RUN with methods in
 // docs/qa/browser-harness.md).
@@ -87,27 +91,27 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 /** Validate one candidate tab. Returns errors; [] means the shape is legal. */
 export function validateTab(raw: unknown, where = 'tab'): TabError[] {
   if (!isRecord(raw)) {
-    return [{ code: 'bad-shape', id: where, detail: 'not an object' }];
+    return [{ code: 'bad-shape', id: where, detail: 'not-an-object' }];
   }
   const errors: TabError[] = [];
   const id = typeof raw['id'] === 'string' ? (raw['id'] as string) : '';
   const label = id || where;
   for (const key of REQUIRED_KEYS) {
     if (!(key in raw)) {
-      errors.push({ code: 'bad-shape', id: label, detail: `missing required field '${key}'` });
+      errors.push({ code: 'bad-shape', id: label, detail: 'missing-required-field:' + key });
     }
   }
   if (!ID_RE.test(id)) {
-    errors.push({ code: 'bad-shape', id: label, detail: `id ${JSON.stringify(id)} is not a lowercase slug` });
+    errors.push({ code: 'bad-shape', id: label, detail: 'not-a-slug:' + id });
   }
   if (typeof raw['title_msgid'] !== 'string' || (raw['title_msgid'] as string).length === 0) {
-    errors.push({ code: 'bad-shape', id: label, detail: 'title_msgid must be a non-empty string' });
+    errors.push({ code: 'bad-shape', id: label, detail: 'title-msgid-not-a-string' });
   }
   if (typeof raw['order'] !== 'number' || !Number.isInteger(raw['order'] as number)) {
-    errors.push({ code: 'bad-shape', id: label, detail: 'order must be an integer' });
+    errors.push({ code: 'bad-shape', id: label, detail: 'order-not-an-integer' });
   }
   if (typeof raw['requires_identity_scope'] !== 'boolean') {
-    errors.push({ code: 'bad-shape', id: label, detail: 'requires_identity_scope must be a boolean' });
+    errors.push({ code: 'bad-shape', id: label, detail: 'requires-identity-scope-not-a-boolean' });
   }
   return errors;
 }
@@ -119,14 +123,14 @@ export function validateTab(raw: unknown, where = 'tab'): TabError[] {
 export function parseInventory(raw: unknown): { inventory: TabInventory | null; errors: TabError[] } {
   const errors: TabError[] = [];
   if (!isRecord(raw)) {
-    return { inventory: null, errors: [{ code: 'bad-shape', id: 'inventory', detail: 'not an object' }] };
+    return { inventory: null, errors: [{ code: 'bad-shape', id: 'inventory', detail: 'not-an-object' }] };
   }
   if (raw['schema'] !== SCHEMA) {
-    errors.push({ code: 'bad-shape', id: 'inventory', detail: `schema must be ${JSON.stringify(SCHEMA)}` });
+    errors.push({ code: 'bad-shape', id: 'inventory', detail: 'bad-schema:' + SCHEMA });
   }
   const rawTabs = raw['tabs'];
   if (!Array.isArray(rawTabs)) {
-    return { inventory: null, errors: [...errors, { code: 'bad-shape', id: 'inventory', detail: 'tabs must be an array' }] };
+    return { inventory: null, errors: [...errors, { code: 'bad-shape', id: 'inventory', detail: 'tabs-not-an-array' }] };
   }
   rawTabs.forEach((t, i) => errors.push(...validateTab(t, `tabs[${i}]`)));
   const reserved = isRecord(raw['reserved_orders']) ? raw['reserved_orders'] : {};
@@ -140,7 +144,7 @@ export function parseInventory(raw: unknown): { inventory: TabInventory | null; 
     }
     const id = String(t['id'] ?? '');
     if (seenIds.has(id) && id !== '') {
-      errors.push({ code: 'duplicate-id', id, detail: `id ${JSON.stringify(id)} declared twice` });
+      errors.push({ code: 'duplicate-id', id, detail: 'duplicate-id:' + id });
     }
     seenIds.add(id);
     const order = t['order'];
@@ -150,8 +154,7 @@ export function parseInventory(raw: unknown): { inventory: TabInventory | null; 
         errors.push({
           code: 'duplicate-order',
           id,
-          detail: `order ${order} claimed by both ${JSON.stringify(owner)} and ${JSON.stringify(id)} — ` +
-            `two tabs claiming one order is a validation failure, not a tie to break`,
+          detail: 'duplicate-order:' + owner + ':' + id,
         });
       }
       seenOrders.set(order, id);
@@ -159,7 +162,7 @@ export function parseInventory(raw: unknown): { inventory: TabInventory | null; 
         errors.push({
           code: 'order-out-of-range',
           id,
-          detail: `order ${order} outside the reserved range ${min}..${max}`,
+          detail: 'order-out-of-range:' + order,
         });
       }
     }
@@ -222,15 +225,14 @@ export class PanelTabRegistry {
         errors: [{
           code: 'unknown-tab-id',
           id: tab.id,
-          detail: `id ${JSON.stringify(tab.id)} is not in the declared tab inventory (ui/panel/tabs.json) — ` +
-            `declare it there first; unknown ids are refused, not dropped`,
+          detail: 'unknown-tab-id:' + tab.id,
         }],
       };
     }
     if (this.registered.has(tab.id)) {
       return {
         ok: false,
-        errors: [{ code: 'duplicate-id', id: tab.id, detail: `id ${JSON.stringify(tab.id)} is already registered` }],
+        errors: [{ code: 'duplicate-id', id: tab.id, detail: 'duplicate-id:' + tab.id }],
       };
     }
     const clash = [...this.registered.values()].find((t) => t.order === tab.order);
@@ -240,7 +242,7 @@ export class PanelTabRegistry {
         errors: [{
           code: 'order-collision',
           id: tab.id,
-          detail: `order ${tab.order} is already claimed by ${JSON.stringify(clash.id)}`,
+          detail: 'order-collision:' + clash.id,
         }],
       };
     }
@@ -250,8 +252,7 @@ export class PanelTabRegistry {
         errors: [{
           code: 'order-mismatch',
           id: tab.id,
-          detail: `the inventory owns order: ${JSON.stringify(tab.id)} declares ${declared.order}, ` +
-            `registration asked for ${tab.order}`,
+          detail: 'order-mismatch:declared=' + declared.order + ',asked=' + tab.order,
         }],
       };
     }
@@ -261,7 +262,7 @@ export class PanelTabRegistry {
         errors: [{
           code: 'order-out-of-range',
           id: tab.id,
-          detail: `order ${tab.order} outside the reserved range ${this.minOrder}..${this.maxOrder}`,
+          detail: 'order-out-of-range:' + tab.order,
         }],
       };
     }

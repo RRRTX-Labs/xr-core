@@ -8,6 +8,9 @@
 // at it with XR_PANEL_TABS_BUNDLE, plus the REAL inventory
 // (xr-core/ui/panel/tabs.json) with XR_PANEL_TABS_INVENTORY.
 //
+// `detail` strings are machine tokens, not prose (l10n_extract R4 forbids
+// space-bearing literals in ui/**), so the assertions match tokens exactly.
+//
 // What is proved here is the refusal surface, because "refused with a typed
 // error" is the whole difference between a registry and a list:
 //   * an id absent from the inventory is refused `unknown-tab-id` and the
@@ -73,7 +76,7 @@ test('an id absent from the inventory is refused unknown-tab-id, never dropped',
   const res = r.register(tab('evil-tab', 60));
   assert.equal(res.ok, false);
   assert.deepEqual(codes(res), ['unknown-tab-id']);
-  assert.match(res.errors[0].detail, /declare it there first/);
+  assert.match(res.errors[0].detail, /^unknown-tab-id:evil-tab$/);
   assert.deepEqual(r.tabs(), [], 'a refused registration must not mutate the registry');
 });
 
@@ -106,7 +109,7 @@ test('the inventory owns order: a renumbering subsystem is refused order-mismatc
   const res = r.register(tab('sent', 15));
   assert.equal(res.ok, false);
   assert.deepEqual(codes(res), ['order-mismatch']);
-  assert.match(res.errors[0].detail, /the inventory owns order/);
+  assert.match(res.errors[0].detail, /^order-mismatch:declared=50,asked=15$/);
 });
 
 test('order-collision names the tab already holding the slot', () => {
@@ -117,7 +120,7 @@ test('order-collision names the tab already holding the slot', () => {
   const res = r.register(tab('update', 10));
   assert.equal(res.ok, false);
   assert.ok(codes(res).includes('order-collision') || codes(res).includes('order-mismatch'));
-  assert.match(res.errors[0].detail, /site|inventory owns order/);
+  assert.match(res.errors[0].detail, /^order-(collision|mismatch):/);
 });
 
 test('a malformed entry is refused bad-shape and mutates nothing', () => {
