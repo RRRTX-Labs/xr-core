@@ -237,3 +237,43 @@ export function genericHideSetRows(set: {
     remove: '',
   }));
 }
+
+/**
+ * The scriptlet surface's rows (P13-T2 / P12-T6's dev page, extended).
+ *
+ * The always-on generic set is not exception-able; the scriptlet registry is
+ * present but INERT. Both facts are rendered as rows with machine tokens, so the
+ * tab says what is true ("registry present, execution INERT (flag off)") instead
+ * of implying a capability the build does not have. `installation_state` is
+ * passed in — this core does not read a flag file, a pref or a clock, and a row
+ * whose state is unknown renders as `unknown` rather than as the comfortable
+ * answer (least privilege + fail safe: an unknown flag state is never "off").
+ */
+export function scriptletRows(registry: { rules: number } | null,
+                              flag_state: 'off' | 'on' | 'unknown'): Array<Record<string, string>> {
+  return [
+    { row: 'scriptlet_registry', state: registry === null ? 'absent' : 'present',
+      detail: registry === null ? 'no-registry-file' : `rules:${registry.rules}` },
+    { row: 'scriptlet_execution',
+      state: flag_state === 'on' ? 'ACTIVE' : flag_state === 'off' ? 'INERT' : 'unknown',
+      detail: flag_state === 'on' ? 'flag:on' : flag_state === 'off' ? 'flag:off'
+                                                                    : 'state-not-observed' },
+  ];
+}
+
+/** What the isolation card says when P4's measurement is NOT-RUN for a row.
+ *
+ * The card is data-driven (P4's measured table), and a row with no measurement
+ * must SAY SO. An empty cell reads as "fine", which is the one thing an
+ * isolation claim may never do: it is the difference between "we measured it and
+ * it holds" and "nobody measured this".
+ */
+export function isolationRowLabel(row: { prop: string; measured?: boolean; holds?: boolean }):
+  { prop: string; cell: string; class: 'measured' | 'not-run' } {
+  if (row.measured !== true) {
+    return { prop: row.prop, cell: 'NOT-RUN (method: docs/qa/browser-harness.md)',
+             class: 'not-run' };
+  }
+  return { prop: row.prop, cell: row.holds === true ? 'holds' : 'VIOLATED',
+           class: 'measured' };
+}
