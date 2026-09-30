@@ -142,3 +142,17 @@ test('permissions summary sorts and names where grants live', () => {
   assert.deepEqual(out.items.map((i) => i.permission), ['camera', 'notifications']);
   assert.equal(out.grants_live_in, 'P15-permissions');
 });
+
+test('the always-on generic set is not exception-able, and says why', () => {
+  const rows = site.genericHideSetRows({
+    count: 33, rule_ids: ['gen-1', 'gen-2'],
+    reason_key: 'shield.generic.alwaysOn',
+  });
+  assert.equal(rows.length, 2);
+  for (const r of rows) {
+    assert.equal(r.exceptionable, false);
+    assert.equal(r.remove, '', 'a non-exception-able rule must emit NO remove action');
+    assert.ok(r.reason_key.length > 0, 'a locked row without a reason is a dead end');
+    assert.equal(r.set_size, '33');
+  }
+});

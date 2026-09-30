@@ -210,3 +210,30 @@ export function blockedDrill(
     };
   });
 }
+
+/**
+ * The always-on generic hide set (P12-T6's 33-rule `xr_shield_cosmetic_v1` set),
+ * as rows that say what they are: NOT exception-able, and WHY.
+ *
+ * This exists because "not exception-able" is a property of the SET, not a
+ * disabled checkbox. A UI that renders a greyed-out switch has said nothing: the
+ * user cannot tell "this is off" from "this cannot be turned off". So the row
+ * carries `exceptionable: false` AND `reason_key`, and the tab has no other way
+ * to express it — there is no per-rule toggle to forget to disable, because the
+ * core never emits a remove action for a member of this set.
+ */
+export function genericHideSetRows(set: {
+  count: number;
+  rule_ids: string[];
+  reason_key: string;
+}): Array<Record<string, string | boolean>> {
+  return set.rule_ids.map((rule_id) => ({
+    rule_id,
+    set_size: String(set.count),
+    exceptionable: false,
+    reason_key: set.reason_key,
+    // Explicitly absent: `remove` is the field exceptionRows() emits. Its
+    // ABSENCE is what makes this row non-exception-able in the rendered shape.
+    remove: '',
+  }));
+}
