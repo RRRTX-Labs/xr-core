@@ -169,15 +169,22 @@ test('the scriptlet registry is present and INERT, and an unknown flag is never 
   assert.equal(site.scriptletRows(null, 'off')[0].state, 'absent');
 });
 
-test('an isolation row with no measurement says NOT-RUN, never an empty cell', async () => {
+test('an isolation row with no measurement says not-run, never an empty cell', async () => {
   const notRun = site.isolationRowLabel({ prop: 'process-isolation' });
-  assert.equal(notRun.class, 'not-run');
-  assert.match(notRun.cell, /^NOT-RUN \(method: docs\/qa\/browser-harness\.md\)$/);
-  assert.notEqual(notRun.cell, '');
-  const holds = site.isolationRowLabel({ prop: 'process-isolation', measured: true,
-                                         holds: true });
-  assert.deepEqual(holds, { prop: 'process-isolation', cell: 'holds', class: 'measured' });
-  const violated = site.isolationRowLabel({ prop: 'storage-partition', measured: true,
-                                            holds: false });
-  assert.equal(violated.cell, 'VIOLATED');
+  assert.deepEqual(notRun, { prop: 'process-isolation', state: 'not-run',
+                             method: 'docs/qa/browser-harness.md' });
+  assert.equal(site.isolationRowLabel({ prop: 'p', measured: true, holds: true }).state,
+               'holds');
+  assert.equal(site.isolationRowLabel({ prop: 'p', measured: true, holds: false }).state,
+               'violated');
+});
+
+test('every isolation row value is a machine token (no space-bearing prose in ui/**)', () => {
+  for (const row of [{ prop: 'process-isolation' },
+                     { prop: 'p', measured: true, holds: true },
+                     { prop: 'p', measured: true, holds: false }]) {
+    for (const [k, v] of Object.entries(site.isolationRowLabel(row))) {
+      assert.ok(!/\s/.test(String(v)), `${k}=${v} carries whitespace`);
+    }
+  }
 });

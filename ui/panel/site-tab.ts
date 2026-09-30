@@ -261,19 +261,27 @@ export function scriptletRows(registry: { rules: number } | null,
   ];
 }
 
-/** What the isolation card says when P4's measurement is NOT-RUN for a row.
+/**
+ * What the isolation card says when P4's measurement is NOT-RUN for a row.
  *
  * The card is data-driven (P4's measured table), and a row with no measurement
- * must SAY SO. An empty cell reads as "fine", which is the one thing an
- * isolation claim may never do: it is the difference between "we measured it and
- * it holds" and "nobody measured this".
+ * must SAY SO. "No cell" reads as "fine", which is the one thing an isolation
+ * claim may never do: it is the difference between "we measured it and it holds"
+ * and "nobody measured this".
+ *
+ * The result is MACHINE TOKENS, never a sentence: `state` is one of
+ * `not-run` / `holds` / `violated`, and the method rides as a PATH the renderer
+ * turns into localized copy. l10n_extract's R4 rule forbids space-bearing
+ * literals under ui/** (they are indistinguishable from user-visible copy at
+ * rest), and the honest fix is to keep the core token-shaped rather than to
+ * allowlist a sentence — a rule relaxed for a good reason is relaxed for the
+ * next one too. The suite asserts no returned value contains a space.
  */
 export function isolationRowLabel(row: { prop: string; measured?: boolean; holds?: boolean }):
-  { prop: string; cell: string; class: 'measured' | 'not-run' } {
+  { prop: string; state: 'not-run' | 'holds' | 'violated'; method: string } {
   if (row.measured !== true) {
-    return { prop: row.prop, cell: 'NOT-RUN (method: docs/qa/browser-harness.md)',
-             class: 'not-run' };
+    return { prop: row.prop, state: 'not-run', method: 'docs/qa/browser-harness.md' };
   }
-  return { prop: row.prop, cell: row.holds === true ? 'holds' : 'VIOLATED',
-           class: 'measured' };
+  return { prop: row.prop, state: row.holds === true ? 'holds' : 'violated',
+           method: 'ui/isolation-matrix' };
 }
