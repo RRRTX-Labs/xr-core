@@ -53,6 +53,17 @@ mechanisms:
   - id: process-isolation
     mode: fake
     question: "is site isolation + dedicated process per identity (fortress)?"
+  # ---- P14 identity-core cells (the identity host; g++/make absent =>
+  # visible skip with the reason — the resolver cells keep the run non-empty)
+  - id: disposable-zero-residue
+    mode: fake
+    question: "disposable close leaves zero bytes (the planted cookie jar reddens)?"
+  - id: identity-derivation-probe
+    mode: fake
+    question: "deriving an identity from a partition name/URL/title/log line fails (the brute-force probe law, security req 2)?"
+  - id: session-restore-no-bleed
+    mode: fake
+    question: "session restore re-binds each tab to its recorded identity, never another, never the default (C-14)?"
 
   # ---- browser-only (not-run here; HG-31 farm) ----
   - id: cookies-1p
