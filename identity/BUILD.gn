@@ -21,6 +21,7 @@ source_set("identity_core") {
     "core/templates.cc",
     "core/binding.cc",
     "core/attribution.cc",
+    "core/session.cc",
   ]
 
   public_deps = [ "//xr-core/common:core" ]
@@ -32,5 +33,6 @@ source_set("identity_core") {
     "core/templates.h",
     "core/binding.h",
     "core/attribution.h",
+    "core/session.h",
   ]
 }
