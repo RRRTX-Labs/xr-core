@@ -12,9 +12,13 @@
 //     never-auto-switch law, checked continuously);
 //   * attribution stays within the total (Σ attributed ≤ measured);
 //   * wake/destroy never resurrect: a purged domain is gone for good.
-// No wall clock, no RNG: a fixed xorshift seeded from argv (default 1) —
-// the campaign's determinism is the evidence.
+// The fleet contract (themes/tests/test_fuzz.cc shape): XR_FUZZ_SECONDS
+// bounds the wall-clock budget (default 30 s; the gate runs >=60 s, the
+// evidence campaign 600 s), XR_FUZZ_SEED fixes the op sequence — same seed,
+// same ops, so a violation is reproducible by re-running with the seed.
+#include <chrono>
 #include <cstdint>
+#include <cstdlib>
 #include <random>
 #include <string>
 #include <vector>
@@ -39,10 +43,17 @@ using xr::identity::ProcessSample;
 using xr::identity::Scheduler;
 using xr::identity::State;
 
-int main(int argc, char** argv) {
-  const unsigned seed = argc > 1 ? static_cast<unsigned>(
-                             std::stoul(argv[1])) : 20260910u;
-  std::mt19937 rng(seed);  // deterministic; the seed IS the repro key
+int main() {
+  long long budget_s = 30;
+  if (const char* e = std::getenv("XR_FUZZ_SECONDS")) {
+    budget_s = std::atoll(e);
+  }
+  uint64_t seed = 20260910;
+  if (const char* e = std::getenv("XR_FUZZ_SEED")) seed = std::atoll(e);
+  std::mt19937 rng(static_cast<unsigned>(seed));  // the seed IS the repro key
+  const auto start = std::chrono::steady_clock::now();
+  const auto deadline = start + std::chrono::seconds(budget_s);
+  long long iter = 0;
   IdentityStore store;
   Manager m(&store);
   Scheduler s(&m, 1 + (rng() % 6));
@@ -50,7 +61,8 @@ int main(int argc, char** argv) {
   std::vector<std::string> live;   // domains believed alive
   int resurrect_attempts = 0;
 
-  for (int i = 0; i < 4000; ++i) {
+  while (std::chrono::steady_clock::now() < deadline) {
+    ++iter;
     const int op = static_cast<int>(rng() % 10);
     if (op == 0) {  // provision (sometimes with hostile entropy)
       CreateRequest req;
@@ -66,6 +78,13 @@ int main(int argc, char** argv) {
         // INVARIANT: the minted key is opaque (never embeds the entropy).
         XR_EXPECT(xr::identity::LooksOpaque(rec.domain, req.entropy));
         live.push_back(rec.domain);
+      }
+      if (live.size() > 32) {  // bound the campaign's memory footprint
+        bool v = false;
+        const auto r = m.Destroy(live.front(), &v);
+        XR_EXPECT_MSG(!r.ok || v,
+                      "bound-destroy verifies (no residuals planted here)");
+        live.erase(live.begin());
       }
     } else if (op == 1 && !live.empty()) {  // activate via scheduler
       s.Activate(live[rng() % live.size()], rng());
@@ -105,9 +124,13 @@ int main(int argc, char** argv) {
       b.RecordSuggestion("site.example", "xr:00000000-0000-4000-8000-"
                                          "000000000001");
       b.TestPlantedAutoSwitch(tab, "xr:00000000-0000-4000-8000-000000000002");
-      // INVARIANT (continuously): no suggestion-caused change exists.
-      for (const auto& ch : b.changes()) {
-        XR_EXPECT(ch.cause != ChangeCause::kSuggestion);
+      // INVARIANT (continuously): no suggestion-caused change exists in
+      // the recent audit window (the deterministic suite checks the whole
+      // trail; here the cost must stay bounded for long campaigns).
+      const auto& trail = b.changes();
+      for (size_t k = trail.size() > 50 ? trail.size() - 50 : 0;
+           k < trail.size(); ++k) {
+        XR_EXPECT(trail[k].cause != ChangeCause::kSuggestion);
       }
     } else if (op == 6) {  // templates apply + ceremony completeness
       static const char* kIds[] = {"personal", "work", "research", "banking",
@@ -161,5 +184,9 @@ int main(int argc, char** argv) {
     }
   }
   XR_EXPECT_MSG(resurrect_attempts >= 0, "wake refusals counted (sanity)");
-  return xrtest::Report("identity/fuzz");
+  const int rc = xrtest::Report("identity/fuzz");
+  std::printf("identity fuzz: %d violations (seed %llu, %lld s budget, "
+              "%lld iters)\n", xrtest::g_failures,
+              static_cast<unsigned long long>(seed), budget_s, iter);
+  return rc;
 }
