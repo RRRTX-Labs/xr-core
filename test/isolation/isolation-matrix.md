@@ -2,7 +2,7 @@
 
 Generated with `--as-of 2026-09-10` (frozen-clock law). Do not hand-edit; regenerate with `tools/isolation_matrix.py`.
 
-Cells: 160 total — EXCEPTION=20, NOT-RUN=110, PASS=30
+Cells: 175 total — EXCEPTION=20, NOT-RUN=110, PASS=45
 
 | mechanism | pair | mode | verdict | detail |
 |---|---|---|---|---|
@@ -36,6 +36,21 @@ Cells: 160 total — EXCEPTION=20, NOT-RUN=110, PASS=30
 | process-isolation | standard/ephemeral | fake | PASS | standard: site_isolated=True dedicated=False; ephemeral: site_isolated=True dedicated=False |
 | process-isolation | shield/fortress | fake | PASS | shield: site_isolated=True dedicated=False; fortress: site_isolated=True dedicated=True |
 | process-isolation | shield/ephemeral | fake | PASS | shield: site_isolated=True dedicated=False; ephemeral: site_isolated=True dedicated=False |
+| disposable-zero-residue | standard/shield | fake | PASS | clean close verified=True; planted cookie jar fails destroy=True |
+| disposable-zero-residue | standard/fortress | fake | PASS | clean close verified=True; planted cookie jar fails destroy=True |
+| disposable-zero-residue | standard/ephemeral | fake | PASS | clean close verified=True; planted cookie jar fails destroy=True |
+| disposable-zero-residue | shield/fortress | fake | PASS | clean close verified=True; planted cookie jar fails destroy=True |
+| disposable-zero-residue | shield/ephemeral | fake | PASS | clean close verified=True; planted cookie jar fails destroy=True |
+| identity-derivation-probe | standard/shield | fake | PASS | 6 derivation probes (name/URL/title/log/vid): no embed, opaque shape |
+| identity-derivation-probe | standard/fortress | fake | PASS | 6 derivation probes (name/URL/title/log/vid): no embed, opaque shape |
+| identity-derivation-probe | standard/ephemeral | fake | PASS | 6 derivation probes (name/URL/title/log/vid): no embed, opaque shape |
+| identity-derivation-probe | shield/fortress | fake | PASS | 6 derivation probes (name/URL/title/log/vid): no embed, opaque shape |
+| identity-derivation-probe | shield/ephemeral | fake | PASS | 6 derivation probes (name/URL/title/log/vid): no embed, opaque shape |
+| session-restore-no-bleed | standard/shield | fake | PASS | identity/session+chaos: identity/session+chaos: 345 checks, 0 failures |
+| session-restore-no-bleed | standard/fortress | fake | PASS | identity/session+chaos: identity/session+chaos: 345 checks, 0 failures |
+| session-restore-no-bleed | standard/ephemeral | fake | PASS | identity/session+chaos: identity/session+chaos: 345 checks, 0 failures |
+| session-restore-no-bleed | shield/fortress | fake | PASS | identity/session+chaos: identity/session+chaos: 345 checks, 0 failures |
+| session-restore-no-bleed | shield/ephemeral | fake | PASS | identity/session+chaos: identity/session+chaos: 345 checks, 0 failures |
 | cookies-1p | standard/shield | browser | NOT-RUN | 1P cookies partitioned per identity |
 | cookies-1p | standard/fortress | browser | NOT-RUN | 1P cookies partitioned per identity |
 | cookies-1p | standard/ephemeral | browser | NOT-RUN | 1P cookies partitioned per identity |
