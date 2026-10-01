@@ -19,6 +19,7 @@ source_set("identity_core") {
     "core/identity.cc",
     "core/mint.cc",
     "core/templates.cc",
+    "core/binding.cc",
   ]
 
   public_deps = [ "//xr-core/common:core" ]
@@ -28,5 +29,6 @@ source_set("identity_core") {
     "core/identity.h",
     "core/mint.h",
     "core/templates.h",
+    "core/binding.h",
   ]
 }
