@@ -60,7 +60,11 @@ $(BUILD)/test_%: test_%.cc $(CORE_OBJS)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) $< $(CORE_OBJS) -o $@
 
-build: $(TESTS:%=$(BUILD)/%)
+$(BUILD)/identity_host: ../host/identity_host.cc $(CORE_OBJS)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $< $(CORE_OBJS) -o $@
+
+build: $(BUILD)/identity_host $(TESTS:%=$(BUILD)/%)
 
 test: build
 	@rc=0; for t in $(TESTS); do \
