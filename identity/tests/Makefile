@@ -71,7 +71,7 @@ build: $(BUILD)/identity_host $(TESTS:%=$(BUILD)/%)
 test: build
 	@rc=0; for t in $(TESTS); do \
 	  echo "== $$t =="; \
-	  ./$(BUILD)/$$t || rc=1; \
+	  $(BUILD)/$$t || rc=1; \
 	done; \
 	if [ $$rc -eq 0 ]; then echo "ALL C++ IDENTITY TESTS PASSED"; else echo "C++ IDENTITY TESTS FAILED"; fi; \
 	exit $$rc
