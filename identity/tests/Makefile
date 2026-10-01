@@ -31,11 +31,13 @@ COMMON_OBJS := \
 CORE_OBJS := \
   $(BUILD)/identity/core/mint.o \
   $(BUILD)/identity/core/identity.o \
-  $(BUILD)/identity/core/hibernate.o
+  $(BUILD)/identity/core/hibernate.o \
+  $(BUILD)/identity/core/templates.o
 
 CORE_OBJS += $(COMMON_OBJS)
 
-TESTS := test_mint test_identity test_hibernate test_sha256_kat
+TESTS := test_mint test_identity test_hibernate test_templates \
+         test_sha256_kat
 
 $(BUILD)/identity/core/%.o: ../core/%.cc
 	@mkdir -p $(dir $@)

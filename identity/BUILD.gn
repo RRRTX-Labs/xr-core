@@ -18,6 +18,7 @@ source_set("identity_core") {
     "core/hibernate.cc",
     "core/identity.cc",
     "core/mint.cc",
+    "core/templates.cc",
   ]
 
   public_deps = [ "//xr-core/common:core" ]
@@ -26,5 +27,6 @@ source_set("identity_core") {
     "core/hibernate.h",
     "core/identity.h",
     "core/mint.h",
+    "core/templates.h",
   ]
 }
