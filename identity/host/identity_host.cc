@@ -70,7 +70,8 @@ int EmitErr(const std::string& code, const std::string& detail) {
   JsonValue::Object o;
   o["error"] = JsonValue(code);
   o["detail"] = JsonValue(detail);
-  return Emit(JsonValue(std::move(o)));  // caller returns 1
+  Emit(JsonValue(std::move(o)));
+  return 1;  // typed error: exit 1 (the response law)
 }
 int EmitReject(const std::string& reason) {
   JsonValue::Object o;
