@@ -10,7 +10,7 @@
 #include <cstdio>
 #include <string>
 
-#include "../../common/core/sha256.h"
+#include "identity/core/sha256.h"
 
 namespace xr::identity {
 namespace {
@@ -40,7 +40,7 @@ bool MintDomain(std::string_view entropy, std::string* out) {
   if (entropy.empty() || out == nullptr) {
     return false;  // fail-closed: no mint from nothing
   }
-  const std::string digest = common::Sha256Hex(std::string(entropy));
+  const std::string digest = Sha256Hex(std::string(entropy));
   if (digest.size() != 64) {
     return false;  // impossible; still fail-closed, never guess
   }

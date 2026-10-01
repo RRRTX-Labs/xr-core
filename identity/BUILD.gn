@@ -34,5 +34,6 @@ source_set("identity_core") {
     "core/binding.h",
     "core/attribution.h",
     "core/session.h",
+    "core/sha256.h",
   ]
 }

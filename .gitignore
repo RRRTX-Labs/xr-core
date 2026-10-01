@@ -18,4 +18,5 @@ themes/tests/*-test-store/
 update/tests/build/
 shield/tests/build/
 renderer/cosmetic/tests/build/
+identity/tests/build/
 update_host_request.tmp
