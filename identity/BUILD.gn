@@ -1,0 +1,30 @@
+# Copyright 2026 RRRTX Labs
+# Use of this source code is governed by the MPL-2.0 license that can be
+# found in the LICENSE file.
+#
+# Intent: S0 — the identity subsystem's build graph (P14-T1): the std-only
+# C++20 core (mint, lifecycle, scheduler, templates, binding, attribution)
+# as a source_set for the browser build, mirroring the sibling cores'
+# BUILD.gn shape. The lane that actually BUILDS AND TESTS this core in CI
+# is the depth-general suite discovery (every xr-core/*/tests/Makefile —
+# P12's "a nested core cannot hide" law); this file is the gn-side wiring
+# for the browser target, exercised where gn/ninja exist (NOT-RUN here —
+# method: docs/qa/browser-harness.md, the rig lane).
+
+import("//build/config/python.gni")  # guard: keep the shape of siblings
+
+source_set("identity_core") {
+  sources = [
+    "core/hibernate.cc",
+    "core/identity.cc",
+    "core/mint.cc",
+  ]
+
+  public_deps = [ "//xr-core/common:core" ]
+
+  public_headers = [
+    "core/hibernate.h",
+    "core/identity.h",
+    "core/mint.h",
+  ]
+}
