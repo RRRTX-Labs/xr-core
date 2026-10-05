@@ -4,6 +4,7 @@ out/
 *.pyc
 __pycache__/
 .DS_Store
+common/tests/build/
 policy/tests/build/
 commands/tests/build/
 commands/tests/shortcuts-test-dir/
