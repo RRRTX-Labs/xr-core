@@ -62,6 +62,14 @@ class Scheduler {
   size_t ActiveCount() const { return active_order_.size(); }
   size_t cap() const { return active_cap_; }
 
+  // Bounded-memory compaction for long campaigns (P14, the CompactAudit
+  // precedent): eviction history keeps its most recent `keep` events —
+  // the LATEST events are the operational evidence anyone reads; ancient
+  // ones are history. Returns the number of events dropped. The LRU
+  // order, the cap, and every eviction LAW are untouched: compaction
+  // only drops rows, never reorders or rewrites them.
+  size_t CompactEvictions(size_t keep = 1024);
+
  private:
   void EvictLru(uint64_t tick);
   Manager* manager_;

@@ -148,5 +148,40 @@ int main() {
                   "typed error");
   }
 
+  // 12. COMPACT EVICTIONS (P14 bounded-campaign memory, the CompactAudit
+  // precedent): the history keeps its most recent `keep` events, in
+  // order; the LRU and every eviction law are untouched.
+  {
+    IdentityStore store;
+    Manager m(&store);
+    Scheduler s(&m, 4);
+    CreateRequest a; a.entropy = "ev-a"; IdentityRecord ra;
+    XR_EXPECT(m.Create(a, &ra).ok);
+    CreateRequest b; b.entropy = "ev-b"; IdentityRecord rb;
+    XR_EXPECT(m.Create(b, &rb).ok);
+    XR_EXPECT(s.Activate(ra.domain, 1).ok);
+    XR_EXPECT(s.Activate(rb.domain, 2).ok);
+    // Six user hibernates -> six eviction events.
+    for (uint64_t tick = 10; tick < 16; ++tick) {
+      XR_EXPECT(s.Hibernate(rb.domain, tick).ok);
+      XR_EXPECT(s.Wake(rb.domain, tick + 100).ok);
+    }
+    XR_EXPECT_EQ(s.evictions().size(), size_t(6));
+    const size_t active_before = s.ActiveCount();
+    const size_t dropped = s.CompactEvictions(4);
+    XR_EXPECT_EQ(dropped, size_t(2));              // 6 -> keep 4
+    XR_EXPECT_EQ(s.evictions().size(), size_t(4));
+    // The LAST four, in order, ticks 12..15 (oldest dropped, order kept).
+    for (size_t i = 0; i < 4; ++i) {
+      XR_EXPECT_EQ(s.evictions()[i].at_tick, uint64_t(12 + i));
+    }
+    // The LRU state and the cap are untouched.
+    XR_EXPECT_EQ(s.ActiveCount(), active_before);
+    XR_EXPECT_EQ(s.cap(), size_t(4));
+    // A no-op under the keep size returns 0 and changes nothing.
+    XR_EXPECT_EQ(s.CompactEvictions(4), size_t(0));
+    XR_EXPECT_EQ(s.evictions().size(), size_t(4));
+  }
+
   return xrtest::Report("identity/hibernate");
 }

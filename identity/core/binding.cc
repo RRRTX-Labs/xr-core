@@ -84,6 +84,25 @@ std::optional<std::string> BindingModel::TabIdentity(
   return it->second;
 }
 
+size_t BindingModel::CompactAudit(size_t keep_suggestions) {
+  // Latest row per tab, emitted in ascending tab order. Snapshot's
+  // latest-per-tab fold (core/session.cc) sees exactly the same final
+  // state — one row per tab with the tab's current `to` — which is the
+  // whole point: bounded memory, unchanged contract.
+  std::map<uint64_t, BindingChange> latest;
+  for (const auto& ch : changes_) latest[ch.tab_id] = ch;
+  const size_t dropped = changes_.size() - latest.size();
+  changes_.clear();
+  changes_.reserve(latest.size());
+  for (const auto& [tab_id, ch] : latest) changes_.push_back(ch);
+  if (suggestions_.size() > keep_suggestions) {
+    suggestions_.erase(suggestions_.begin(),
+                       suggestions_.end() -
+                           static_cast<long>(keep_suggestions));
+  }
+  return dropped;
+}
+
 CallResult BindingModel::TestPlantedAutoSwitch(uint64_t tab_id,
                                                std::string_view to) {
   // The forbidden path: a suggestion-caused change. This MUST fail — the

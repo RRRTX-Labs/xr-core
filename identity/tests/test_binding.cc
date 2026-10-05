@@ -11,8 +11,10 @@
 
 #include "harness.h"
 #include "core/binding.h"
+#include "core/session.h"
 
 using xr::identity::BindingModel;
+using xr::identity::IdentityStore;
 using xr::identity::CallResult;
 using xr::identity::ChangeCause;
 
@@ -126,6 +128,58 @@ int main() {
   // `from` must match the binding — no blind writes).
   XR_EXPECT_MSG(!b.MoveTab(kA, kB, 900, false, {}).ok,
                 "mismatched from-domain refused");
+
+  // 11. COMPACT AUDIT (P14 bounded-campaign memory): the audit keeps the
+  // LATEST row per tab — exactly what a session Snapshot folds — so
+  // compaction is contract-preserving by construction; these cases prove
+  // it rather than trust it.
+  {
+    BindingModel c;
+    XR_EXPECT(c.SetWindowDefault("w", kA).ok);
+    XR_EXPECT(c.OpenTab("w", 7, "").ok);            // tab 7 -> A
+    XR_EXPECT(c.OpenTab("w", 9, "").ok);            // tab 9 -> A
+    XR_EXPECT(c.MoveTab(kA, kB, 9, false, {}).ok);  // tab 9 -> B (move)
+    XR_EXPECT(c.MoveTab(kB, kC, 9, false, {}).ok);  // tab 9 -> C (move)
+    XR_EXPECT(c.RestoreTab(7, kC).ok);              // tab 7 -> C (restore)
+    XR_EXPECT_EQ(c.changes().size(), size_t(5));
+    // The pre-compaction session (what a crash would snapshot).
+    const std::string before =
+        xr::identity::SerializeSession(
+            xr::identity::Snapshot(IdentityStore(), c,
+                                   nullptr));
+    const size_t dropped = c.CompactAudit(2);
+    XR_EXPECT_EQ(dropped, size_t(3));               // 5 rows -> 2 tabs
+    XR_EXPECT_EQ(c.changes().size(), size_t(2));
+    // Ascending tab order, latest binding per tab, cause preserved.
+    XR_EXPECT_EQ(c.changes()[0].tab_id, uint64_t(7));
+    XR_EXPECT_STREQ(c.changes()[0].to.c_str(), kC);
+    XR_EXPECT(c.changes()[0].cause == ChangeCause::kRestore);
+    XR_EXPECT_EQ(c.changes()[1].tab_id, uint64_t(9));
+    XR_EXPECT_STREQ(c.changes()[1].to.c_str(), kC);
+    XR_EXPECT(c.changes()[1].cause == ChangeCause::kUserConfirmedMove);
+    XR_EXPECT_STREQ(c.TabIdentity(7)->c_str(), kC);
+    XR_EXPECT_STREQ(c.TabIdentity(9)->c_str(), kC);
+    // THE CONTRACT: the compacted session is byte-identical.
+    const std::string after =
+        xr::identity::SerializeSession(
+            xr::identity::Snapshot(IdentityStore(), c,
+                                   nullptr));
+    XR_EXPECT_MSG(before == after,
+                  "compaction preserves the Snapshot bytes");
+    // Never-auto-switch survives compaction (nothing may carry the
+    // suggestion cause).
+    for (const auto& ch : c.changes()) {
+      XR_EXPECT(ch.cause != ChangeCause::kSuggestion);
+    }
+    // Suggestions keep their most recent entries only.
+    for (int i = 0; i < 4; ++i) {
+      XR_EXPECT(c.RecordSuggestion("s" + std::to_string(i), kA).ok);
+    }
+    (void)c.CompactAudit(2);
+    XR_EXPECT_EQ(c.suggestions().size(), size_t(2));
+    XR_EXPECT_STREQ(c.suggestions()[0].site.c_str(), "s2");
+    XR_EXPECT_STREQ(c.suggestions()[1].site.c_str(), "s3");
+  }
 
   return xrtest::Report("identity/binding");
 }

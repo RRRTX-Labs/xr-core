@@ -23,6 +23,14 @@ void Scheduler::EvictLru(uint64_t tick) {
   active_order_.erase(active_order_.begin());
 }
 
+size_t Scheduler::CompactEvictions(size_t keep) {
+  if (evictions_.size() <= keep) return 0;
+  const size_t dropped = evictions_.size() - keep;
+  evictions_.erase(evictions_.begin(),
+                   evictions_.end() - static_cast<long>(keep));
+  return dropped;
+}
+
 CallResult Scheduler::Activate(std::string_view domain, uint64_t tick) {
   CallResult res;
   IdentityRecord* r = manager_->FindInStore(domain);

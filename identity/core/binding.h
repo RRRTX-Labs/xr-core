@@ -83,6 +83,20 @@ class BindingModel {
   const std::vector<BindingChange>& changes() const { return changes_; }
   std::optional<std::string> TabIdentity(uint64_t tab_id) const;
 
+  // Bounded-memory compaction for long campaigns (P14: the fuzz fleet's
+  // 60 s gate run appends ~10M audit rows — >1 GB — and the 600 s
+  // evidence campaign would need >12 GB; browser sessions run for DAYS).
+  // The audit keeps the LATEST row per tab — exactly what a session
+  // Snapshot computes from, so the observable contract is unchanged —
+  // and the suggestion log keeps its most recent `keep_suggestions`
+  // entries (suggestions are surfaced, never applied; ancient ones are
+  // history). Returns the number of audit rows dropped. Laws preserved
+  // by construction: compaction only DROPS rows (no kSuggestion row can
+  // appear — never-auto-switch), and TabIdentity() reads the live map,
+  // never the audit. Deterministic: same state -> same compacted audit
+  // (ascending tab order).
+  size_t CompactAudit(size_t keep_suggestions = 1024);
+
   // TEST-ONLY probe: attempt to change a tab's identity with the forbidden
   // cause. MUST return kNotPermitted — the test asserts it (the planted
   // auto-switch; if a future refactor makes this succeed, the law broke).

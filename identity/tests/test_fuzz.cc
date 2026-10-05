@@ -132,6 +132,17 @@ int main() {
            k < trail.size(); ++k) {
         XR_EXPECT(trail[k].cause != ChangeCause::kSuggestion);
       }
+      // BOUNDED CAMPAIGN MEMORY (P14): the audit is append-only and the
+      // 600 s evidence campaign is 100M+ ops — an uncompacted audit would
+      // pass 12 GB (the 60 s gate run already peaks >1 GB and OOMs a
+      // 2 GB runner). Compact to the Snapshot contract (latest row per
+      // tab) at the cap; semantics are unchanged by construction and
+      // proven by test_binding's compaction cases + the session Snapshot
+      // equivalence assert there.
+      if (b.changes().size() > 100000) {
+        (void)b.CompactAudit();
+        (void)s.CompactEvictions();  // same law: bounded campaign memory
+      }
     } else if (op == 6) {  // templates apply + ceremony completeness
       static const char* kIds[] = {"personal", "work", "research", "banking",
                                    "shopping", "disposable", "tor", "ghost"};
