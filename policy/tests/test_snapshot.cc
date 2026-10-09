@@ -27,6 +27,14 @@ SnapshotEntry Mk(const std::string& id, const std::string& site, const std::stri
   return e;
 }
 
+// Hand-built diff envelope with the 7 frozen keys. The hash is a placeholder:
+// the refusals under test happen before the reconstructed-hash check.
+std::string RawDiff(const std::string& kind, const std::string& delta_body) {
+  return std::string("{\"schema\":\"xr-policy-snapshot\",\"schema_version\":1,\"kind\":\"") + kind +
+         "\",\"seq\":2,\"base_seq\":1,\"hash\":\"" + std::string(64, 'a') +
+         "\",\"delta\":{" + delta_body + "}}";
+}
+
 bool SameState(const std::vector<SnapshotEntry>& a, const std::vector<SnapshotEntry>& b) {
   if (a.size() != b.size()) return false;
   for (size_t i = 0; i < a.size(); ++i) {
@@ -249,6 +257,36 @@ int main() {
     es[1].trust = "kStandard";
     SortEntries(&es);
     XR_EXPECT_MSG(es[0].site == "a.example", "entries with one identity sort by site");
+  }
+
+  // ---- delta apply: key order and refusal codes (mutation kills) ----
+  {
+    // Same identity and trust, different sites: the two keys stay distinct.
+    std::vector<SnapshotEntry> pair = {Mk("xr:1", "a.example", "kStandard", false),
+                                       Mk("xr:1", "b.example", "kStandard", true)};
+    auto full = EncodeFullSnapshot(1, pair);
+    auto base = DecodeFullSnapshot(full.blob);
+    XR_EXPECT_MSG(full.ok && base.ok && base.entries.size() == 2,
+                  "full round trip keeps both sites");
+    auto diff = EncodeDiffSnapshot(2, 1, base.entries, base.entries);
+    auto r = ApplyDiffSnapshot(diff.blob, base.entries);
+    XR_EXPECT_MSG(diff.ok && r.ok && r.entries.size() == 2,
+                  "sites of one identity must not collapse in a diff apply");
+  }
+  {
+    auto r = ApplyDiffSnapshot(RawDiff("diff", "\"added\":[5],\"changed\":[],\"removed\":[]"), {});
+    XR_EXPECT_MSG(!r.ok && r.error == SnapshotError::kInvalidEntry,
+                  "a non-object delta entry is refused as kInvalidEntry");
+  }
+  {
+    auto r = ApplyDiffSnapshot(RawDiff("full", "\"added\":[],\"changed\":[],\"removed\":[]"), {});
+    XR_EXPECT_MSG(!r.ok && r.error == SnapshotError::kMalformedInput,
+                  "a non-diff kind is refused by the diff path");
+  }
+  {
+    auto r = ApplyDiffSnapshot(RawDiff("diff", "\"added\":\"x\",\"changed\":[],\"removed\":[]"), {});
+    XR_EXPECT_MSG(!r.ok && r.error == SnapshotError::kMalformedInput,
+                  "a non-array delta list is malformed input");
   }
 
   return xrtest::Report("test_snapshot");
