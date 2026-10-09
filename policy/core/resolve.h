@@ -83,6 +83,53 @@ struct ExtensionHint {
   std::vector<std::string> capabilities;
 };
 
+// P15 permission overlay (ADR-0051, carrier R2): input DATA the resolver
+// consults for the four FROZEN PermissionState fields (geolocation, camera,
+// microphone, notifications). Capability names outside those four have no
+// slot here and are never representable (envelope (i), ADR-0051).
+//  * present == false => INERT: the frozen tier table decides, so the 66
+//    frozen vectors stay byte-identical (the carrier's parity proof).
+//  * corrupt == true  => FAIL-CLOSED for every identity: all four deny. A
+//    malformed overlay is never partially applied (contrast with the other
+//    layers, which drop the bad entry; an overlay entry dropped is a widening).
+//  * denied_identities => the Fortress deny-list. The HOST writes it from the
+//    identity grade as data; the resolver never derives it from grade, and
+//    nothing below it can widen it.
+//  * defaults => per-identity state for one capability (overrides the tier).
+//  * grants => an active grant widens (identity, domain, capability) to
+//    kAllow. Scope semantics mirror ExceptionActive: once (remaining_uses >
+//    0), session (session_id match), 7d (expires_at > now_ms, fail-closed at
+//    ==). Unknown scope => inactive.
+struct OverlayDefault {
+  std::string identity;
+  std::string capability;  // geolocation | camera | microphone | notifications
+  std::string state;       // kDeny | kAsk | kAllow (anything else => deny)
+};
+
+struct OverlayGrant {
+  std::string identity;
+  std::string domain;      // registrable domain (the origin key)
+  std::string capability;  // the frozen four
+  std::string scope;       // once | session | 7d
+  int64_t expires_at = 0;      // 7d: active iff expires_at > now_ms
+  std::string session_id;      // session: active iff == request session_id
+  int64_t remaining_uses = 0;  // once: active iff > 0 (caller decrements)
+};
+
+struct PermissionOverlayView {
+  bool present = false;
+  bool corrupt = false;
+  std::vector<std::string> denied_identities;
+  std::vector<OverlayDefault> defaults;
+  std::vector<OverlayGrant> grants;
+};
+
+// Strict parse of the request's "permission_overlay" object (resolve_io.cc).
+// Returns false on ANY defect (unknown key, wrong type, bad enum, duplicate
+// (identity, capability) default, missing scope field); the caller then sets
+// corrupt. Never partially fills an accepted view.
+bool ParsePermissionOverlay(const JsonValue& v, PermissionOverlayView* out);
+
 struct ResolveRequest {
   // Frozen core (mojom PolicyResolver.Resolve args, parsed):
   bool has_request = false;      // input was not even a JSON object
@@ -102,6 +149,9 @@ struct ResolveRequest {
   ExtensionHint extension;
   int64_t now_ms = 0;
   std::string session_id;
+
+  // P15 (ADR-0051 R2): inert when absent; see PermissionOverlayView above.
+  PermissionOverlayView permission_overlay;
 };
 
 struct ResolveOutput {

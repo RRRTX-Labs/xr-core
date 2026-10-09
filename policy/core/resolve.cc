@@ -62,6 +62,85 @@ EffectivePolicy TieredPolicy(int t, bool ephemeral, bool fortress_id,
   return p;
 }
 
+// ---- P15 permission overlay (ADR-0051 R2) --------------------------------
+// The four frozen capability names; anything else has no slot (envelope (i)).
+PermissionState* PermissionSlot(EffectivePolicy* p, const std::string& cap) {
+  if (cap == "geolocation") return &p->geolocation;
+  if (cap == "camera") return &p->camera;
+  if (cap == "microphone") return &p->microphone;
+  if (cap == "notifications") return &p->notifications;
+  return nullptr;
+}
+
+// Parses a PermissionState name. Unknown names fail closed (kDeny) at the
+// call site; this only reports whether the name was legal.
+bool PermissionStateFromName(const std::string& s, PermissionState* out) {
+  if (s == "kDeny") { *out = PermissionState::kDeny; return true; }
+  if (s == "kAsk") { *out = PermissionState::kAsk; return true; }
+  if (s == "kAllow") { *out = PermissionState::kAllow; return true; }
+  return false;
+}
+
+// Grant activity: the ExceptionActive scope rules, applied to permissions.
+bool OverlayGrantActive(const OverlayGrant& g, const ResolveRequest& req) {
+  if (g.scope == "once") return g.remaining_uses > 0;
+  if (g.scope == "session") return !g.session_id.empty() && g.session_id == req.session_id;
+  if (g.scope == "7d") return g.expires_at > req.now_ms;  // fail-closed at ==
+  return false;  // unknown scope never widens
+}
+
+void DenyAllPermissions(EffectivePolicy* p) {
+  p->geolocation = PermissionState::kDeny;
+  p->camera = PermissionState::kDeny;
+  p->microphone = PermissionState::kDeny;
+  p->notifications = PermissionState::kDeny;
+}
+
+// Consults the overlay for the frozen four. Order is load-bearing: corrupt and
+// the Fortress deny-list are FINAL (nothing after them can widen), then the
+// per-identity defaults, then active grants (which widen to kAllow only for
+// the matching identity AND domain). Identity isolation is structural: every
+// lookup is keyed on req.identity.
+void ApplyPermissionOverlay(const ResolveRequest& req, EffectivePolicy* p) {
+  const PermissionOverlayView& ov = req.permission_overlay;
+  if (!ov.present) return;  // absent => frozen tier table (vector parity)
+  if (ov.corrupt) {
+    DenyAllPermissions(p);  // fail-closed: a corrupt overlay denies everything
+    return;
+  }
+  for (const auto& id : ov.denied_identities) {
+    if (id == req.identity) {
+      DenyAllPermissions(p);  // Fortress deny-list: no prompt, no widening
+      return;
+    }
+  }
+  bool seen[4] = {false, false, false, false};  // geolocation camera mic notif
+  for (const auto& d : ov.defaults) {
+    if (d.identity != req.identity) continue;
+    PermissionState* slot = PermissionSlot(p, d.capability);
+    if (slot == nullptr) continue;  // parse rejects this; belt and braces
+    PermissionState st = PermissionState::kDeny;
+    if (!PermissionStateFromName(d.state, &st)) st = PermissionState::kDeny;
+    size_t idx = (d.capability == "geolocation") ? 0 : (d.capability == "camera") ? 1
+               : (d.capability == "microphone") ? 2 : 3;
+    // A repeated default for one capability (the parser rejects these; a C++
+    // caller could still pass one) resolves to the MOST restrictive value.
+    if (seen[idx]) {
+      if (static_cast<int>(st) < static_cast<int>(*slot)) *slot = st;
+    } else {
+      *slot = st;
+      seen[idx] = true;
+    }
+  }
+  for (const auto& g : ov.grants) {
+    if (g.identity != req.identity || g.domain != req.registrable_domain) continue;
+    if (!OverlayGrantActive(g, req)) continue;
+    if (PermissionState* slot = PermissionSlot(p, g.capability); slot != nullptr) {
+      *slot = PermissionState::kAllow;
+    }
+  }
+}
+
 // Exception activity: pure evaluation against caller-supplied now/session.
 bool ExceptionActive(const ExceptionEntry& e, const ResolveRequest& req) {
   if (e.scope == "once") return e.remaining_uses > 0;
@@ -171,6 +250,10 @@ ResolveOutput Resolve(const ResolveRequest& req) {
   // Extension context never widens: autofill mediation is off (Guard
   // dispatch itself is P21; this is the conservative v1 input rule).
   if (req.extension.present) p.autofill_allowed = false;
+
+  // P15: the overlay is the last word on the four frozen permission fields
+  // (inert when absent). Pure: it reads req.now_ms / req.session_id only.
+  ApplyPermissionOverlay(req, &p);
 
   out.ok = true;
   out.policy = p;

@@ -10,7 +10,9 @@
 #include <algorithm>
 #include <array>
 #include <cstdlib>
+#include <initializer_list>
 #include <type_traits>
+#include <utility>
 
 #include "policy/core/resolve.h"
 
@@ -166,6 +168,133 @@ bool ParseExtension(const JsonValue& v, ExtensionHint* out) {
 
 }  // namespace
 
+// ---- P15 permission overlay parse (ADR-0051 R2) ----------------------------
+// STRICT: every defect returns false, and the caller marks the WHOLE overlay
+// corrupt (fail-closed). Nothing here drops one entry and keeps the rest,
+// because dropping an overlay entry silently widens the answer.
+namespace {
+
+bool IsFrozenCapability(const std::string& c) {
+  return c == "geolocation" || c == "camera" || c == "microphone" || c == "notifications";
+}
+
+bool IsLegalStateName(const std::string& s) {
+  return s == "kDeny" || s == "kAsk" || s == "kAllow";
+}
+
+// True iff every key of `obj` is one of `allowed` (unknown key => defect).
+bool OnlyKeys(const JsonValue& obj, std::initializer_list<const char*> allowed) {
+  for (const auto& kv : obj.as_object()) {
+    bool ok = false;
+    for (const char* a : allowed) {
+      if (kv.first == a) { ok = true; break; }
+    }
+    if (!ok) return false;
+  }
+  return true;
+}
+
+bool ParseOverlayDefault(const JsonValue& v, OverlayDefault* out) {
+  if (!v.is_object() || !OnlyKeys(v, {"identity", "capability", "state"})) return false;
+  const JsonValue* id = v.find("identity");
+  const JsonValue* cap = v.find("capability");
+  const JsonValue* st = v.find("state");
+  if (id == nullptr || !id->is_string() || id->as_string().empty()) return false;
+  if (cap == nullptr || !cap->is_string() || !IsFrozenCapability(cap->as_string())) return false;
+  if (st == nullptr || !st->is_string() || !IsLegalStateName(st->as_string())) return false;
+  out->identity = id->as_string();
+  out->capability = cap->as_string();
+  out->state = st->as_string();
+  return true;
+}
+
+bool ParseOverlayGrant(const JsonValue& v, OverlayGrant* out) {
+  if (!v.is_object()) return false;
+  const JsonValue* scope = v.find("scope");
+  if (scope == nullptr || !scope->is_string()) return false;
+  const std::string s = scope->as_string();
+  const JsonValue* id = v.find("identity");
+  const JsonValue* dom = v.find("domain");
+  const JsonValue* cap = v.find("capability");
+  if (id == nullptr || !id->is_string() || id->as_string().empty()) return false;
+  if (dom == nullptr || !dom->is_string() || dom->as_string().empty()) return false;
+  if (cap == nullptr || !cap->is_string() || !IsFrozenCapability(cap->as_string())) return false;
+  // Each scope admits exactly its own field: an extra field is a defect.
+  if (s == "once") {
+    if (!OnlyKeys(v, {"identity", "domain", "capability", "scope", "remaining_uses"})) return false;
+    const JsonValue* r = v.find("remaining_uses");
+    if (r == nullptr || !r->is_int()) return false;
+    out->remaining_uses = r->as_int();
+  } else if (s == "session") {
+    if (!OnlyKeys(v, {"identity", "domain", "capability", "scope", "session_id"})) return false;
+    const JsonValue* sid = v.find("session_id");
+    if (sid == nullptr || !sid->is_string() || sid->as_string().empty()) return false;
+    out->session_id = sid->as_string();
+  } else if (s == "7d") {
+    if (!OnlyKeys(v, {"identity", "domain", "capability", "scope", "expires_at"})) return false;
+    const JsonValue* e = v.find("expires_at");
+    if (e == nullptr || !e->is_int()) return false;
+    out->expires_at = e->as_int();
+  } else {
+    return false;  // unknown scope: refused, never widened
+  }
+  out->scope = s;
+  out->identity = id->as_string();
+  out->domain = dom->as_string();
+  out->capability = cap->as_string();
+  return true;
+}
+
+}  // namespace
+
+bool ParsePermissionOverlay(const JsonValue& v, PermissionOverlayView* out) {
+  if (!v.is_object()) return false;
+  if (!OnlyKeys(v, {"contract_version", "corrupt", "denied_identities", "defaults", "grants"})) {
+    return false;
+  }
+  PermissionOverlayView r;
+  r.present = true;
+  if (const JsonValue* cv = v.find("contract_version"); cv != nullptr) {
+    if (!cv->is_int() || cv->as_int() != 1) return false;
+  }
+  if (const JsonValue* c = v.find("corrupt"); c != nullptr) {
+    if (!c->is_bool()) return false;
+    if (c->as_bool()) {  // the host marks a store it could not read
+      r.corrupt = true;
+      *out = std::move(r);
+      return true;
+    }
+  }
+  if (const JsonValue* d = v.find("denied_identities"); d != nullptr) {
+    if (!d->is_array()) return false;
+    for (const auto& e : d->as_array()) {
+      if (!e.is_string() || e.as_string().empty()) return false;
+      r.denied_identities.push_back(e.as_string());
+    }
+  }
+  if (const JsonValue* ds = v.find("defaults"); ds != nullptr) {
+    if (!ds->is_array()) return false;
+    for (const auto& e : ds->as_array()) {
+      OverlayDefault od;
+      if (!ParseOverlayDefault(e, &od)) return false;
+      for (const auto& prev : r.defaults) {  // a duplicate is a defect, not a choice
+        if (prev.identity == od.identity && prev.capability == od.capability) return false;
+      }
+      r.defaults.push_back(std::move(od));
+    }
+  }
+  if (const JsonValue* gs = v.find("grants"); gs != nullptr) {
+    if (!gs->is_array()) return false;
+    for (const auto& e : gs->as_array()) {
+      OverlayGrant og;
+      if (!ParseOverlayGrant(e, &og)) return false;
+      r.grants.push_back(std::move(og));
+    }
+  }
+  *out = std::move(r);
+  return true;
+}
+
 RequestParse ParseResolveRequest(const JsonValue& v) {
   RequestParse rp;
   ResolveRequest& req = rp.request;
@@ -256,6 +385,22 @@ RequestParse ParseResolveRequest(const JsonValue& v) {
   if (const JsonValue* sid = v.find("session_id"); sid != nullptr) {
     if (sid->is_string()) req.session_id = sid->as_string();
     else rp.dropped.push_back("session_id: not a string; treated as empty");
+  }
+
+  // P15 (ADR-0051 R2): absent => inert. PRESENT but malformed (including an
+  // explicit null) => the WHOLE overlay is corrupt, which denies. It is never
+  // partially applied: the other layers drop a bad entry, and for this layer
+  // a dropped entry would widen the answer.
+  if (const JsonValue* po = v.find("permission_overlay"); po != nullptr) {
+    PermissionOverlayView view;
+    if (ParsePermissionOverlay(*po, &view)) {
+      req.permission_overlay = std::move(view);
+    } else {
+      req.permission_overlay = PermissionOverlayView{};
+      req.permission_overlay.present = true;
+      req.permission_overlay.corrupt = true;
+      rp.dropped.push_back("permission_overlay: malformed; overlay fully denying (fail-closed)");
+    }
   }
 
   // Origin / class / trust (fake order).
