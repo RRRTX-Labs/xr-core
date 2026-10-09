@@ -365,5 +365,54 @@ int main() {
                   "fortress kind sets the fortress class");
   }
 
+  // ---- permission overlay defaults and exception scopes (mutation kills) ----
+  {
+    // A default for the request identity applies its state (kAllow must parse).
+    auto out = R(Req(std::string("\"permission_overlay\":{\"defaults\":[{\"identity\":\"") + kStd +
+                     "\",\"capability\":\"camera\",\"state\":\"kAllow\"}]}"));
+    XR_EXPECT(out.policy.camera == PermissionState::kAllow);
+    // The first default for geolocation applies (no stale "seen" slot).
+    out = R(Req(std::string("\"permission_overlay\":{\"defaults\":[{\"identity\":\"") + kStd +
+                "\",\"capability\":\"geolocation\",\"state\":\"kAllow\"}]}"));
+    XR_EXPECT(out.policy.geolocation == PermissionState::kAllow);
+    // A default for another identity never applies to this request.
+    out = R(Req(std::string("\"permission_overlay\":{\"defaults\":[{\"identity\":\"") + kFort +
+                "\",\"capability\":\"camera\",\"state\":\"kAllow\"}]}"));
+    XR_EXPECT(out.policy.camera != PermissionState::kAllow);
+  }
+  {
+    // Repeated defaults (the parser refuses them; a C++ caller can still pass
+    // them) resolve to the most restrictive value, whatever the order.
+    RequestParse rp = ParseResolveRequest(ParseJson(Req("")).value);
+    rp.request.permission_overlay.present = true;
+    rp.request.permission_overlay.defaults.push_back(OverlayDefault{kStd, "camera", "kDeny"});
+    rp.request.permission_overlay.defaults.push_back(OverlayDefault{kStd, "camera", "kAllow"});
+    XR_EXPECT_MSG(Resolve(rp.request).policy.camera == PermissionState::kDeny,
+                  "repeated defaults resolve to the most restrictive state");
+  }
+  {
+    // An exception with an unknown scope is never active.
+    RequestParse rp = ParseResolveRequest(ParseJson(Req("")).value);
+    ExceptionEntry ex;
+    ex.id = "x";
+    ex.domain = "example.com";
+    ex.scope = "forever";
+    ex.trust = "kFortress";
+    ex.created_at = 1;
+    rp.request.exceptions.push_back(ex);
+    XR_EXPECT_MSG(Resolve(rp.request).policy.camera == PermissionState::kAsk,
+                  "unknown scope must not activate the exception");
+    // Control: the same exception with a live scope activates (Fortress denies camera).
+    rp.request.exceptions[0].scope = "permanent";
+    rp.request.exceptions[0].granted_by = "settings";
+    XR_EXPECT_MSG(Resolve(rp.request).policy.camera == PermissionState::kDeny,
+                  "live permanent exception activates the Fortress tier");
+  }
+  {
+    // StorageScopeFromString maps the identity-scoped name (not a fallthrough).
+    auto ident = StorageScopeFromString("kIdentityScoped");
+    XR_EXPECT(ident.has_value() && *ident == StorageScope::kIdentityScoped);
+  }
+
   return xrtest::Report("test_resolve");
 }
