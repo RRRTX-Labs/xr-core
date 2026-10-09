@@ -14,6 +14,7 @@
 #include <string>
 
 #include "settings/core/settings_schema.h"
+#include "settings/core/json.h"
 #include "settings/tests/harness.h"
 
 using namespace xr::settings;
@@ -152,5 +153,64 @@ int main() {
 
   std::printf("suite: %d checks, %d failures\n", xrtest::g_checks,
               xrtest::g_failures);
+  // P15 hardening (mutation survivors, research-log-P15 section 10).
+  {
+    // The int window is closed: its lower bound is in range.
+    SettingDef def;
+    def.type = "int";
+    std::string err;
+    XR_EXPECT_MSG(ValidateSettingValue(def, {}, JsonValue(static_cast<int64_t>(-2147483648LL)), &err),
+                  "int at the lower window bound accepted");
+    XR_EXPECT_MSG(!ValidateSettingValue(def, {}, JsonValue(static_cast<int64_t>(-2147483649LL)), &err),
+                  "int below the window refused");
+    // An enum value must be a string; an unknown declared type is refused.
+    SettingDef en;
+    en.type = "enum";
+    XR_EXPECT_MSG(!ValidateSettingValue(en, {"on", "off"}, JsonValue(static_cast<int64_t>(1)), &err),
+                  "non-string enum value refused");
+    SettingDef bogus;
+    bogus.type = "bogus";
+    XR_EXPECT_MSG(!ValidateSettingValue(bogus, {}, JsonValue(std::string("x")), &err),
+                  "unknown declared type refused");
+  }
+  {
+    // Schema-variant loads: edit the parsed v1 document, then load it strictly.
+    auto load_edited = [](auto edit) -> SchemaLoadResult {
+      std::string err;
+      const std::string text = ReadSchema(&err);
+      JsonParseResult pr = ParseJson(text);
+      JsonValue::Object obj = pr.value.as_object();
+      edit(obj);
+      SettingsSchema s;
+      return s.Load(JsonValue(obj).Canonical());
+    };
+    const SchemaLoadResult base = load_edited([](JsonValue::Object&) {});
+    XR_EXPECT_MSG(base.ok, "unedited v1 schema loads (variant harness sanity)");
+    auto first_row = [](JsonValue::Object& o, auto set) {
+      JsonValue::Array rows = o.at("settings").as_array();
+      JsonValue::Object row = rows[0].as_object();
+      set(row);
+      rows[0] = JsonValue(row);
+      o["settings"] = JsonValue(rows);
+    };
+    const SchemaLoadResult unknown = load_edited([&](JsonValue::Object& o) {
+      first_row(o, [](JsonValue::Object& row) { row["bogus"] = JsonValue(std::string("x")); });
+    });
+    XR_EXPECT_MSG(!unknown.ok && unknown.error.find("unknown field") != std::string::npos,
+                  "setting row with an unknown field refused");
+    const SchemaLoadResult flag = load_edited([&](JsonValue::Object& o) {
+      first_row(o, [](JsonValue::Object& row) {
+        row["security_relevant"] = JsonValue(std::string("yes"));
+      });
+    });
+    XR_EXPECT_MSG(!flag.ok && flag.error.find("security_relevant must be bool") != std::string::npos,
+                  "non-bool security_relevant refused");
+    const SchemaLoadResult writable = load_edited([](JsonValue::Object& o) {
+      o["writable_in_v0"] = JsonValue(JsonValue::Array{JsonValue(std::string("no.such.key"))});
+    });
+    XR_EXPECT_MSG(!writable.ok && writable.error.find("known key") != std::string::npos,
+                  "writable_in_v0 entry must name a known key");
+  }
+
   return xrtest::Report("test_settings_schema");
 }

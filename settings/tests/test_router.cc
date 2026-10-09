@@ -125,5 +125,13 @@ int main() {
 
   std::printf("suite: %d checks, %d failures\n", xrtest::g_checks,
               xrtest::g_failures);
+  // P15 hardening (mutation survivors): an unknown section unrelated to every
+  // section id has no near-miss suggestions.
+  {
+    const ResolveResult unrelated = router.Resolve("xr://settings/zzz-no-such-section");
+    XR_EXPECT_MSG(unrelated.kind == ResolveKind::kUnknown && unrelated.suggestions.empty(),
+                  "unrelated unknown section has no suggestions");
+  }
+
   return xrtest::Report("test_router");
 }

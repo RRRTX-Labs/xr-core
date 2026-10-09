@@ -130,5 +130,54 @@ int main() {
 
   std::printf("suite: %d checks, %d failures\n", xrtest::g_checks,
               xrtest::g_failures);
+  // P15 hardening (mutation survivors, research-log-P15 section 10).
+  // Token and field scoring: no match is zero; each token is scored from its
+  // own start; the joined form of a spaced field counts; NUL never matches.
+  XR_EXPECT_MSG(WordTokenScore("zzz", "abc") == 0, "no token match scores 0");
+  XR_EXPECT_MSG(WordTokenScore("adc", "abdc") == 1, "subsequence match scores 1");
+  XR_EXPECT_MSG(WordTokenScore(std::string("ab\0", 3), "ab") == 0,
+                "a NUL is never a subsequence of the token");
+  XR_EXPECT_MSG(WordFieldBest("zzz", "abc") == 0, "field with no match scores 0");
+  XR_EXPECT_MSG(WordFieldBest("abc", "abc x") == 3, "first token of a field is scored");
+  XR_EXPECT_MSG(WordFieldBest("def", "abc def") == 3, "later token scored from its own start");
+  XR_EXPECT_MSG(WordFieldBest("abc", "a bc") == 3, "joined form of a spaced field is scored");
+  {
+    // A one-character query word adds no token score: only the phrase term
+    // (exact joined form, 300) decides the score.
+    IndexEntry one;
+    one.key = "one";
+    one.order = 0;
+    one.fields = {"x"};
+    IndexEntry::ParsedField pf;
+    pf.tokens = {"x"};
+    pf.joined = "x";
+    one.parsed = {pf};
+    const auto only = MatchQuery("x", {one});
+    XR_EXPECT_MSG(only.size() == 1 && only[0].score == 300,
+                  "one-character query word adds no token score");
+  }
+  {
+    // Results order by score first (exact outranks prefix), then schema order.
+    IndexEntry first;
+    first.key = "first";
+    first.order = 0;
+    first.fields = {"alpha"};
+    IndexEntry::ParsedField pa;
+    pa.tokens = {"alpha"};
+    pa.joined = "alpha";
+    first.parsed = {pa};
+    IndexEntry second;
+    second.key = "second";
+    second.order = 1;
+    second.fields = {"alp"};
+    IndexEntry::ParsedField pb;
+    pb.tokens = {"alp"};
+    pb.joined = "alp";
+    second.parsed = {pb};
+    const auto ranked = MatchQuery("alp", {first, second});
+    XR_EXPECT_MSG(ranked.size() == 2 && ranked[0].key == "second",
+                  "exact match outranks an earlier prefix match");
+  }
+
   return xrtest::Report("test_settings_search");
 }

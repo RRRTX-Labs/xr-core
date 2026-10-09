@@ -139,5 +139,14 @@ int main() {
 
   std::printf("suite: %d checks, %d failures\n", xrtest::g_checks,
               xrtest::g_failures);
+  // P15 hardening (mutation survivors): the state-doc refusal names version 1.
+  {
+    PolicyState fresh;
+    const StateLoadResult wrong = fresh.Load(
+        "{\"schema\":\"xr-settings-state\",\"schema_version\":2}");
+    XR_EXPECT_MSG(!wrong.ok && wrong.error == "state doc: schema_version must be 1",
+                  "wrong state-doc version refused with the expected version named");
+  }
+
   return xrtest::Report("test_sections");
 }

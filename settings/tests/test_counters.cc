@@ -16,6 +16,7 @@
 
 #include "settings/core/counters.h"
 #include "settings/core/json.h"
+#include <fstream>
 #include "settings/tests/harness.h"
 
 using namespace xr::settings;
@@ -205,5 +206,28 @@ int main() {
   Sys("rm -rf " + std::string(kStore));
   std::printf("suite: %d checks, %d failures\n", xrtest::g_checks,
               xrtest::g_failures);
+  // P15 hardening (mutation survivors): a ledger that parses to a non-object
+  // is corrupt and is preserved, never rewritten.
+  {
+    const std::string d = std::string(kStore) + "/non-object";
+    Sys("mkdir -p \"" + d + "\"");
+    std::ofstream(d + "/settings-counters.json") << "[]";
+    CounterStore cs(d);
+    const CounterStore::LoadResult lr = cs.Load();
+    XR_EXPECT_MSG(!lr.ok && lr.preserved && lr.error.find("corrupt") != std::string::npos,
+                  "non-object ledger is preserved as corrupt");
+  }
+  // P15 hardening (mutation survivors): a ledger that cannot be written reports
+  // the failure (the tmp path is a directory, so the open fails).
+  {
+    const std::string d = std::string(kStore) + "/tmp-blocked";
+    Sys("mkdir -p \"" + d + "\"");
+    CounterStore cs(d);
+    cs.Load();
+    Sys("mkdir -p \"" + cs.Path() + ".tmp\"");
+    std::string err;
+    XR_EXPECT_MSG(!cs.Save(&err) && !err.empty(), "unwritable tmp ledger fails Save");
+  }
+
   return xrtest::Report("test_counters");
 }
