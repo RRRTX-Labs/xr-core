@@ -268,5 +268,46 @@ int main() {
     XR_EXPECT(b.policy.geolocation == PermissionState::kAllow);  // the owner's grant does apply
   }
 
+  // ---- P15 policy-suite kills. policy/core is judged by THIS suite in the
+  // mutation map, so each planted overlay defect must die here, not only in the
+  // permissions cross-core suite. The frozen vectors are untouched.
+
+  // (1) The 7d boundary is fail-closed: expires_at == now_ms is INACTIVE.
+  {
+    const std::string tail =
+        "\",\"domain\":\"example.com\",\"capability\":\"geolocation\",\"scope\":\"7d\",\"expires_at\":";
+    auto at = R(Req(std::string("\"now_ms\":1000,\"permission_overlay\":{\"grants\":[{\"identity\":\"") +
+                    kStd + tail + "1000}]}"));
+    XR_EXPECT(at.ok);
+    XR_EXPECT(at.policy.geolocation == PermissionState::kAsk);  // equality: tier answer
+    auto live = R(Req(std::string("\"now_ms\":1000,\"permission_overlay\":{\"grants\":[{\"identity\":\"") +
+                      kStd + tail + "1001}]}"));
+    XR_EXPECT(live.ok);
+    XR_EXPECT(live.policy.geolocation == PermissionState::kAllow);  // one ms before expiry: live
+  }
+
+  // (2) The Fortress deny-list is FINAL: identity A is denied AND holds an active grant.
+  {
+    const std::string overlay =
+        "\"now_ms\":1000,\"permission_overlay\":{\"denied_identities\":[\"" + std::string(kStd) +
+        "\"],\"grants\":[{\"identity\":\"" + std::string(kStd) +
+        "\",\"domain\":\"example.com\",\"capability\":\"geolocation\",\"scope\":\"7d\","
+        "\"expires_at\":10000}]}";
+    auto out = R(Req(overlay));
+    XR_EXPECT(out.ok);
+    XR_EXPECT(out.policy.geolocation == PermissionState::kDeny);  // deny beats the grant
+    XR_EXPECT(out.policy.camera == PermissionState::kDeny);
+  }
+
+  // (3) A corrupt overlay (unknown key) denies all four, and is never read as absent.
+  {
+    auto out = R(Req("\"permission_overlay\":{\"grants\":[],\"zzz\":1}"));
+    XR_EXPECT(out.ok);
+    XR_EXPECT(out.policy.geolocation == PermissionState::kDeny);
+    XR_EXPECT(out.policy.camera == PermissionState::kDeny);
+    XR_EXPECT(out.policy.microphone == PermissionState::kDeny);
+    XR_EXPECT(out.policy.notifications == PermissionState::kDeny);
+  }
+
   return xrtest::Report("test_resolve");
 }
