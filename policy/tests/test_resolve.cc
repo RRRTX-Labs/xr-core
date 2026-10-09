@@ -242,5 +242,31 @@ int main() {
     XR_EXPECT(out.policy == deny);
   }
 
+  // ---- P15 matrix kill: a trust binding with NO identity field is a site default.
+  // ParseBinding's optional-identity guard. The frozen vectors always carry the
+  // field, so only this request reaches the "absent identity" branch.
+  {
+    auto out = R(Req("\"bindings\":[{\"domain\":\"example.com\",\"trust\":\"kShield\",\"created_at\":1}]"));
+    XR_EXPECT(out.ok);
+    XR_EXPECT(out.policy.route == RouteClass::kProxy);  // site default applies to every identity
+  }
+
+  // ---- P15 matrix kill: an overlay grant never widens another identity. Identity A
+  // (kStd) must stay at the tier answer; identity B (kFort), the grant's owner, widens.
+  {
+    const std::string overlay =
+        "\"now_ms\":1000,\"permission_overlay\":{\"grants\":[{\"identity\":\"" + std::string(kFort) +
+        "\",\"domain\":\"example.com\",\"capability\":\"geolocation\",\"scope\":\"7d\","
+        "\"expires_at\":10000}]}";
+    auto a = R(Req(overlay));
+    XR_EXPECT(a.ok);
+    XR_EXPECT(a.policy.geolocation == PermissionState::kAsk);  // no cross-identity widening
+    auto b = R(std::string("{\"identity\":{\"value\":\"") + kFort +
+               "\"},\"origin\":{\"scheme\":\"https\",\"registrable_domain\":\"example.com\"},"
+               "\"request_class\":\"kNavigation\"," + overlay + "}");
+    XR_EXPECT(b.ok);
+    XR_EXPECT(b.policy.geolocation == PermissionState::kAllow);  // the owner's grant does apply
+  }
+
   return xrtest::Report("test_resolve");
 }
