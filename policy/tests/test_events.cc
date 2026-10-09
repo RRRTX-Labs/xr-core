@@ -99,5 +99,34 @@ int main() {
                                              old_p, new_p, true).Canonical();
   XR_EXPECT(gold == again);
 
+  // ---- flattened booleans and fingerprint ranks (mutation kills) ----
+  {
+    auto flat_value = [](const std::vector<std::pair<std::string, std::string>>& flat,
+                         const char* key) {
+      for (const auto& kv : flat) {
+        if (kv.first == key) return kv.second;
+      }
+      return std::string("<missing>");
+    };
+    EffectivePolicy e;  // defaults: in_memory=true, autofill_allowed=false
+    XR_EXPECT_STREQ(flat_value(FlattenPolicy(e), "storage_scope.in_memory").c_str(), "true");
+    XR_EXPECT_STREQ(flat_value(FlattenPolicy(e), "vault_scope.autofill_allowed").c_str(), "false");
+    e.in_memory = false;
+    e.autofill_allowed = true;
+    XR_EXPECT_STREQ(flat_value(FlattenPolicy(e), "storage_scope.in_memory").c_str(), "false");
+    XR_EXPECT_STREQ(flat_value(FlattenPolicy(e), "vault_scope.autofill_allowed").c_str(), "true");
+  }
+  // kOff -> kReduce strengthens protection (kOff ranks below kReduce).
+  {
+    EffectivePolicy a, b;
+    a.fingerprint_mode = FingerprintMode::kOff;
+    b.fingerprint_mode = FingerprintMode::kReduce;
+    auto fp = DiffPolicies(a, b);
+    XR_EXPECT_MSG(fp.size() == 1, "only the fingerprint mode differs");
+    if (fp.size() == 1) {
+      XR_EXPECT_STREQ(fp[0].human.c_str(), "stricter fingerprint protection");
+    }
+  }
+
   return xrtest::Report("test_events");
 }
