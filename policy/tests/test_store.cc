@@ -289,5 +289,31 @@ int main() {
     XR_EXPECT_MSG(!exceptions_ok(base + "}"), "version-2 exception without granted_by refused");
   }
 
+  // ---- migration re-validates the migrated doc (mutation kill) ----
+  {
+    // A v1 doc whose entry has an unknown scope migrates, then must fail the
+    // v2 validation. Built in memory: Load() would reject it before migration.
+    std::string bad_v1 = kV1;
+    const std::string once = "\"scope\":\"once\"";
+    size_t at = bad_v1.find(once);
+    XR_EXPECT_MSG(at != std::string::npos, "fixture has a once-scope entry");
+    if (at != std::string::npos) bad_v1.replace(at, once.size(), "\"scope\":\"forever\"");
+    auto parsed = ParseJson(bad_v1);
+    XR_EXPECT_MSG(parsed.ok, "fixture parses");
+    const JsonValue* data = parsed.value.find("data");
+    XR_EXPECT_MSG(data != nullptr, "fixture has data");
+    if (data != nullptr) {
+      StoreDoc d;
+      d.schema = "xr-exceptions";
+      d.schema_version = 1;
+      d.created_at = 10;
+      d.data = *data;
+      auto m = latest.MigrateToLatest(d);
+      XR_EXPECT_MSG(!m.ok, "a migrated doc with an unknown scope must not pass");
+      XR_EXPECT_MSG(m.error.find("failed validation") != std::string::npos,
+                    "the refusal comes from the post-migration validation");
+    }
+  }
+
   return xrtest::Report("test_store");
 }
