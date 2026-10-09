@@ -194,5 +194,40 @@ int main() {
   XR_EXPECT_MSG(!(Version::Parse("1.0.0.0", &a) && Version::Parse("1.0.0", &b)),
             "three-part version refused");
 
+  // P15 hardening (mutation survivors, research-log-P15 section 10).
+  // A zero-byte package is a valid size; only a negative size is malformed.
+  {
+    JsonValue::Object r = BaseResponse("1.2.0.0").as_object();
+    JsonValue::Object app = r.at("app").as_array()[0].as_object();
+    JsonValue::Object uc = app.at("updatecheck").as_object();
+    JsonValue::Object man = uc.at("manifest").as_object();
+    JsonValue::Object pkgs = man.at("packages").as_object();
+    JsonValue::Object pkg = pkgs.at("package").as_array()[0].as_object();
+    pkg["size"] = JsonValue(static_cast<int64_t>(0));
+    pkgs["package"] = JsonValue(JsonValue::Array{JsonValue(pkg)});
+    man["packages"] = JsonValue(pkgs);
+    uc["manifest"] = JsonValue(man);
+    app["updatecheck"] = JsonValue(uc);
+    r["app"] = JsonValue(JsonValue::Array{JsonValue(app)});
+    XR_EXPECT_MSG(ParseEnvelope(Envelope(JsonValue(r)), &env) == ParseResult::kOk,
+              "zero-byte package size accepted");
+  }
+  // A digest of 64 characters with one non-hex character is a bad digest.
+  XR_EXPECT_MSG(ParseEnvelope(Envelope(BaseResponse(
+                    "1.2.0.0", std::string(63, 'a') + "G")), &env) ==
+                ParseResult::kBadDigest, "non-hex digest character refused");
+  // A non-object app entry where a closed object is required: unknown field.
+  {
+    JsonValue::Object r = BaseResponse("1.2.0.0").as_object();
+    r["app"] = JsonValue(JsonValue::Array{JsonValue(std::string("not-an-object"))});
+    XR_EXPECT_MSG(ParseEnvelope(Envelope(JsonValue(r)), &env) ==
+              ParseResult::kUnknownField, "non-object app entry refused");
+  }
+  // Oversize means strictly more than 64 KiB: exactly 64 KiB is not refused as such.
+  XR_EXPECT_MSG(ParseEnvelope(std::string(64 * 1024, ' '), &env) !=
+                ParseResult::kOversize, "exactly 64 KiB is not oversize");
+  // Leading zero: "09" is refused, including when the second digit is 9.
+  XR_EXPECT_MSG(!Version::Parse("1.09.0.0", &a), "leading zero before 9 refused");
+
   return xrtest::Report("test_manifest_strict");
 }

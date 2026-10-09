@@ -115,5 +115,24 @@ int main() {
     XR_EXPECT_MSG(!s.Insert("", &err), "empty id refused");
   }
 
+  // P15 hardening (mutation survivors): an absent store is a fresh install;
+  // valid JSON that is not an object is corrupt and refused.
+  {
+    const std::string fresh = TempDir("replay_fresh");
+    SeenSet s(fresh);
+    std::string err;
+    XR_EXPECT_MSG(s.Load(&err), "absent store loads as a fresh install");
+  }
+  {
+    const std::string dir2 = TempDir("replay_nonobject");
+    std::ofstream f(dir2 + "/update-seen.json", std::ios::binary | std::ios::trunc);
+    f << "[\"id-a\"]";
+    f.close();
+    SeenSet s(dir2);
+    std::string err;
+    XR_EXPECT_MSG(!s.Load(&err) && err.find("is corrupt") != std::string::npos,
+                  "valid non-object store refused as corrupt");
+  }
+
   return xrtest::Report("test_replay");
 }

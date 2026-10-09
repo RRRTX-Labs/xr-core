@@ -8,6 +8,7 @@
 // identical verdict (the transport echo exists only at the host layer and
 // is ignored). Also: channel/class refusals, epoch kill switch, key
 // pinning, and the reason ordering the golden vectors pin.
+#include "update/core/epoch.h"
 #include "update/core/verify_policy.h"
 
 #include "harness.h"
@@ -173,6 +174,19 @@ int main() {
                                                  verifier, "dev");
     XR_EXPECT_MSG(o.verdict == Verdict::kDeny && o.reason == "replay-refused",
                   "replayed manifest refused");
+  }
+
+  // P15 hardening (mutation survivors, research-log-P15 section 10): the
+  // manual-path kill switch refuses an epoch on its own, and sequence 0 is
+  // a valid first epoch.
+  {
+    EpochState st;
+    st.manual_path = true;
+    XR_EXPECT_MSG(!EpochAcceptable(st, "epoch-2026-09", "xr-root-1", 3),
+                  "manual path alone refuses the epoch");
+    st = EpochState();
+    XR_EXPECT_MSG(EpochAcceptable(st, "epoch-2026-09", "xr-root-1", 0),
+                  "sequence 0 is an acceptable first epoch");
   }
 
   return xrtest::Report("test_verify_policy");

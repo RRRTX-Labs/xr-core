@@ -55,5 +55,10 @@ int main() {
                 "50% ramp boundary lands exactly");
   XR_EXPECT_MSG(InRamp(0, 1) && !InRamp(1, 1), "1% ramp covers bucket 0 only");
 
+  // P15 hardening (mutation survivors): zero or negative bucket counts map to
+  // bucket 0 and never reach the modulo.
+  XR_EXPECT_MSG(CohortBucket("install-1", "stable", 0) == 0, "zero buckets -> 0");
+  XR_EXPECT_MSG(CohortBucket("install-1", "stable", -4) == 0, "negative buckets -> 0");
+
   return xrtest::Report("test_cohort");
 }
