@@ -60,9 +60,13 @@ int main() {
       XR_EXPECT_MSG(o.rows.empty() != c.removed, "a removal emits exactly one expiry row (none otherwise)");
       if (c.removed) {
         XR_EXPECT_MSG(o.rows.size() == 1 && o.rows[0].event == AuditEvent::kExpiry, "expiry event");
-        XR_EXPECT_MSG(o.rows[0].reason == "ttl" && o.rows[0].ttl_millis == kSevenDaysMillis, "ttl reason and TTL");
-        XR_EXPECT_MSG(o.rows[0].ts_millis == c.now, "expiry is stamped with the caller's clock");
-        XR_EXPECT_MSG(o.rows[0].deciding_layer == DecidingLayer::kGlobalFallback, "after expiry the global fallback decides");
+        if (o.rows.size() == 1) {  // no row: reported above; never index an empty vector
+          XR_EXPECT_MSG(o.rows[0].reason == "ttl" && o.rows[0].ttl_millis == kSevenDaysMillis,
+                        "ttl reason and TTL");
+          XR_EXPECT_MSG(o.rows[0].ts_millis == c.now, "expiry is stamped with the caller's clock");
+          XR_EXPECT_MSG(o.rows[0].deciding_layer == DecidingLayer::kGlobalFallback,
+                        "after expiry the global fallback decides");
+        }
       }
     }
   }
@@ -95,7 +99,8 @@ int main() {
     OpOutcome restart = SweepExpired(s, kT0 + 1, "s2");
     XR_EXPECT_MSG(LiveGrants(restart.store) == 0, "a new session id ends the old session's grants");
     XR_EXPECT_MSG(restart.rows.size() == 1 && restart.rows[0].reason == "session_end", "row reason: session_end");
-    XR_EXPECT_MSG(restart.rows[0].ttl_millis == 0, "session grants carry no TTL");
+    XR_EXPECT_MSG(restart.rows.size() == 1 && restart.rows[0].ttl_millis == 0,
+                  "session grants carry no TTL");
     XR_EXPECT_MSG(LiveGrants(SweepExpired(s, kT0 + 1, "").store) == 0, "no active session ends all session grants");
   }
 
@@ -108,7 +113,8 @@ int main() {
     XR_EXPECT_MSG(SerializeStore(again.store) == SerializeStore(first.store), "second sweep: identical bytes");
     OpOutcome twin = SweepExpired(s, kEnd, "s1");
     XR_EXPECT_MSG(SerializeStore(twin.store) == SerializeStore(first.store), "same inputs, same bytes");
-    XR_EXPECT_MSG(twin.rows.size() == first.rows.size() && twin.rows[0].ts_millis == first.rows[0].ts_millis,
+    XR_EXPECT_MSG(twin.rows.size() == first.rows.size() &&
+                      (twin.rows.empty() || twin.rows[0].ts_millis == first.rows[0].ts_millis),
                   "same inputs, same rows");
   }
 
