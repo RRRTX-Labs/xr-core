@@ -21,3 +21,4 @@ shield/tests/build/
 renderer/cosmetic/tests/build/
 identity/tests/build/
 update_host_request.tmp
+permissions/tests/build/
