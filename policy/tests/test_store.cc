@@ -257,5 +257,37 @@ int main() {
     XR_EXPECT(lr.error == StoreError::kIoError);
   }
 
+  // P15 hardening (mutation survivors): trust bindings are objects with a known
+  // trust tier; an empty binding list is valid.
+  {
+    auto bindings_ok = [](const std::string& json) {
+      auto p = ParseJson(json);
+      XR_EXPECT_MSG(p.ok, "test bug: bad store JSON");
+      std::string err;
+      return ValidateTrustBindings(p.value, &err);
+    };
+    XR_EXPECT_MSG(bindings_ok("{\"bindings\":[]}"), "empty trust-binding list accepted");
+    XR_EXPECT_MSG(!bindings_ok("{\"bindings\":[\"not-an-object\"]}"),
+                  "non-object trust binding refused");
+    XR_EXPECT_MSG(!bindings_ok("{\"bindings\":[{\"domain\":\"example.com\",\"trust\":\"bogus\"}]}"),
+                  "unknown trust tier refused");
+  }
+
+  // P15 hardening (mutation survivors): a version-2 exception must carry
+  // granted_by.
+  {
+    auto exceptions_ok = [](const std::string& entry) {
+      auto p = ParseJson("{\"exceptions\":[" + entry + "]}");
+      XR_EXPECT_MSG(p.ok, "test bug: bad exceptions JSON");
+      std::string err;
+      return ValidateExceptions(p.value, 2, &err);
+    };
+    const std::string base = "{\"id\":\"e1\",\"domain\":\"example.com\",\"scope\":\"permanent\","
+                             "\"trust\":\"kStandard\",\"expires_at\":0,\"remaining_uses\":0";
+    XR_EXPECT_MSG(exceptions_ok(base + ",\"granted_by\":\"settings\"}"),
+                  "version-2 exception with granted_by accepted");
+    XR_EXPECT_MSG(!exceptions_ok(base + "}"), "version-2 exception without granted_by refused");
+  }
+
   return xrtest::Report("test_store");
 }

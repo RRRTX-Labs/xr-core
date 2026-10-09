@@ -237,5 +237,19 @@ int main() {
     XR_EXPECT(a.blob == b.blob);
   }
 
+  // P15 hardening (mutation survivors): entries that share an identity are
+  // ordered by site.
+  {
+    std::vector<SnapshotEntry> es(2);
+    es[0].identity = "id";
+    es[0].site = "z.example";
+    es[0].trust = "kStandard";
+    es[1].identity = "id";
+    es[1].site = "a.example";
+    es[1].trust = "kStandard";
+    SortEntries(&es);
+    XR_EXPECT_MSG(es[0].site == "a.example", "entries with one identity sort by site");
+  }
+
   return xrtest::Report("test_snapshot");
 }

@@ -309,5 +309,61 @@ int main() {
     XR_EXPECT(out.policy.notifications == PermissionState::kDeny);
   }
 
+  // P15 hardening (mutation survivors, research-log-P15 section 10): the
+  // overlay parser refuses a non-object, contract version 2, a once-grant with
+  // an extra key and a default with an empty identity; it accepts contract
+  // version 1, a valid default and the corrupt marker.
+  {
+    auto parse_overlay = [](const std::string& json, PermissionOverlayView* out) {
+      auto p = ParseJson(json);
+      XR_EXPECT_MSG(p.ok, "test bug: bad overlay JSON");
+      return ParsePermissionOverlay(p.value, out);
+    };
+    PermissionOverlayView out;
+    XR_EXPECT_MSG(!ParsePermissionOverlay(JsonValue(std::string("x")), &out),
+                  "non-object overlay refused");
+    XR_EXPECT_MSG(parse_overlay("{\"contract_version\":1}", &out),
+                  "contract version 1 accepted");
+    XR_EXPECT_MSG(!parse_overlay("{\"contract_version\":2}", &out),
+                  "contract version 2 refused");
+    XR_EXPECT_MSG(parse_overlay("{\"corrupt\":true}", &out) && out.corrupt,
+                  "corrupt marker parsed as corrupt");
+    XR_EXPECT_MSG(parse_overlay("{\"defaults\":[{\"identity\":\"" + std::string(kStd) +
+                  "\",\"capability\":\"camera\",\"state\":\"kAsk\"}]}", &out),
+                  "valid default accepted");
+    XR_EXPECT_MSG(!parse_overlay("{\"defaults\":[{\"identity\":\"\",\"capability\":\"camera\","
+                  "\"state\":\"kAsk\"}]}", &out),
+                  "default with an empty identity refused");
+    XR_EXPECT_MSG(!parse_overlay("{\"grants\":[{\"identity\":\"" + std::string(kStd) +
+                  "\",\"domain\":\"example.com\",\"capability\":\"camera\",\"scope\":\"once\","
+                  "\"remaining_uses\":1,\"extra\":1}]}", &out),
+                  "once-grant with an extra key refused");
+  }
+  {
+    // Request layers that cannot be parsed are dropped with a ledger reason;
+    // a request without them drops nothing.
+    auto drops = [](const std::string& json) {
+      auto p = ParseJson(json);
+      XR_EXPECT_MSG(p.ok, "test bug: bad request JSON");
+      return ParseResolveRequest(p.value).dropped.size();
+    };
+    XR_EXPECT_MSG(drops(Req("")) == 0, "a plain request drops nothing");
+    XR_EXPECT_MSG(drops(Req("\"exceptions\":[\"not-an-object\"]")) >= 1,
+                  "non-object exception entry dropped");
+    XR_EXPECT_MSG(drops(Req("\"enterprise\":{\"force_fingerprint\":5}")) >= 1,
+                  "non-string force_fingerprint dropped");
+    XR_EXPECT_MSG(drops(Req("\"enterprise\":{\"force_fingerprint\":\"bogus\"}")) >= 1,
+                  "unknown fingerprint mode dropped");
+  }
+  {
+    // The kind "fortress" sets the fortress class of a listed identity.
+    auto p = ParseJson(Req("\"identities\":[{\"value\":\"" + std::string(kFort) +
+                           "\",\"kind\":\"fortress\"}]"));
+    XR_EXPECT_MSG(p.ok, "test bug: bad identity request JSON");
+    const RequestParse rp = ParseResolveRequest(p.value);
+    XR_EXPECT_MSG(rp.request.identities.size() == 1 && rp.request.identities[0].fortress,
+                  "fortress kind sets the fortress class");
+  }
+
   return xrtest::Report("test_resolve");
 }
