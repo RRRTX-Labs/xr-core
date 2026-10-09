@@ -129,6 +129,38 @@ int main() {
     ExpectCorrupt(head + rec("xr:0001") + "," + rec("xr:0002") + tail, "duplicate grant id across identities");
   }
 
+  // --- exhaustive single-byte mutation sweep (the deterministic fuzz row) ----
+  // libFuzzer is absent in this sandbox (no clang), so the fuzz row is an
+  // EXHAUSTIVE single-byte mutation of the canonical fixture, at every position,
+  // with six substitutions. Each mutant must be refused (corrupt, fully
+  // denying), or be accepted ONLY as canonical bytes that re-serialize to
+  // themselves (no silent repair). Acceptance is legitimate for a semantic edit
+  // that still satisfies the schema, so the property is about the bytes.
+  {
+    const std::string base = kValid;
+    const char subs[] = {'"', ' ', '0', 'x', '}', ','};
+    int mutants = 0, refused = 0, accepted = 0;
+    for (size_t i = 0; i < base.size(); ++i) {
+      for (char c : subs) {
+        if (base[i] == c) continue;
+        std::string m = base;
+        m[i] = c;
+        ++mutants;
+        Store s = LoadStore(m);
+        if (s.corrupt) {
+          ++refused;
+          XR_EXPECT_MSG(ProjectViewJson(s) == kDenyView, "a refused mutant denies every identity");
+        } else {
+          ++accepted;
+          XR_EXPECT_MSG(SerializeStore(s) == m, "an accepted mutant is canonical (no silent repair)");
+        }
+      }
+    }
+    XR_EXPECT_MSG(mutants > 1000, "the sweep covers every position of the fixture");
+    XR_EXPECT_MSG(refused > accepted, "most single-byte corruptions are refused");
+    XR_EXPECT_MSG(refused + accepted == mutants, "every mutant is either refused or canonical-accepted");
+  }
+
   // Corruption persists: a corrupt store serializes to a marker that is itself
   // corrupt on reload, so a save path cannot erase the deny.
   {
