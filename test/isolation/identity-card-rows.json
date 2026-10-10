@@ -1,0 +1,254 @@
+{
+ "as_of": "2026-09-10T00:00:00+00:00",
+ "contract": "identity-isolation-card-rows",
+ "contract_version": 1,
+ "generator": "tools/isolation_matrix.py",
+ "rows": [
+  {
+   "measured": 5,
+   "method": "xr-core/test/isolation/isolation-matrix.json",
+   "pairs": 5,
+   "prop": "storage-scope",
+   "state": "holds"
+  },
+  {
+   "measured": 5,
+   "method": "xr-core/test/isolation/isolation-matrix.json",
+   "pairs": 5,
+   "prop": "vault-scope",
+   "state": "holds"
+  },
+  {
+   "measured": 5,
+   "method": "xr-core/test/isolation/isolation-matrix.json",
+   "pairs": 5,
+   "prop": "egress-route",
+   "state": "holds"
+  },
+  {
+   "measured": 5,
+   "method": "xr-core/test/isolation/isolation-matrix.json",
+   "pairs": 5,
+   "prop": "permission-overlay",
+   "state": "holds"
+  },
+  {
+   "measured": 5,
+   "method": "xr-core/test/isolation/isolation-matrix.json",
+   "pairs": 5,
+   "prop": "fingerprint-mode",
+   "state": "holds"
+  },
+  {
+   "measured": 5,
+   "method": "xr-core/test/isolation/isolation-matrix.json",
+   "pairs": 5,
+   "prop": "process-isolation",
+   "state": "holds"
+  },
+  {
+   "measured": 5,
+   "method": "xr-core/test/isolation/isolation-matrix.json",
+   "pairs": 5,
+   "prop": "disposable-zero-residue",
+   "state": "holds"
+  },
+  {
+   "measured": 5,
+   "method": "xr-core/test/isolation/isolation-matrix.json",
+   "pairs": 5,
+   "prop": "identity-derivation-probe",
+   "state": "holds"
+  },
+  {
+   "measured": 5,
+   "method": "xr-core/test/isolation/isolation-matrix.json",
+   "pairs": 5,
+   "prop": "session-restore-no-bleed",
+   "state": "holds"
+  },
+  {
+   "measured": 0,
+   "method": "docs/qa/browser-harness.md",
+   "pairs": 5,
+   "prop": "cookies-1p",
+   "state": "not-run"
+  },
+  {
+   "measured": 0,
+   "method": "docs/qa/browser-harness.md",
+   "pairs": 5,
+   "prop": "cookies-3p-chips",
+   "state": "not-run"
+  },
+  {
+   "measured": 0,
+   "method": "docs/qa/browser-harness.md",
+   "pairs": 5,
+   "prop": "localstorage",
+   "state": "not-run"
+  },
+  {
+   "measured": 0,
+   "method": "docs/qa/browser-harness.md",
+   "pairs": 5,
+   "prop": "sessionstorage",
+   "state": "not-run"
+  },
+  {
+   "measured": 0,
+   "method": "docs/qa/browser-harness.md",
+   "pairs": 5,
+   "prop": "indexeddb",
+   "state": "not-run"
+  },
+  {
+   "measured": 0,
+   "method": "docs/qa/browser-harness.md",
+   "pairs": 5,
+   "prop": "cache-api",
+   "state": "not-run"
+  },
+  {
+   "measured": 0,
+   "method": "docs/qa/browser-harness.md",
+   "pairs": 5,
+   "prop": "serviceworker",
+   "state": "not-run"
+  },
+  {
+   "measured": 0,
+   "method": "docs/qa/browser-harness.md",
+   "pairs": 5,
+   "prop": "broadcastchannel",
+   "state": "not-run"
+  },
+  {
+   "measured": 0,
+   "method": "docs/qa/browser-harness.md",
+   "pairs": 5,
+   "prop": "sharedworker",
+   "state": "not-run"
+  },
+  {
+   "measured": 0,
+   "method": "docs/qa/browser-harness.md",
+   "pairs": 5,
+   "prop": "messagechannel-opener",
+   "state": "not-run"
+  },
+  {
+   "measured": 0,
+   "method": "docs/qa/browser-harness.md",
+   "pairs": 5,
+   "prop": "window-name",
+   "state": "not-run"
+  },
+  {
+   "measured": 0,
+   "method": "docs/qa/browser-harness.md",
+   "pairs": 5,
+   "prop": "downloads-metadata",
+   "state": "not-run"
+  },
+  {
+   "measured": 0,
+   "method": "docs/qa/browser-harness.md",
+   "pairs": 5,
+   "prop": "notification-state",
+   "state": "not-run"
+  },
+  {
+   "measured": 0,
+   "method": "docs/qa/browser-harness.md",
+   "pairs": 5,
+   "prop": "clipboard",
+   "state": "not-run"
+  },
+  {
+   "measured": 0,
+   "method": "docs/qa/browser-harness.md",
+   "pairs": 5,
+   "prop": "hsts-expect-ct",
+   "state": "not-run"
+  },
+  {
+   "measured": 0,
+   "method": "docs/qa/browser-harness.md",
+   "pairs": 5,
+   "prop": "tls-resumption",
+   "state": "not-run"
+  },
+  {
+   "measured": 0,
+   "method": "docs/qa/browser-harness.md",
+   "pairs": 5,
+   "prop": "devtools-attach",
+   "state": "not-run"
+  },
+  {
+   "measured": 0,
+   "method": "docs/qa/browser-harness.md",
+   "pairs": 5,
+   "prop": "omnibox",
+   "state": "not-run"
+  },
+  {
+   "measured": 0,
+   "method": "docs/qa/browser-harness.md",
+   "pairs": 5,
+   "prop": "print",
+   "state": "not-run"
+  },
+  {
+   "measured": 0,
+   "method": "docs/qa/browser-harness.md",
+   "pairs": 5,
+   "prop": "drag-across-identity",
+   "state": "not-run"
+  },
+  {
+   "measured": 0,
+   "method": "docs/limitations.md#13-exception-ledger-rows",
+   "pairs": 5,
+   "prop": "dns-cache-observable",
+   "state": "disclosed"
+  },
+  {
+   "measured": 0,
+   "method": "docs/limitations.md#13-exception-ledger-rows",
+   "pairs": 5,
+   "prop": "gpu-texture-side-channel",
+   "state": "disclosed"
+  },
+  {
+   "measured": 0,
+   "method": "docs/limitations.md#13-exception-ledger-rows",
+   "pairs": 5,
+   "prop": "favicon-cache",
+   "state": "disclosed"
+  },
+  {
+   "measured": 0,
+   "method": "docs/limitations.md#13-exception-ledger-rows",
+   "pairs": 5,
+   "prop": "http-auth-cache",
+   "state": "disclosed"
+  },
+  {
+   "measured": 0,
+   "method": "xr-core/test/isolation/matrix.yaml",
+   "pairs": 5,
+   "prop": "extension-availability",
+   "state": "not-run"
+  },
+  {
+   "measured": 0,
+   "method": "xr-core/test/isolation/matrix.yaml",
+   "pairs": 5,
+   "prop": "blob-storage",
+   "state": "not-run"
+  }
+ ],
+ "source": "xr-core/test/isolation/isolation-matrix.json"
+}

@@ -188,3 +188,57 @@ test('every isolation row value is a machine token (no space-bearing prose in ui
     }
   }
 });
+
+// P14-CLOSE C-5: the Isolation Card's identity rows come from DATA. The lane
+// points XR_PANEL_IDENTITY_CARD at the REAL generated file
+// (xr-core/test/isolation/identity-card-rows.json), so the card is proved
+// against what the matrix generator wrote, not against a fixture.
+function realCard() {
+  const p = process.env.XR_PANEL_IDENTITY_CARD;
+  assert.ok(p, 'XR_PANEL_IDENTITY_CARD not set (run build/webui/panel-tests.sh)');
+  return JSON.parse(readFileSync(p, 'utf8'));
+}
+
+test('the identity card renders every generated row, row for row', () => {
+  const doc = realCard();
+  const view = site.identityCardView(doc);
+  assert.equal(view.refused, false, `generated card refused: ${view.reason}`);
+  assert.equal(view.rows.length, doc.rows.length);
+  assert.deepEqual(view.rows, doc.rows.map((r) => ({ prop: r.prop, state: r.state,
+    measured: r.measured, pairs: r.pairs, method: r.method })));
+  // The identity mechanisms the P14 core proves are on the card as data.
+  for (const prop of ['process-isolation', 'disposable-zero-residue',
+                      'identity-derivation-probe', 'session-restore-no-bleed']) {
+    const row = view.rows.find((r) => r.prop === prop);
+    assert.ok(row, `${prop} missing from the card`);
+    assert.equal(row.state, 'holds');
+    assert.equal(row.measured, row.pairs);
+  }
+});
+
+test('the identity card REFUSES prose — the whole card, typed, never a fallback sentence', () => {
+  const doc = realCard();
+  const plant = (i, over) => ({ ...doc, rows: doc.rows.map((r, j) => (j === i ? { ...r, ...over } : r)) });
+  assert.deepEqual(site.identityCardView(plant(0, { prop: 'Your identities are fully isolated' })),
+                   { refused: true, reason: 'card-prose:0' });
+  assert.deepEqual(site.identityCardView(plant(1, { method: 'trust us' })),
+                   { refused: true, reason: 'card-prose:1' });
+  assert.deepEqual(site.identityCardView(plant(2, { state: 'Isolated' })),
+                   { refused: true, reason: 'card-prose:2' });
+  assert.deepEqual(site.identityCardView(plant(2, { state: 'mostly' })),
+                   { refused: true, reason: 'card-state:2' });
+  assert.deepEqual(site.identityCardView(plant(3, { note: 'extra copy' })),
+                   { refused: true, reason: 'card-row-shape:3' });
+  assert.deepEqual(site.identityCardView(plant(0, { measured: 4 })),
+                   { refused: true, reason: 'card-unmeasured-hold:0' });
+  assert.deepEqual(site.identityCardView(plant(0, { measured: 6 })),
+                   { refused: true, reason: 'card-count:0' });
+  const nr = doc.rows.findIndex((r) => r.state === 'not-run');
+  assert.deepEqual(site.identityCardView(plant(nr, { measured: 1 })),
+                   { refused: true, reason: `card-not-run-measured:${nr}` });
+  assert.deepEqual(site.identityCardView({ ...doc, contract: 'prose' }),
+                   { refused: true, reason: 'card-contract' });
+  assert.deepEqual(site.identityCardView({ ...doc, rows: [] }),
+                   { refused: true, reason: 'card-no-rows' });
+  assert.deepEqual(site.identityCardView(null), { refused: true, reason: 'card-not-object' });
+});

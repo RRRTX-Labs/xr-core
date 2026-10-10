@@ -285,3 +285,69 @@ export function isolationRowLabel(row: { prop: string; measured?: boolean; holds
   return { prop: row.prop, state: row.holds === true ? 'holds' : 'violated',
            method: 'ui/isolation-matrix' };
 }
+
+/** One identity row of the Isolation Card, as generated (P14-CLOSE C-5). */
+export interface IdentityCardRow {
+  prop: string;
+  state: 'holds' | 'violated' | 'not-run' | 'disclosed';
+  measured: number;
+  pairs: number;
+  method: string;
+}
+
+export type IdentityCardView =
+  | { refused: false; rows: IdentityCardRow[] }
+  | { refused: true; reason: string };
+
+const CARD_TOKEN = /^[a-z0-9][a-z0-9._:/#-]*$/;
+const CARD_STATES: ReadonlyArray<string> = ['holds', 'violated', 'not-run', 'disclosed'];
+const CARD_KEYS = 'measured,method,pairs,prop,state';
+
+/**
+ * The Isolation Card's identity rows, rendered FROM DATA or not at all.
+ *
+ * The input is xr-core/test/isolation/identity-card-rows.json, which
+ * xr-browser's tools/isolation_matrix.py generates from the isolation-matrix
+ * record (Plan §1.13: the card is the measured table, not prose). This view
+ * REFUSES the whole card rather than render a doubtful row:
+ *   * any prop/state/method that is not a token is prose, and prose on an
+ *     isolation card is a promise nobody measured (`card-prose:<i>`);
+ *   * an unknown state (`card-state:<i>`), extra or missing keys
+ *     (`card-row-shape:<i>`), counts outside 0 <= measured <= pairs
+ *     (`card-count:<i>`);
+ *   * `holds` without every pair measured (`card-unmeasured-hold:<i>`) and
+ *     `not-run` that claims a measurement (`card-not-run-measured:<i>`).
+ * A refused card is a typed answer the renderer shows as "card unavailable";
+ * it never falls back to copy. Reasons are tokens (l10n_extract R4).
+ */
+export function identityCardView(doc: unknown): IdentityCardView {
+  if (doc === null || typeof doc !== 'object') return { refused: true, reason: 'card-not-object' };
+  const d = doc as { contract?: unknown; rows?: unknown };
+  if (d.contract !== 'identity-isolation-card-rows') return { refused: true, reason: 'card-contract' };
+  if (!Array.isArray(d.rows) || d.rows.length === 0) return { refused: true, reason: 'card-no-rows' };
+  const rows: IdentityCardRow[] = [];
+  for (let i = 0; i < d.rows.length; i++) {
+    const r = d.rows[i] as Record<string, unknown> | null;
+    if (r === null || typeof r !== 'object' || Object.keys(r).sort().join(',') !== CARD_KEYS) {
+      return { refused: true, reason: `card-row-shape:${i}` };
+    }
+    for (const k of ['prop', 'state', 'method']) {
+      const v = r[k];
+      if (typeof v !== 'string' || !CARD_TOKEN.test(v)) return { refused: true, reason: `card-prose:${i}` };
+    }
+    if (!CARD_STATES.includes(r.state as string)) return { refused: true, reason: `card-state:${i}` };
+    const m = r.measured;
+    const n = r.pairs;
+    if (typeof m !== 'number' || typeof n !== 'number' || !Number.isInteger(m) ||
+        !Number.isInteger(n) || m < 0 || m > n) {
+      return { refused: true, reason: `card-count:${i}` };
+    }
+    if (r.state === 'holds' && (n === 0 || m !== n)) {
+      return { refused: true, reason: `card-unmeasured-hold:${i}` };
+    }
+    if (r.state === 'not-run' && m !== 0) return { refused: true, reason: `card-not-run-measured:${i}` };
+    rows.push({ prop: r.prop as string, state: r.state as IdentityCardRow['state'],
+                measured: m, pairs: n, method: r.method as string });
+  }
+  return { refused: false, rows };
+}
