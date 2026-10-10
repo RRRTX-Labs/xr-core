@@ -33,15 +33,18 @@ int main() {
   XR_EXPECT_EQ(schema.Count(), 11);
   auto index = BuildIndex(schema);
 
-  // 1. Index: 3 sections + 11 settings in schema order; every setting
+  // 1. Index: 4 sections + 11 settings in schema order; every setting
   //    carries key + section + aliases; sections carry their id.
   {
-    XR_EXPECT_EQ(index.size(), 14);
+    XR_EXPECT_EQ(index.size(), 15);
     XR_EXPECT(index[0].kind == EntryKind::kSection);
     XR_EXPECT_STREQ(index[0].key, "network");
-    XR_EXPECT_EQ(index[3].kind, EntryKind::kSetting);
-    XR_EXPECT_STREQ(index[3].key, "network.adblock");
-    XR_EXPECT(index[3].fields.size() >= 3);  // key + section + aliases
+    XR_EXPECT_EQ(index[3].kind, EntryKind::kSection);
+    XR_EXPECT_STREQ(index[3].key, "permissions");
+    XR_EXPECT(index[3].fields.size() >= 2);  // id + aliases (P15-CLOSE C5)
+    XR_EXPECT_EQ(index[4].kind, EntryKind::kSetting);
+    XR_EXPECT_STREQ(index[4].key, "network.adblock");
+    XR_EXPECT(index[4].fields.size() >= 3);  // key + section + aliases
     for (size_t i = 1; i < index.size(); ++i)
       XR_EXPECT(index[i - 1].order < index[i].order);
   }
@@ -68,6 +71,14 @@ int main() {
   }
   XR_EXPECT_STREQ(top1("https upgrade"), "network.https-upgrade");
   XR_EXPECT_STREQ(top1("notifications"), "privacy.notifications");
+  // P15-CLOSE C5: the permissions section is found by its schema aliases
+  // (search-only data); "notifications" still lands on the privacy row,
+  // which stays where it is (ADR-0051 addendum).
+  for (const char* w : {"permission", "permissions", "camera", "microphone",
+                        "location", "geolocation", "clipboard",
+                        "site permissions"}) {
+    XR_EXPECT_MSG(top1(w) == "permissions", w);
+  }
 
   // 3. Search-only vocabulary: "container(s)" is an alias for the identity
   //    vocabulary and resolves there — and never appears as a label field

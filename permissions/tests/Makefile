@@ -11,6 +11,8 @@
 #   make clean
 # Std-only C++20, -Werror, same flags as policy/tests (reproducible off-tree).
 # Lane discovery: tools/ci_lane_discovery.py finds this Makefile automatically.
+# test_fuzz is wall-clock budgeted like every fleet target (XR_FUZZ_SECONDS;
+# fleet row permissions-overlay, P15-CLOSE C3).
 
 CXX ?= g++
 CXXFLAGS := -std=c++20 -O2 -Wall -Wextra -Werror -D_FORTIFY_SOURCE=2 -I../..

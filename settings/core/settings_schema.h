@@ -52,6 +52,9 @@ struct SectionDef {
   std::string title_id;
   std::string availability;     // always | identity.active (deny unknown)
   std::vector<std::string> settings;  // ordered row keys
+  // Search-only words for the section (P15-CLOSE C5), like a row's aliases:
+  // data the C++ ranker matches, never rendered copy.
+  std::vector<std::string> aliases;
 };
 
 struct SchemaLoadResult {

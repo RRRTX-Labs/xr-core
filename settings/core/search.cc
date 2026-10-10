@@ -108,6 +108,7 @@ std::vector<IndexEntry> BuildIndex(const SettingsSchema& schema) {
     e.kind = EntryKind::kSection;
     e.order = order++;
     e.fields.push_back(s->id);
+    for (const std::string& a : s->aliases) e.fields.push_back(a);
     add(std::move(e));
   }
   for (const SettingDef* st : schema.Settings()) {

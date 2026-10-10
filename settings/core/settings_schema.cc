@@ -85,7 +85,8 @@ SchemaLoadResult SettingsSchema::Load(const std::string& json_text) {
       "title_id", "desc_id", "security_relevant", "aliases", "policy", "writable"};
   static const char* kPolicyFields[] = {"kind", "field"};
   static const char* kSectionFields[] = {
-      "id", "order", "title_id", "availability", "subsections", "settings"};
+      "id", "order", "title_id", "availability", "subsections", "settings",
+      "aliases"};
 
   // --- sections ----------------------------------------------------------
   const JsonValue* sections = doc.find("sections");
@@ -119,6 +120,14 @@ SchemaLoadResult SettingsSchema::Load(const std::string& json_text) {
       for (const auto& k : rows->as_array()) {
         if (!k.is_string()) { r.error = "section settings must be strings"; return r; }
         def.settings.push_back(k.as_string());
+      }
+    }
+    const JsonValue* sal = s.find("aliases");
+    if (sal != nullptr) {
+      if (!sal->is_array()) { r.error = "section " + def.id + ": aliases must be array"; return r; }
+      for (const auto& a : sal->as_array()) {
+        if (!a.is_string()) { r.error = "section " + def.id + ": aliases must be strings"; return r; }
+        def.aliases.push_back(a.as_string());
       }
     }
     if (section_idx_.count(def.id)) {

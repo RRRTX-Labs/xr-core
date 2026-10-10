@@ -42,17 +42,21 @@ int main() {
   SettingsSchema schema = LoadSchema();
   XR_EXPECT_EQ(schema.Count(), 11);
 
-  // 1. No identity: exactly the three declared sections; identity is gated.
+  // 1. No identity: exactly the four declared sections; identity is gated.
+  //    permissions (P15-CLOSE C5) is the overlay's destination section and
+  //    owns no schema rows in v0 — the ONLY section allowed to be row-less.
   {
     PolicyState st;
     auto r = st.Load(StateDoc(false));
     XR_EXPECT_MSG(r.ok, r.error);
     auto reg = BuildRegistry(schema, st);
-    XR_EXPECT_EQ(reg.size(), 3);
+    XR_EXPECT_EQ(reg.size(), 4);
     // registry order == schema order
     XR_EXPECT_STREQ(reg[0].id, "network");
     XR_EXPECT_STREQ(reg[1].id, "privacy");
     XR_EXPECT_STREQ(reg[2].id, "identity");
+    XR_EXPECT_STREQ(reg[3].id, "permissions");
+    XR_EXPECT(reg[3].available && reg[3].setting_keys.empty());
     for (const auto& s : reg) {
       XR_EXPECT_STREQ(s.anchor, std::string("xr://settings/") + s.id);
       if (s.id == "identity") {
@@ -62,7 +66,7 @@ int main() {
         XR_EXPECT_MSG(s.available, s.id);
         XR_EXPECT(s.unavailable_reason.empty());
       }
-      XR_EXPECT_MSG(!s.setting_keys.empty(), s.id);
+      XR_EXPECT_MSG(!s.setting_keys.empty() || s.id == "permissions", s.id);
       XR_EXPECT_EQ(s.availability == "identity.active", s.id == "identity");
     }
     // network owns exactly its four rows, in schema order

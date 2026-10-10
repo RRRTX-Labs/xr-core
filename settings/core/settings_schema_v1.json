@@ -41,6 +41,23 @@
         "identity.storage",
         "identity.default_grade"
       ]
+    },
+    {
+      "id": "permissions",
+      "order": 10,
+      "title_id": "settings.section.permissions",
+      "availability": "always",
+      "subsections": [],
+      "settings": [],
+      "aliases": [
+        "permission",
+        "site permissions",
+        "camera",
+        "microphone",
+        "location",
+        "geolocation",
+        "clipboard"
+      ]
     }
   ],
   "settings": [

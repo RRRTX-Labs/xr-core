@@ -111,7 +111,7 @@ int main() {
   {
     auto r = RunHost(kStore2, basic, "on", req);
     XR_EXPECT_EQ(r.rc, 0);
-    XR_EXPECT(r.out.find("\"count\":3") != std::string::npos);
+    XR_EXPECT(r.out.find("\"count\":4") != std::string::npos);
     XR_EXPECT(r.out.find("\"id\":\"identity\"") != std::string::npos);
     XR_EXPECT(r.out.find("\"available\":false") != std::string::npos);
     auto r2 = RunHost(kStore, active, "on", req);

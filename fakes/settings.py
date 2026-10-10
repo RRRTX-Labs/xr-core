@@ -112,6 +112,10 @@ class Schema:
         self._enum_options = {k: list(v) for k, v in
                               (d.get("enum_options") or {}).items()}
         sec_ids = {s.get("id") for s in self.sections if isinstance(s, dict)}
+        for s in self.sections:  # section aliases: search-only data (P15-CLOSE C5)
+            al = s.get("aliases", []) if isinstance(s, dict) else []
+            if not isinstance(al, list) or not all(isinstance(a, str) for a in al):
+                raise SchemaError(f"section {s.get('id')}: aliases must be strings")
         for row in d["settings"]:
             if not isinstance(row, dict):
                 raise SchemaError("setting row must be an object")
@@ -318,8 +322,9 @@ def build_index(schema: Schema) -> list[dict[str, Any]]:
     idx: list[dict[str, Any]] = []
     order = 0
     for s in schema.sections_in_order():
+        fields = [s["id"]] + list(s.get("aliases", []))
         idx.append({"key": s["id"], "kind": "section", "order": order,
-                    "fields": [lower_ascii(s["id"])]})
+                    "fields": [lower_ascii(f) for f in fields]})
         order += 1
     for row in schema.settings_in_order():
         fields = [row["key"], row["section"]] + list(row.get("aliases", []))

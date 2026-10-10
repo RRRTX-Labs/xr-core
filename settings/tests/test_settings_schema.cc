@@ -53,7 +53,12 @@ int main() {
     XR_EXPECT_MSG(r.ok, r.error);
     XR_EXPECT_EQ(s.version(), 1);
     XR_EXPECT_EQ(s.Count(), 11);
-    XR_EXPECT_EQ(s.Sections().size(), 3);
+    XR_EXPECT_EQ(s.Sections().size(), 4);  // + permissions (P15-CLOSE C5)
+    {
+      const SectionDef* p = s.FindSection("permissions");
+      XR_EXPECT(p != nullptr && p->order == 10 && p->settings.empty() &&
+                !p->aliases.empty());
+    }
     XR_EXPECT_STREQ(s.anchor_root(), "xr://settings");
     const SettingDef* d = s.FindSetting("network.adblock");
     XR_EXPECT(d != nullptr);

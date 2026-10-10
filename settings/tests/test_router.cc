@@ -46,7 +46,7 @@ int main() {
   // 2. Every section anchor resolves to its section.
   {
     auto anchors = router.SectionAnchors();
-    XR_EXPECT_EQ(anchors.size(), 3);
+    XR_EXPECT_EQ(anchors.size(), 4);
     for (const std::string& a : anchors) {
       auto r = router.Resolve(a);
       XR_EXPECT_MSG(r.ok && r.kind == ResolveKind::kSection, a);

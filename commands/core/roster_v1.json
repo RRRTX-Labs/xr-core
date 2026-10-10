@@ -411,6 +411,28 @@
       "descriptor": {
         "attention_tier": "tier2",
         "danger_class": "safe",
+        "handler": "action.settings.permissions",
+        "id": "settings.permissions",
+        "surface": "tools-menu",
+        "title": "Settings: Permissions"
+      },
+      "registry": {
+        "group": "Settings",
+        "keywords": [
+          "settings",
+          "permissions",
+          "camera",
+          "microphone",
+          "location"
+        ],
+        "predicate_id": "always",
+        "scope": "global"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier2",
+        "danger_class": "safe",
         "handler": "action.help.index",
         "id": "help.index",
         "surface": "command-palette",

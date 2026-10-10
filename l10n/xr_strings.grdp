@@ -82,6 +82,10 @@
     Identity
   </message>
 
+  <message name="IDS_XR_SETTINGS_SECTION_PERMISSIONS" desc="Title of the site permissions settings section (P15)" xr-id="settings.section.permissions">
+    Permissions
+  </message>
+
   
   
 <message name="IDS_XR_SETTINGS_NETWORK_ADBLOCK_TITLE" desc="Title of the ad-blocking setting" xr-id="settings.network.adblock.title">
