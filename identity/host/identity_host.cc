@@ -42,6 +42,7 @@
 #include "core/binding.h"
 #include "core/hibernate.h"
 #include "core/identity.h"
+#include "core/ledger_tag.h"
 #include "core/mint.h"
 #include "core/templates.h"
 
@@ -461,7 +462,22 @@ int RunLiving(const std::string& cmd, const JsonValue& args) {
   }
   if (cmd == "audit") {
     return Emit(AuditJson(s));
+  }  // P14-T5 (P14-CLOSE C-2): the ledger identity overlay. The Python twin is
+  // xr-core/fakes/ledger_identity.py; the byte-law is
+  // docs/contracts/vectors/ledger-identity-overlay-v1.json (both backends).
+  if (cmd == "ledger-tag" || cmd == "omnibox-filter" ||
+      cmd == "history-oracle") {
+    JsonValue out;
+    std::string why;
+    const bool ok = cmd == "ledger-tag"
+                        ? xr::identity::TagEvent(args, &out, &why)
+                        : cmd == "omnibox-filter"
+                              ? xr::identity::FilterOmnibox(args, &out, &why)
+                              : xr::identity::HistoryOracle(args, &out, &why);
+    if (!ok) return EmitReject(why);
+    return Emit(out);
   }
+
   if (cmd == "attribute") {
     std::vector<ProcessSample> samples;
     if (const JsonValue* sa = args.find("samples");

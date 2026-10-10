@@ -35,13 +35,14 @@ CORE_OBJS := \
   $(BUILD)/identity/core/templates.o \
   $(BUILD)/identity/core/binding.o \
   $(BUILD)/identity/core/attribution.o \
-  $(BUILD)/identity/core/session.o
+  $(BUILD)/identity/core/session.o \
+  $(BUILD)/identity/core/ledger_tag.o
 
 CORE_OBJS += $(COMMON_OBJS)
 
 TESTS := test_mint test_identity test_hibernate test_templates \
          test_binding test_attribution test_session_chaos test_fuzz \
-         test_sha256_kat
+         test_sha256_kat test_ledger_tag
 
 $(BUILD)/identity/core/%.o: ../core/%.cc
 	@mkdir -p $(dir $@)
