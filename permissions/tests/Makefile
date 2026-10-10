@@ -25,7 +25,7 @@ POLICY_OBJS := $(BUILD)/pol_effective_policy.o $(BUILD)/pol_resolve.o $(BUILD)/p
 LIB := $(PERM_OBJS) $(COMMON_OBJS)
 
 TESTS := test_store test_ops test_expiry test_isolation test_merge test_present \
-         test_envelope test_audit test_cross_core test_kill9
+         test_envelope test_audit test_cross_core test_kill9 test_fuzz
 BENCH := bench_main
 HOST := permissions_host
 
