@@ -1,0 +1,23 @@
+diff --git a/chrome/browser/ui/views/permissions/permission_prompt_bubble_base_view.cc b/chrome/browser/ui/views/permissions/permission_prompt_bubble_base_view.cc
+index fd8d002..620fb01 100644
+--- a/chrome/browser/ui/views/permissions/permission_prompt_bubble_base_view.cc
++++ b/chrome/browser/ui/views/permissions/permission_prompt_bubble_base_view.cc
+@@ -151,9 +151,18 @@ void PermissionPromptBubbleBaseView::CreatePermissionButtons(
+     allow_always_button->SetStyle(ui::ButtonStyle::kTonal);
+     block_button->SetStyle(ui::ButtonStyle::kTonal);
+ 
++#if defined(ENABLE_XR_PERMISSIONS)
++    // XR patch 0400 (order only): one-time first for the capabilities
++    // that offer it, so keyboard focus lands on the one-time grant
++    // (xr-core permissions/core/present.cc ButtonOrder; plan line 808).
++    buttons_container->AddChildView(std::move(allow_once_button));
++    buttons_container->AddChildView(std::move(allow_always_button));
++    buttons_container->AddChildView(std::move(block_button));
++#else
+     buttons_container->AddChildView(std::move(allow_always_button));
+     buttons_container->AddChildView(std::move(allow_once_button));
+     buttons_container->AddChildView(std::move(block_button));
++#endif  // ENABLE_XR_PERMISSIONS
+ 
+     views::LayoutProvider* const layout_provider = views::LayoutProvider::Get();
+     buttons_container->SetPreferredSize(gfx::Size(

@@ -119,3 +119,16 @@ patches:
       - third_party/blink/renderer/core/xr/xr_cosmetic_seam.h
       - third_party/blink/renderer/core/xr/xr_cosmetic_seam.cc
     dir: blink-seams/0300-cosmetic-document-start
+  # P15-CLOSE C7: the permission prompt's button order (one-time first for the
+  # capabilities that offer it, plan line 808). category ui (cap 35). 1 file,
+  # within the P15 brief's <=4-file budget under chrome/browser/ui/views/
+  # permissions/ (inside the allowed root chrome/browser/ui/). Order only:
+  # build/webui/permission_patch_roundtrip.py (xr-browser) regenerates it from
+  # the pinned bytes and byte-compares, and refuses any added line that is new
+  # code. No Chromium build is claimed (gn is absent here).
+  - id: "0400-permission-prompt-order"
+    owner: "@xr/platform"
+    category: ui
+    files:
+      - chrome/browser/ui/views/permissions/permission_prompt_bubble_base_view.cc
+    dir: ui-permissions/0400-permission-prompt-order
