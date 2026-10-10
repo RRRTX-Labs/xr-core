@@ -518,4 +518,94 @@
 <message name="IDS_XR_IDCHROME_ROUTE_TOR_UNBOUND" desc="Route summary in the identity pill for the Tor template while no Tor route is bound" xr-id="idchrome.route.tor-unbound">
     Tor route not connected
   </message>
+  <!-- P14-T7 (P14-CLOSE C-3): the xr://identities developer page
+       (ui/identities). Dev builds only, enforced by the identity host's
+       build-channel startup gate; tools/shield_state_check.py requires these ids. -->
+<message name="IDS_XR_IDENTITIES_HEADING" desc="Heading of the xr://identities developer page that lists every identity on this device" xr-id="identities.heading">
+    Identities
+  </message>
+<message name="IDS_XR_IDENTITIES_DEV_ONLY" desc="Note at the top of the xr://identities page: the page exists in developer builds only" xr-id="identities.dev-only">
+    Developer page. Available in dev builds only.
+  </message>
+<message name="IDS_XR_IDENTITIES_STATE_NORMAL" desc="Page state line: the identities on this device are listed below" xr-id="identities.state.normal">
+    Identities on this device
+  </message>
+<message name="IDS_XR_IDENTITIES_STATE_EMPTY" desc="Page state line: there are no identities on this device yet" xr-id="identities.state.empty">
+    No identities on this device yet
+  </message>
+<message name="IDS_XR_IDENTITIES_STATE_PURGE_UNVERIFIED" desc="Page state line: deleting an identity could not be verified, so some of its data may still be on this device" xr-id="identities.state.purge-unverified">
+    A deleted identity could not be verified as fully removed. Some of its data may remain on this device.
+  </message>
+<message name="IDS_XR_IDENTITIES_STATE_DEV_REFUSED" desc="Page state line when this build is not a developer build; CHANNEL is the build channel name (for example release)" xr-id="identities.state.dev-refused">
+    This page is available in dev builds only. This build's channel: <ph name="CHANNEL">{CHANNEL}<ex>release</ex></ph>
+  </message>
+<message name="IDS_XR_IDENTITIES_STATE_UNKNOWN" desc="Page state line when the page reports a state this version does not know; STATE is the raw state, shown so nothing is guessed" xr-id="identities.state.unknown">
+    Page state not recognized: <ph name="STATE">{STATE}<ex>other</ex></ph>
+  </message>
+<message name="IDS_XR_IDENTITIES_LIFECYCLE_ACTIVE" desc="Lifecycle column value: the identity is active (its data can be loaded)" xr-id="identities.lifecycle.active">
+    Active
+  </message>
+<message name="IDS_XR_IDENTITIES_LIFECYCLE_ARCHIVED" desc="Lifecycle column value: the identity is archived (hibernated; its data stays on disk, unloaded)" xr-id="identities.lifecycle.archived">
+    Archived
+  </message>
+<message name="IDS_XR_IDENTITIES_LIFECYCLE_UNKNOWN" desc="Lifecycle column value this version does not recognize; STATE is the raw value" xr-id="identities.lifecycle.unknown">
+    Not recognized: <ph name="STATE">{STATE}<ex>other</ex></ph>
+  </message>
+<message name="IDS_XR_IDENTITIES_PERMISSIONS_COUNT" desc="Site permissions column value; COUNT is how many site permissions this identity holds" xr-id="identities.permissions.count">
+    <ph name="COUNT">{COUNT}<ex>3</ex></ph> site permissions
+  </message>
+<message name="IDS_XR_IDENTITIES_NOT_REPORTED" desc="Column value when a number was not reported for this identity (shown instead of guessing zero)" xr-id="identities.not-reported">
+    Not reported
+  </message>
+<message name="IDS_XR_IDENTITIES_ROW_LABEL" desc="Accessible name of one identity row; NAME is the identity, TABS the number of open tabs, BYTES the stored data size in bytes" xr-id="identities.row-label">
+    <ph name="NAME">{NAME}<ex>Work</ex></ph>: <ph name="TABS">{TABS}<ex>2</ex></ph> open tabs, <ph name="BYTES">{BYTES}<ex>80896</ex></ph> bytes stored
+  </message>
+<message name="IDS_XR_IDENTITIES_IN_MEMORY" desc="Marker next to an identity whose data is kept in memory only and is never written to disk" xr-id="identities.in-memory">
+    In memory only
+  </message>
+<message name="IDS_XR_IDENTITIES_COL_NAME" desc="Column header: identity name" xr-id="identities.col.name">
+    Identity
+  </message>
+<message name="IDS_XR_IDENTITIES_COL_LIFECYCLE" desc="Column header: identity lifecycle (active or archived)" xr-id="identities.col.lifecycle">
+    State
+  </message>
+<message name="IDS_XR_IDENTITIES_COL_TABS" desc="Column header: number of open tabs in this identity" xr-id="identities.col.tabs">
+    Open tabs
+  </message>
+<message name="IDS_XR_IDENTITIES_COL_STORAGE" desc="Column header: data stored by this identity, in bytes" xr-id="identities.col.storage">
+    Stored data (bytes)
+  </message>
+<message name="IDS_XR_IDENTITIES_COL_PERMISSIONS" desc="Column header: number of site permissions this identity holds" xr-id="identities.col.permissions">
+    Site permissions
+  </message>
+<message name="IDS_XR_IDENTITIES_COL_ACTIONS" desc="Column header: actions for this identity (rename, change color, archive, delete)" xr-id="identities.col.actions">
+    Actions
+  </message>
+<message name="IDS_XR_IDENTITIES_RENAME" desc="Button and field label: rename this identity" xr-id="identities.rename">
+    Rename
+  </message>
+<message name="IDS_XR_IDENTITIES_RECOLOR" desc="Label of the color field: change this identity's color" xr-id="identities.recolor">
+    Change color
+  </message>
+<message name="IDS_XR_IDENTITIES_ARCHIVE" desc="Button: archive this identity (keeps its data, unloads it)" xr-id="identities.archive">
+    Archive
+  </message>
+<message name="IDS_XR_IDENTITIES_PURGE" desc="Button: delete this identity and all of its data from this device" xr-id="identities.purge">
+    Delete identity and its data
+  </message>
+<message name="IDS_XR_IDENTITIES_PURGE_CONFIRM" desc="Label of the field where the user types the identity's name to confirm deleting it; NAME is the identity's name" xr-id="identities.purge-confirm">
+    Type <ph name="NAME">{NAME}<ex>Work</ex></ph> to confirm deletion
+  </message>
+<message name="IDS_XR_IDENTITIES_PURGE_UNVERIFIED_ROW" desc="Line naming a deleted identity whose removal could not be verified; DOMAIN is its internal id, KINDS lists the kinds of data that remain" xr-id="identities.purge-unverified-row">
+    Removal not verified for <ph name="DOMAIN">{DOMAIN}<ex>xr:7a43ffae-3a4f-4c6e-8938-e5f47f15687a</ex></ph>. Remaining: <ph name="KINDS">{KINDS}<ex>stray-cache</ex></ph>
+  </message>
+<message name="IDS_XR_IDENTITIES_RESET_ALL" desc="Button: delete every identity and all of their data from this device (developer builds only)" xr-id="identities.reset-all">
+    Reset all identities
+  </message>
+<message name="IDS_XR_IDENTITIES_RESET_ALL_CONFIRM" desc="Label of the field where the user types the confirmation phrase PHRASE (shown verbatim, not translated) before resetting all identities" xr-id="identities.reset-all-confirm">
+    Type <ph name="PHRASE">{PHRASE}<ex>reset-all</ex></ph> to delete every identity and all of its data
+  </message>
+<message name="IDS_XR_IDENTITIES_NOT_FOUND" desc="Shown when an xr://identities address names no page" xr-id="identities.not-found">
+    No identities page at this address
+  </message>
 </grit-part>

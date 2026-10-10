@@ -4,7 +4,8 @@
 //
 // WebUI shell entry (esbuild entrypoint). Registers the P7 four-views-one-
 // registry custom elements (palette / shortcut editor / help index) and the
-// P8 settings shell + per-section views (network / privacy / identity). The
+// P8 settings shell + per-section views (network / privacy / identity), and
+// the dev-only xr://identities manager page (P14-T7). The
 // host glue (P16) pushes host-protocol data into the views' properties and
 // reads the palette's onInvoke / the settings shell's onJump. No network,
 // no logic here.
@@ -17,6 +18,7 @@ import './settings/privacy.js';
 import './settings/identity.js';
 import './about/about.js';
 import './shield/shield.js';
+import './identities/identities.js';
 import './panel/panel-frame.js';
 
 export const XR_UI_VIEWS = [
@@ -29,5 +31,6 @@ export const XR_UI_VIEWS = [
   'xr-settings-identity',
   'xr-about',
   'xr-shield',
+  'xr-identities',
   'xr-panel-frame',
 ];

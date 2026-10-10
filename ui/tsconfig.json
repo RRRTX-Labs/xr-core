@@ -29,6 +29,7 @@
     "settings-shell/*.ts",
     "settings/*.ts",
     "panel/*.ts",
-    "identity-chrome/*.ts"
+    "identity-chrome/*.ts",
+    "identities/*.ts"
   ]
 }

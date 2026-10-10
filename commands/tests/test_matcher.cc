@@ -164,5 +164,14 @@ int main(int argc, char** argv) {
     XR_EXPECT_STREQ(r[0].id.c_str(), "alpha");  // earlier registration wins the tie
     XR_EXPECT_STREQ(r[1].id.c_str(), "beta");
   }
+  // A query character no title or keyword holds matches nothing, including
+  // the NUL byte: the scan never reads past the end of a title (P14-CLOSE:
+  // the honest mutation re-score found this boundary unasserted).
+  {
+    auto none = MatchQuery(std::string(1, '\0'), ptrs);
+    XR_EXPECT_MSG(none.empty(), "an embedded NUL query matches no command");
+    auto tail = MatchQuery(std::string("t") + '\0', ptrs);
+    XR_EXPECT_MSG(tail.empty(), "a query ending in NUL matches no command");
+  }
   return xrtest::Report("test_matcher");
 }

@@ -64,6 +64,9 @@ int main() {
     XR_EXPECT_EQ(r.Tier1Count(), 9);
     RegisterResult tenth = r.Register(C("tenth", "tier1"));
     XR_EXPECT_MSG(!tenth.ok, "10th tier1 control rejected at registration");
+    // The refusal states the ceiling truthfully (P14-CLOSE re-score).
+    XR_EXPECT(tenth.error.find("would be the 10th tier1 control") != std::string::npos);
+    XR_EXPECT(tenth.error.find("'Tier-1 always-visible <=9 controls'") != std::string::npos);
     XR_EXPECT(tenth.error.find("<=9") != std::string::npos ||
              tenth.error.find("Tier-1") != std::string::npos);
     XR_EXPECT_EQ(r.Tier1Count(), 9);  // unchanged
@@ -101,6 +104,48 @@ int main() {
     XR_EXPECT_EQ(r2.Tier1Count(), 1);
     // canonical JSON is sorted-key + byte-stable.
     XR_EXPECT_STREQ(r.ToJson().Canonical().c_str(), r2.ToJson().Canonical().c_str());
+  }
+  // KnownId answers both ways.
+  {
+    Registry r;
+    r.Register(C("known", "tier2"));
+    XR_EXPECT(r.KnownId("known"));
+    XR_EXPECT(!r.KnownId("unknown"));
+    XR_EXPECT(!r.KnownId(""));
+  }
+  // FromJson refuses every malformed doc with false AND a reason (P14-CLOSE:
+  // the honest mutation re-score found no test of a refusal).
+  {
+    Registry ok;
+    ok.Register(C("a", "tier2"));
+    const JsonValue good = ok.ToJson();
+    const JsonValue entry = good.find("commands")->as_array()[0];
+    auto doc = [](JsonValue::Array cmds, int64_t version, const char* schema) {
+      JsonValue::Object d = {{"schema", JsonValue(schema)},
+                             {"schema_version", JsonValue(version)},
+                             {"commands", JsonValue(std::move(cmds))}};
+      return JsonValue(d);
+    };
+    JsonValue::Object desc_only = {{"descriptor", *entry.find("descriptor")}};
+    JsonValue::Object meta_only = {{"registry", *entry.find("registry")}};
+    struct Case { JsonValue d; const char* want; };
+    const Case cases[] = {
+        {JsonValue(JsonValue::Array{}), "registry doc must be an object"},
+        {doc({entry}, 1, "other"), "bad schema id 'other' (want xr-commands-registry)"},
+        {doc({entry}, 2, "xr-commands-registry"), "unsupported schema_version (want 1)"},
+        {doc({JsonValue(desc_only)}, 1, "xr-commands-registry"), "entry missing descriptor/registry"},
+        {doc({JsonValue(meta_only)}, 1, "xr-commands-registry"), "entry missing descriptor/registry"},
+    };
+    for (const Case& c : cases) {
+      Registry r2;
+      std::string err;
+      XR_EXPECT_MSG(!r2.FromJson(c.d, &err), std::string("refused: ") + c.want);
+      XR_EXPECT_MSG(err == c.want, "reason: " + err);
+    }
+    Registry r3;
+    std::string err;
+    XR_EXPECT(r3.FromJson(doc({entry}, 1, "xr-commands-registry"), &err));
+    XR_EXPECT_EQ(r3.Size(), 1);
   }
   return xrtest::Report("test_registry");
 }

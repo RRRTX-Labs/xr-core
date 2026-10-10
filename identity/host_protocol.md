@@ -33,7 +33,14 @@ identity_host <frozen-method> ['<json-args>']     # frozen {method,args} surface
 identity_host '<json-with-method>'                # frozen surface
 identity_host                                     # request JSON on stdin
 identity_host <subcommand> ['<json-args>' | -]    # living surface
+identity_host --build-channel dev|nightly-test|release <subcommand> …
 ```
+
+`--build-channel` (P14-CLOSE C-3) is the REAL gate for the dev-only
+`manager-page` / `reset-all` subcommands — the xr://shield precedent
+(`shield/host/shield_host.cc`). It defaults to `release` (a host started
+without it fails CLOSED); any other value is a usage error (exit 2). It is
+stripped before dispatch, so the frozen surface is untouched.
 
 ## Methods
 
@@ -72,6 +79,9 @@ The frozen `mojom/identity.mojom` v1 set (byte-parity with
 | `ledger-tag` | `{identity_id, event_class, event}` | `{event, event_class, identity_id, schema:"ledger-identity-overlay-v1"}` — `identity_id` REQUIRED and mint-shaped; `event_class` in the closed set of ten (the eight frozen `ActivityKind` values + `kHistory`/`kBookmark`); `event` an object carried byte-for-byte · refusals `kRejected` with `identity-id-required` / `identity-id-malformed` / `unknown-event-class:<cls>` / `event-not-object` (P14-T5) |
 | `omnibox-filter` | `{identity_id, rows:[{identity_id?, …}]}` | `{current:[rows owned by identity_id], identity_id, unknown:[rows with no valid id, provenance:"unknown"]}` — rows owned by any OTHER identity are dropped and not counted; no current identity ⇒ `kRejected identity-id-required` (sees nothing, never everything) |
 | `history-oracle` | `{identity_id, upstream_rows:[{url_id, visit_id, url, title, ts}]}` | `{overlay_rows, upstream_bytes_after, upstream_bytes_before, verdict:"diff-clean"\|"DELTA"}` — the zero-delta oracle: upstream history bytes with the overlay written equal the bytes without it AND the rows as handed in; an unknown upstream field ⇒ `kRejected upstream-row-unknown-field:<k>` |
+| `manager-page-states` | `{}` | `{states:["normal","empty","purge-unverified","dev-refused"]}` — the xr://identities page-state union (`core/manager_page.h`); `tools/shield_state_check.py` holds the view to it (P14-CLOSE C-3) |
+| `manager-page` | `{identities:[{entropy, display_name?, template_id?, in_memory?}], tabs?:[{identity:<i>, tab_id}], permission_counts?:[<n>…], edits?:[{identity:<i>, op: rename\|recolor\|archive, value}], purge?:[<i>…], plant_residual?:[<i>…]}` | DEV ONLY: non-dev channel ⇒ `kRejected build-channel-not-dev:<channel>` (exit 0, no page bytes). Else `{state, rows:[{domain, display_name, color, glyph, template_id, in_memory, lifecycle, tab_count, storage_bytes, permission_count}], purges:[{domain, verified, residual_kinds}], edits:[{op, ok, error?}]}` — `<i>` indexes `identities`; `permission_count` absent ⇒ `null` (never a guessed 0); `storage_bytes` is the purge-verify walk; edits never move the domain (rename: non-empty, ≤64 bytes, no control chars, opacity kept; recolor: `#rrggbb` lowercase; archive = hibernate — a distinct archived state is a manager-mojom item); `plant_residual` is a TEST HOOK |
+| `reset-all` | `{identities:[…as above…], plant_residual?:[<i>…]}` | DEV ONLY (same refusal). `{destroyed, all_verified, results:[{domain, zero_residual_verified}]}` — every identity purged-and-verified; one planted residual ⇒ `all_verified:false` (the escape cannot claim a clean reset it did not verify) |
 
 ## Error model
 

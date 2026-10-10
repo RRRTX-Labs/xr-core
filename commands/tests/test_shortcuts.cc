@@ -171,5 +171,81 @@ int main() {
     XR_EXPECT(lr.ok);
     XR_EXPECT_EQ(t.bindings().size(), 1);
   }
+  // Every Load outcome, each flag checked, and every Save failure path
+  // answering false with its reason (P14-CLOSE: the honest mutation re-score
+  // found these outcomes unasserted).
+  {
+    auto put = [&](const std::string& bytes) {
+      std::FILE* f = std::fopen((dir + "/shortcuts.json").c_str(), "wb");
+      XR_EXPECT(f != nullptr);
+      if (f) {
+        std::fwrite(bytes.data(), 1, bytes.size(), f);
+        std::fclose(f);
+      }
+    };
+    ShortcutStore eph;  // ephemeral: in-memory only
+    auto le = eph.Load();
+    XR_EXPECT(le.ok);
+    XR_EXPECT(!le.preserved);
+    std::string err;
+    XR_EXPECT_MSG(eph.Save(&err), "an ephemeral Save persists nothing and succeeds");
+
+    (void)std::remove((dir + "/shortcuts.json").c_str());
+    ShortcutStore absent(dir);
+    auto la = absent.Load();
+    XR_EXPECT_MSG(la.ok && !la.preserved, "absent file => empty store, ok");
+    XR_EXPECT(absent.bindings().empty());
+
+    struct Case { std::string bytes; const char* reason; };
+    const Case cases[] = {
+        {"", "is empty (truncated write?)"},
+        {"{\"bindings\":[],\"schema\":\"other\",\"schema_version\":1}", "unrecognized schema"},
+        {"{\"schema\":\"xr-shortcuts\",\"schema_version\":1}", "missing bindings[]"},
+    };
+    for (const Case& c : cases) {
+      put(c.bytes);
+      ShortcutStore t(dir);
+      auto lr = t.Load();
+      XR_EXPECT_MSG(!lr.ok, std::string("refused: ") + c.reason);
+      XR_EXPECT_MSG(lr.preserved, std::string("preserved: ") + c.reason);
+      XR_EXPECT_MSG(lr.error.find(c.reason) != std::string::npos, "reason: " + lr.error);
+      XR_EXPECT(ReadFileBytes(t.Path()) == c.bytes);  // never rewritten
+    }
+
+    ShortcutStore w(dir);
+    w.Bind("sv", "Ctrl+S");
+    const std::string tmp = w.Path() + ".tmp";
+    // open fails: the tmp path is a directory.
+    XR_EXPECT(::mkdir(tmp.c_str(), 0700) == 0);
+    err.clear();
+    XR_EXPECT_MSG(!w.Save(&err), "Save refuses when the tmp cannot be opened");
+    XR_EXPECT(err.find("cannot open tmp file") != std::string::npos);
+    (void)::rmdir(tmp.c_str());
+    // write/fsync fails: the tmp is a symlink to /dev/full (Linux; the CI and
+    // sandbox lanes both have it).
+    if (::access("/dev/full", W_OK) == 0) {
+      XR_EXPECT(::symlink("/dev/full", tmp.c_str()) == 0);
+      err.clear();
+      XR_EXPECT_MSG(!w.Save(&err), "Save refuses when the write cannot be flushed");
+      XR_EXPECT(err == "tmp write/fsync failed");
+      (void)std::remove(tmp.c_str());
+    } else {
+      XR_EXPECT_MSG(false, "/dev/full is required to prove the write-failure path");
+    }
+    // rename fails: the committed path is a non-empty directory.
+    (void)std::remove(w.Path().c_str());
+    XR_EXPECT(::mkdir(w.Path().c_str(), 0700) == 0);
+    {
+      std::FILE* f = std::fopen((w.Path() + "/keep").c_str(), "wb");
+      if (f) std::fclose(f);
+    }
+    err.clear();
+    XR_EXPECT_MSG(!w.Save(&err), "Save refuses when the atomic rename fails");
+    XR_EXPECT(err == "atomic rename failed");
+    (void)std::remove((w.Path() + "/keep").c_str());
+    (void)::rmdir(w.Path().c_str());
+    (void)std::remove(tmp.c_str());
+    XR_EXPECT_MSG(w.Save(&err), "Save recovers once the path is clear: " + err);
+  }
   return xrtest::Report("test_shortcuts");
 }

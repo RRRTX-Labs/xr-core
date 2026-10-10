@@ -328,6 +328,27 @@
       "descriptor": {
         "attention_tier": "tier2",
         "danger_class": "safe",
+        "handler": "action.identities.page",
+        "id": "identities.page",
+        "surface": "command-palette",
+        "title": "Open Identities Manager Page (Dev)"
+      },
+      "registry": {
+        "group": "Browser",
+        "keywords": [
+          "identities",
+          "identity",
+          "manager",
+          "page"
+        ],
+        "predicate_id": "build.channel-dev",
+        "scope": "global"
+      }
+    },
+    {
+      "descriptor": {
+        "attention_tier": "tier2",
+        "danger_class": "safe",
         "handler": "action.settings.network",
         "id": "settings.network",
         "surface": "tools-menu",

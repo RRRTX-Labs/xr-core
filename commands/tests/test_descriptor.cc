@@ -99,6 +99,9 @@ void TestBattery() {
       "\"keywords\":[\"x\"]}"));
   XR_EXPECT_MSG(!unknown.ok, "unknown field rejected");
   XR_EXPECT(unknown.error.find("additionalProperties") != std::string::npos);
+  // The reason names the frozen value, not just the keyword (P14-CLOSE:
+  // an error that said "additionalProperties:true" would misstate the law).
+  XR_EXPECT(unknown.error.find("additionalProperties:false") != std::string::npos);
 
   // missing field => reject.
   DescriptorResult missing = ValidateDescriptor(Obj(

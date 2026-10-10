@@ -57,11 +57,11 @@ int main() {
   std::string err;
   XR_EXPECT_MSG(Load(&ctx, &err), "LoadContext: " + err);
 
-  // Seeded roster: 26 commands (P10-T8 +update.about/-check-now/
+  // Seeded roster: 27 commands (P10-T8 +update.about/-check-now/
   // -manual-download; P11-T6 +shield.add-rule/-remove-rule/.page and the
-  // destubbed shield.toggle), 7 tier1, tor.open + shield.page
-  // disabled-by-predicate.
-  XR_EXPECT_EQ(ctx.registry.Size(), 26);
+  // destubbed shield.toggle; P14-T7 +identities.page), 7 tier1, tor.open +
+  // shield.page + identities.page disabled-by-predicate.
+  XR_EXPECT_EQ(ctx.registry.Size(), 27);
   XR_EXPECT_EQ(ctx.registry.Tier1Count(), 7);
 
   // flag-status.
@@ -72,7 +72,7 @@ int main() {
   // list (all + by group).
   {
     std::string r = HandleMethod("list", Req("{}"), ctx);
-    XR_EXPECT_EQ(OkCount(r), 26);
+    XR_EXPECT_EQ(OkCount(r), 27);
     std::string rg = HandleMethod("list", Req("{\"group\":\"Trust\"}"), ctx);
     XR_EXPECT_EQ(OkCount(rg), 7);  // 4 dial + toggle/add-rule/remove-rule
   }
@@ -82,6 +82,13 @@ int main() {
     XR_EXPECT(r.find("\"id\":\"tor.open\"") != std::string::npos);
     XR_EXPECT(r.find("\"available\":false") != std::string::npos);
     XR_EXPECT(r.find("P31") != std::string::npos);  // placeholder reason
+  }
+  // query: identities.page (P14-T7) is present but disabled-with-reason off
+  // the dev channel — the dev-only page is never absent, never enabled.
+  {
+    std::string r = HandleMethod("query", Req("{\"query\":\"identities manager\"}"), ctx);
+    XR_EXPECT(r.find("\"id\":\"identities.page\"") != std::string::npos);
+    XR_EXPECT(r.find("\"available\":false") != std::string::npos);
   }
   // menu-model: tier1 separated, tor.open unavailable, tier1 count == 7.
   {

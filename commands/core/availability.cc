@@ -64,7 +64,8 @@ AvailabilityVerdict Availability::Evaluate(
   }
 
   if (predicate_id == "build.channel-dev") {
-    // P11-T6: the xr://shield debug page is a DEV-build surface. The
+    // P11-T6: the xr://shield debug page is a DEV-build surface (and, from
+    // P14-T7, the xr://identities manager page). The
     // snapshot's capabilities carry the build channel; anywhere else the
     // command stays registered, disabled WITH a reason (never absent).
     // The host-side gate (shield_host --build-channel) is the enforcement;

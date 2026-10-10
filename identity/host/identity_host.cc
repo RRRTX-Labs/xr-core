@@ -43,6 +43,7 @@
 #include "core/hibernate.h"
 #include "core/identity.h"
 #include "core/ledger_tag.h"
+#include "core/manager_page.h"
 #include "core/mint.h"
 #include "core/templates.h"
 
@@ -304,7 +305,8 @@ JsonValue AuditJson(const HostState& s) {
 // The LIVING subcommand surface (policy_host precedent): argv[1] is the
 // subcommand, argv[2] (or stdin via '-') the args object. NOT part of the
 // frozen {method,args} table — see the header comment.
-int RunLiving(const std::string& cmd, const JsonValue& args) {
+int RunLiving(const std::string& cmd, const JsonValue& args,
+              const std::string& channel) {
   HostState s;
 
   if (cmd == "flag-status") {
@@ -518,6 +520,133 @@ int RunLiving(const std::string& cmd, const JsonValue& args) {
     o["total_kb"] = JsonValue(static_cast<int64_t>(total));
     return Emit(JsonValue(std::move(o)));
   }
+  if (cmd == "manager-page-states") {
+    // P14-CLOSE C-3: the xr://identities page-state union, for the view's
+    // coverage law (tools/shield_state_check.py reads this list).
+    JsonValue::Array arr;
+    for (const char* st : xr::identity::kManagerPageStates) arr.push_back(JsonValue(st));
+    JsonValue::Object o;
+    o["states"] = JsonValue(std::move(arr));
+    return Emit(JsonValue(std::move(o)));
+  }
+  if (cmd == "manager-page" || cmd == "reset-all") {
+    // P14-CLOSE C-3: the DEV page and its reset-all escape. The gate is the
+    // REAL startup option --build-channel (default "release": fails CLOSED);
+    // a non-dev host refuses with a typed reason and renders no page bytes.
+    std::string why;
+    if (!xr::identity::DevChannel(channel, &why)) {
+      return EmitReject(why + ":" + channel);
+    }
+    // The identities the page shows are provisioned into ONE state (v1 host
+    // is stateless: every state rides in the request).
+    std::vector<std::string> order;
+    const JsonValue* ids = args.find("identities");
+    if (ids == nullptr || !ids->is_array()) {
+      return EmitErr("kMalformedInput", "identities must be an array");
+    }
+    for (const auto& spec : ids->as_array()) {
+      CreateRequest req;
+      req.entropy = Str(&spec, "entropy");
+      req.display_name = Str(&spec, "display_name");
+      req.template_id = Str(&spec, "template_id");
+      req.in_memory = Bool(&spec, "in_memory");
+      IdentityRecord rec;
+      auto res = s.manager.Create(req, &rec);
+      if (!res.ok) return EmitErr("kInternal", res.error);
+      order.push_back(rec.domain);
+    }
+    auto at = [&order](const JsonValue& v, std::string* domain) {
+      if (!v.is_int() || v.as_int() < 0 ||
+          static_cast<size_t>(v.as_int()) >= order.size()) {
+        return false;
+      }
+      *domain = order[static_cast<size_t>(v.as_int())];
+      return true;
+    };
+    std::string domain;
+    if (const JsonValue* pl = args.find("plant_residual"); pl && pl->is_array()) {
+      for (const auto& v : pl->as_array()) {  // TEST HOOK (the purge negative)
+        if (!at(v, &domain)) return EmitErr("kMalformedInput", "plant_residual index");
+        s.store.PlantResidual(domain, {"stray-cache", 64});
+      }
+    }
+    if (cmd == "reset-all") {
+      JsonValue::Array results;
+      bool all = true;
+      for (const std::string& d : order) {
+        bool verified = false;
+        auto res = s.manager.Destroy(d, &verified);
+        all = all && res.ok && verified;
+        JsonValue::Object r;
+        r["domain"] = JsonValue(d);
+        r["zero_residual_verified"] = JsonValue(res.ok && verified);
+        results.push_back(JsonValue(std::move(r)));
+      }
+      JsonValue::Object o;
+      o["all_verified"] = JsonValue(all);
+      o["destroyed"] = JsonValue(static_cast<int64_t>(order.size()));
+      o["results"] = JsonValue(std::move(results));
+      return Emit(JsonValue(std::move(o)));
+    }
+    if (const JsonValue* tabs = args.find("tabs"); tabs && tabs->is_array()) {
+      for (const auto& t : tabs->as_array()) {
+        const JsonValue* idx = t.find("identity");
+        if (idx == nullptr || !at(*idx, &domain)) {
+          return EmitErr("kMalformedInput", "tabs[].identity index");
+        }
+        const std::string win = "w" + std::to_string(idx->as_int());
+        s.binding.SetWindowDefault(win, domain);
+        auto res = s.binding.OpenTab(win, static_cast<uint64_t>(Int(&t, "tab_id")), "");
+        if (!res.ok) return EmitErr("kInternal", res.error);
+      }
+    }
+    JsonValue::Array edits;
+    if (const JsonValue* ed = args.find("edits"); ed && ed->is_array()) {
+      for (const auto& e : ed->as_array()) {
+        const JsonValue* idx = e.find("identity");
+        if (idx == nullptr || !at(*idx, &domain)) {
+          return EmitErr("kMalformedInput", "edits[].identity index");
+        }
+        const std::string op = Str(&e, "op");
+        xr::identity::PageEdit kind;
+        if (op == "rename") kind = xr::identity::PageEdit::kRename;
+        else if (op == "recolor") kind = xr::identity::PageEdit::kRecolor;
+        else if (op == "archive") kind = xr::identity::PageEdit::kArchive;
+        else return EmitErr("kMalformedInput", "edits[].op");
+        auto res = xr::identity::ApplyPageEdit(&s.store, &s.manager, domain, kind,
+                                               Str(&e, "value"));
+        JsonValue::Object r;
+        r["ok"] = JsonValue(res.ok);
+        r["op"] = JsonValue(op);
+        if (!res.ok) r["error"] = JsonValue(res.error);
+        edits.push_back(JsonValue(std::move(r)));
+      }
+    }
+    std::vector<xr::identity::PurgeOutcome> purges;
+    if (const JsonValue* pg = args.find("purge"); pg && pg->is_array()) {
+      for (const auto& v : pg->as_array()) {
+        if (!at(v, &domain)) return EmitErr("kMalformedInput", "purge index");
+        xr::identity::PurgeOutcome po;
+        po.domain = domain;
+        auto res = s.manager.Destroy(domain, &po.verified);
+        po.verified = res.ok && po.verified;
+        if (!po.verified) po.residual_kinds = s.store.ResidualKinds(domain);
+        purges.push_back(std::move(po));
+      }
+    }
+    std::map<std::string, int64_t> perms;
+    if (const JsonValue* pc = args.find("permission_counts"); pc && pc->is_array()) {
+      size_t i = 0;
+      for (const auto& v : pc->as_array()) {
+        if (i < order.size() && v.is_int()) perms[order[i]] = v.as_int();
+        ++i;
+      }
+    }
+    JsonValue page = xr::identity::BuildManagerPage(s.store, s.binding, order, perms, purges);
+    JsonValue::Object o = page.as_object();
+    o["edits"] = JsonValue(std::move(edits));
+    return Emit(JsonValue(std::move(o)));
+  }
   if (cmd == "scenario") {
     // A deterministic op-list against ONE state (multi-step parity cases:
     // cap evictions, wake refusals, binding audit trails).
@@ -619,8 +748,23 @@ int RunLiving(const std::string& cmd, const JsonValue& args) {
 }
 
 int main(int argc, char** argv) {
+  // P14-CLOSE C-3: the REAL build-channel gate for the dev-only manager
+  // page and reset-all (the xr://shield precedent). Default "release": a
+  // host started without the option fails CLOSED.
+  std::string channel = "release";
   std::vector<std::string> positional;
-  for (int i = 1; i < argc; ++i) positional.push_back(argv[i]);
+  for (int i = 1; i < argc; ++i) {
+    const std::string a = argv[i];
+    if (a == "--build-channel" && i + 1 < argc) {
+      channel = argv[++i];
+    } else {
+      positional.push_back(a);
+    }
+  }
+  if (channel != "dev" && channel != "nightly-test" && channel != "release") {
+    std::fprintf(stderr, "usage error: --build-channel must be dev|nightly-test|release\n");
+    return 2;
+  }
 
   // Subcommand form (the LIVING surface): identity_host <cmd> ['<args>'].
   if (!positional.empty() && positional[0].rfind("{", 0) != 0 &&
@@ -634,7 +778,7 @@ int main(int argc, char** argv) {
     if (!apr.ok || !apr.value.is_object()) {
       return EmitErr("kMalformedInput", "args must be a JSON object");
     }
-    return RunLiving(positional[0], apr.value);
+    return RunLiving(positional[0], apr.value, channel);
   }
 
   // {method,args} JSON form (the FROZEN surface): positional method name,

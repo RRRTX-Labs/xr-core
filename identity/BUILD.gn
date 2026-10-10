@@ -23,6 +23,7 @@ source_set("identity_core") {
     "core/attribution.cc",
     "core/session.cc",
     "core/ledger_tag.cc",
+    "core/manager_page.cc",
   ]
 
   public_deps = [ "//xr-core/common:core" ]
@@ -36,6 +37,7 @@ source_set("identity_core") {
     "core/attribution.h",
     "core/session.h",
     "core/ledger_tag.h",
+    "core/manager_page.h",
     "core/sha256.h",
   ]
 }
