@@ -36,11 +36,11 @@ Cells: 175 total — EXCEPTION=20, NOT-RUN=110, PASS=45
 | process-isolation | standard/ephemeral | fake | PASS | standard: site_isolated=True dedicated=False; ephemeral: site_isolated=True dedicated=False |
 | process-isolation | shield/fortress | fake | PASS | shield: site_isolated=True dedicated=False; fortress: site_isolated=True dedicated=True |
 | process-isolation | shield/ephemeral | fake | PASS | shield: site_isolated=True dedicated=False; ephemeral: site_isolated=True dedicated=False |
-| disposable-zero-residue | standard/shield | fake | PASS | clean close verified=True; planted cookie jar fails destroy=True |
-| disposable-zero-residue | standard/fortress | fake | PASS | clean close verified=True; planted cookie jar fails destroy=True |
-| disposable-zero-residue | standard/ephemeral | fake | PASS | clean close verified=True; planted cookie jar fails destroy=True |
-| disposable-zero-residue | shield/fortress | fake | PASS | clean close verified=True; planted cookie jar fails destroy=True |
-| disposable-zero-residue | shield/ephemeral | fake | PASS | clean close verified=True; planted cookie jar fails destroy=True |
+| disposable-zero-residue | standard/shield | fake | PASS | clean close verified=True; planted cookie jar fails destroy=True; fs-diff clean close 0 paths + planted leftover caught=True |
+| disposable-zero-residue | standard/fortress | fake | PASS | clean close verified=True; planted cookie jar fails destroy=True; fs-diff clean close 0 paths + planted leftover caught=True |
+| disposable-zero-residue | standard/ephemeral | fake | PASS | clean close verified=True; planted cookie jar fails destroy=True; fs-diff clean close 0 paths + planted leftover caught=True |
+| disposable-zero-residue | shield/fortress | fake | PASS | clean close verified=True; planted cookie jar fails destroy=True; fs-diff clean close 0 paths + planted leftover caught=True |
+| disposable-zero-residue | shield/ephemeral | fake | PASS | clean close verified=True; planted cookie jar fails destroy=True; fs-diff clean close 0 paths + planted leftover caught=True |
 | identity-derivation-probe | standard/shield | fake | PASS | 6 derivation probes (name/URL/title/log/vid): no embed, opaque shape |
 | identity-derivation-probe | standard/fortress | fake | PASS | 6 derivation probes (name/URL/title/log/vid): no embed, opaque shape |
 | identity-derivation-probe | standard/ephemeral | fake | PASS | 6 derivation probes (name/URL/title/log/vid): no embed, opaque shape |
