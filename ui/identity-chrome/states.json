@@ -1,0 +1,47 @@
+{
+ "schema": "identity-chrome-states-v1",
+ "note": "P14-T4 (P14-CLOSE C-1): the identity chrome's state -> visual mapping as DATA. One table is consumed by the pure core (chrome-core.ts) and by the structural snapshot generator (xr-browser tools/identity_chrome_check.py). The two are locked together by tests/identity-chrome.test.mjs, which requires the core's structure() output to equal every committed snapshot. Colors never stand alone: every layout carries a glyph or initial, and every state an accessible name and an SR string. Contrast is computed per theme from ui/themes/tokens.json and never typed in. A bar or border below its minimum gets a text-token edge line, recorded in the snapshot. Pixel rendering is NOT-RUN (docs/qa/browser-harness.md#identity-chrome-visual).",
+ "bar_px": 2,
+ "edge_px": 1,
+ "dot_px": 8,
+ "contrast_min": {"non_text": 3.0, "text": 4.5},
+ "tokens": {"strip_surface": "surface", "pill_text": "text", "pill_bg": "surface-raised", "edge": "text"},
+ "layouts": {
+  "top": {"bar_side": "block-start", "mark": "bar", "glyph": true, "label": true},
+  "vertical": {"bar_side": "inline-start", "mark": "bar", "glyph": true, "label": true},
+  "compact": {"bar_side": "block-start", "mark": "bar", "glyph": true, "label": false},
+  "rail": {"bar_side": "none", "mark": "dot", "glyph": true, "label": false}
+ },
+ "states": {
+  "standard": {
+   "class": "xr-idc--standard",
+   "accessible_name": "idchrome.pill",
+   "sr": "idchrome.sr.standard",
+   "route": "idchrome.route.direct",
+   "window_border": null
+  },
+  "disposable": {
+   "class": "xr-idc--disposable",
+   "accessible_name": "idchrome.pill",
+   "sr": "idchrome.sr.disposable",
+   "route": "idchrome.route.direct",
+   "window_border": {"style": "dashed", "px": 2, "color": "token:danger-caution"}
+  },
+  "tor-unbound": {
+   "class": "xr-idc--tor-unbound",
+   "accessible_name": "idchrome.pill",
+   "sr": "idchrome.sr.tor-unbound",
+   "route": "idchrome.route.tor-unbound",
+   "window_border": {"style": "solid", "px": 2, "color": "identity"}
+  }
+ },
+ "samples": [
+  {"template": "personal", "name": "Personal", "color": "#4285f4", "glyph": "P", "state": "standard"},
+  {"template": "work", "name": "Work", "color": "#1a73e8", "glyph": "W", "state": "standard"},
+  {"template": "research", "name": "Research", "color": "#0f9d58", "glyph": "R", "state": "standard"},
+  {"template": "banking", "name": "Banking", "color": "#f4b400", "glyph": "B", "state": "standard"},
+  {"template": "shopping", "name": "Shopping", "color": "#db4437", "glyph": "S", "state": "standard"},
+  {"template": "disposable", "name": "Disposable", "color": "#f9ab00", "glyph": "D", "state": "disposable"},
+  {"template": "tor", "name": "Tor", "color": "#78288c", "glyph": "T", "state": "tor-unbound"}
+ ]
+}

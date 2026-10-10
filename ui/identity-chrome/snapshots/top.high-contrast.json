@@ -1,0 +1,542 @@
+{
+ "layout": "top",
+ "nodes": [
+  {
+   "class": [
+    "xr-idc",
+    "xr-idc--standard"
+   ],
+   "contrast": {
+    "mark": 5.89,
+    "pill_text": 19.17,
+    "window_border": null
+   },
+   "pill": {
+    "children": [
+     {
+      "aria_hidden": true,
+      "color": "#4285f4",
+      "part": "swatch"
+     },
+     {
+      "aria_hidden": true,
+      "part": "glyph",
+      "text": "P"
+     },
+     {
+      "part": "name",
+      "text": "Personal"
+     },
+     {
+      "msg": "idchrome.route.direct",
+      "part": "route"
+     }
+    ],
+    "name": {
+     "msg": "idchrome.pill",
+     "params": {
+      "NAME": "Personal",
+      "ROUTE": {
+       "msg": "idchrome.route.direct"
+      }
+     }
+    },
+    "role": "button"
+   },
+   "sample": "personal",
+   "state": "standard",
+   "tab": {
+    "children": [
+     {
+      "color": "#4285f4",
+      "edge": null,
+      "part": "bar",
+      "px": 2,
+      "side": "block-start"
+     },
+     {
+      "aria_hidden": true,
+      "part": "glyph",
+      "text": "P"
+     },
+     {
+      "part": "label",
+      "text": "Personal"
+     }
+    ],
+    "description": {
+     "msg": "idchrome.sr.standard",
+     "params": {
+      "NAME": "Personal"
+     }
+    },
+    "role": "tab"
+   },
+   "window_border": null
+  },
+  {
+   "class": [
+    "xr-idc",
+    "xr-idc--standard"
+   ],
+   "contrast": {
+    "mark": 4.66,
+    "pill_text": 19.17,
+    "window_border": null
+   },
+   "pill": {
+    "children": [
+     {
+      "aria_hidden": true,
+      "color": "#1a73e8",
+      "part": "swatch"
+     },
+     {
+      "aria_hidden": true,
+      "part": "glyph",
+      "text": "W"
+     },
+     {
+      "part": "name",
+      "text": "Work"
+     },
+     {
+      "msg": "idchrome.route.direct",
+      "part": "route"
+     }
+    ],
+    "name": {
+     "msg": "idchrome.pill",
+     "params": {
+      "NAME": "Work",
+      "ROUTE": {
+       "msg": "idchrome.route.direct"
+      }
+     }
+    },
+    "role": "button"
+   },
+   "sample": "work",
+   "state": "standard",
+   "tab": {
+    "children": [
+     {
+      "color": "#1a73e8",
+      "edge": null,
+      "part": "bar",
+      "px": 2,
+      "side": "block-start"
+     },
+     {
+      "aria_hidden": true,
+      "part": "glyph",
+      "text": "W"
+     },
+     {
+      "part": "label",
+      "text": "Work"
+     }
+    ],
+    "description": {
+     "msg": "idchrome.sr.standard",
+     "params": {
+      "NAME": "Work"
+     }
+    },
+    "role": "tab"
+   },
+   "window_border": null
+  },
+  {
+   "class": [
+    "xr-idc",
+    "xr-idc--standard"
+   ],
+   "contrast": {
+    "mark": 5.98,
+    "pill_text": 19.17,
+    "window_border": null
+   },
+   "pill": {
+    "children": [
+     {
+      "aria_hidden": true,
+      "color": "#0f9d58",
+      "part": "swatch"
+     },
+     {
+      "aria_hidden": true,
+      "part": "glyph",
+      "text": "R"
+     },
+     {
+      "part": "name",
+      "text": "Research"
+     },
+     {
+      "msg": "idchrome.route.direct",
+      "part": "route"
+     }
+    ],
+    "name": {
+     "msg": "idchrome.pill",
+     "params": {
+      "NAME": "Research",
+      "ROUTE": {
+       "msg": "idchrome.route.direct"
+      }
+     }
+    },
+    "role": "button"
+   },
+   "sample": "research",
+   "state": "standard",
+   "tab": {
+    "children": [
+     {
+      "color": "#0f9d58",
+      "edge": null,
+      "part": "bar",
+      "px": 2,
+      "side": "block-start"
+     },
+     {
+      "aria_hidden": true,
+      "part": "glyph",
+      "text": "R"
+     },
+     {
+      "part": "label",
+      "text": "Research"
+     }
+    ],
+    "description": {
+     "msg": "idchrome.sr.standard",
+     "params": {
+      "NAME": "Research"
+     }
+    },
+    "role": "tab"
+   },
+   "window_border": null
+  },
+  {
+   "class": [
+    "xr-idc",
+    "xr-idc--standard"
+   ],
+   "contrast": {
+    "mark": 11.38,
+    "pill_text": 19.17,
+    "window_border": null
+   },
+   "pill": {
+    "children": [
+     {
+      "aria_hidden": true,
+      "color": "#f4b400",
+      "part": "swatch"
+     },
+     {
+      "aria_hidden": true,
+      "part": "glyph",
+      "text": "B"
+     },
+     {
+      "part": "name",
+      "text": "Banking"
+     },
+     {
+      "msg": "idchrome.route.direct",
+      "part": "route"
+     }
+    ],
+    "name": {
+     "msg": "idchrome.pill",
+     "params": {
+      "NAME": "Banking",
+      "ROUTE": {
+       "msg": "idchrome.route.direct"
+      }
+     }
+    },
+    "role": "button"
+   },
+   "sample": "banking",
+   "state": "standard",
+   "tab": {
+    "children": [
+     {
+      "color": "#f4b400",
+      "edge": null,
+      "part": "bar",
+      "px": 2,
+      "side": "block-start"
+     },
+     {
+      "aria_hidden": true,
+      "part": "glyph",
+      "text": "B"
+     },
+     {
+      "part": "label",
+      "text": "Banking"
+     }
+    ],
+    "description": {
+     "msg": "idchrome.sr.standard",
+     "params": {
+      "NAME": "Banking"
+     }
+    },
+    "role": "tab"
+   },
+   "window_border": null
+  },
+  {
+   "class": [
+    "xr-idc",
+    "xr-idc--standard"
+   ],
+   "contrast": {
+    "mark": 4.89,
+    "pill_text": 19.17,
+    "window_border": null
+   },
+   "pill": {
+    "children": [
+     {
+      "aria_hidden": true,
+      "color": "#db4437",
+      "part": "swatch"
+     },
+     {
+      "aria_hidden": true,
+      "part": "glyph",
+      "text": "S"
+     },
+     {
+      "part": "name",
+      "text": "Shopping"
+     },
+     {
+      "msg": "idchrome.route.direct",
+      "part": "route"
+     }
+    ],
+    "name": {
+     "msg": "idchrome.pill",
+     "params": {
+      "NAME": "Shopping",
+      "ROUTE": {
+       "msg": "idchrome.route.direct"
+      }
+     }
+    },
+    "role": "button"
+   },
+   "sample": "shopping",
+   "state": "standard",
+   "tab": {
+    "children": [
+     {
+      "color": "#db4437",
+      "edge": null,
+      "part": "bar",
+      "px": 2,
+      "side": "block-start"
+     },
+     {
+      "aria_hidden": true,
+      "part": "glyph",
+      "text": "S"
+     },
+     {
+      "part": "label",
+      "text": "Shopping"
+     }
+    ],
+    "description": {
+     "msg": "idchrome.sr.standard",
+     "params": {
+      "NAME": "Shopping"
+     }
+    },
+    "role": "tab"
+   },
+   "window_border": null
+  },
+  {
+   "class": [
+    "xr-idc",
+    "xr-idc--disposable"
+   ],
+   "contrast": {
+    "mark": 10.85,
+    "pill_text": 19.17,
+    "window_border": 14.54
+   },
+   "pill": {
+    "children": [
+     {
+      "aria_hidden": true,
+      "color": "#f9ab00",
+      "part": "swatch"
+     },
+     {
+      "aria_hidden": true,
+      "part": "glyph",
+      "text": "D"
+     },
+     {
+      "part": "name",
+      "text": "Disposable"
+     },
+     {
+      "msg": "idchrome.route.direct",
+      "part": "route"
+     }
+    ],
+    "name": {
+     "msg": "idchrome.pill",
+     "params": {
+      "NAME": "Disposable",
+      "ROUTE": {
+       "msg": "idchrome.route.direct"
+      }
+     }
+    },
+    "role": "button"
+   },
+   "sample": "disposable",
+   "state": "disposable",
+   "tab": {
+    "children": [
+     {
+      "color": "#f9ab00",
+      "edge": null,
+      "part": "bar",
+      "px": 2,
+      "side": "block-start"
+     },
+     {
+      "aria_hidden": true,
+      "part": "glyph",
+      "text": "D"
+     },
+     {
+      "part": "label",
+      "text": "Disposable"
+     }
+    ],
+    "description": {
+     "msg": "idchrome.sr.disposable",
+     "params": {
+      "NAME": "Disposable"
+     }
+    },
+    "role": "tab"
+   },
+   "window_border": {
+    "aria_hidden": true,
+    "color": "#ffd23e",
+    "edge": null,
+    "part": "window-border",
+    "px": 2,
+    "style": "dashed"
+   }
+  },
+  {
+   "class": [
+    "xr-idc",
+    "xr-idc--tor-unbound"
+   ],
+   "contrast": {
+    "mark": 2.48,
+    "pill_text": 19.17,
+    "window_border": 2.48
+   },
+   "pill": {
+    "children": [
+     {
+      "aria_hidden": true,
+      "color": "#78288c",
+      "part": "swatch"
+     },
+     {
+      "aria_hidden": true,
+      "part": "glyph",
+      "text": "T"
+     },
+     {
+      "part": "name",
+      "text": "Tor"
+     },
+     {
+      "msg": "idchrome.route.tor-unbound",
+      "part": "route"
+     }
+    ],
+    "name": {
+     "msg": "idchrome.pill",
+     "params": {
+      "NAME": "Tor",
+      "ROUTE": {
+       "msg": "idchrome.route.tor-unbound"
+      }
+     }
+    },
+    "role": "button"
+   },
+   "sample": "tor",
+   "state": "tor-unbound",
+   "tab": {
+    "children": [
+     {
+      "color": "#78288c",
+      "edge": {
+       "color": "#ffffff",
+       "px": 1,
+       "ratio": 21.0,
+       "token": "text"
+      },
+      "part": "bar",
+      "px": 2,
+      "side": "block-start"
+     },
+     {
+      "aria_hidden": true,
+      "part": "glyph",
+      "text": "T"
+     },
+     {
+      "part": "label",
+      "text": "Tor"
+     }
+    ],
+    "description": {
+     "msg": "idchrome.sr.tor-unbound",
+     "params": {
+      "NAME": "Tor"
+     }
+    },
+    "role": "tab"
+   },
+   "window_border": {
+    "aria_hidden": true,
+    "color": "#78288c",
+    "edge": {
+     "color": "#ffffff",
+     "px": 1,
+     "ratio": 21.0,
+     "token": "text"
+    },
+    "part": "window-border",
+    "px": 2,
+    "style": "solid"
+   }
+  }
+ ],
+ "schema": "identity-chrome-snapshot-v1",
+ "theme": "high-contrast"
+}

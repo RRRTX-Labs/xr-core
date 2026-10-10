@@ -28,6 +28,7 @@
     "help-index/*.ts",
     "settings-shell/*.ts",
     "settings/*.ts",
-    "panel/*.ts"
+    "panel/*.ts",
+    "identity-chrome/*.ts"
   ]
 }

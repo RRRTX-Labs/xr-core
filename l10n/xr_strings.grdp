@@ -496,4 +496,26 @@
 <message name="IDS_XR_PANEL_TAB_SENT" desc="Panel tab title: the what-would-be-sent viewer — exactly the serializer's field set, in the order it is written" xr-id="panel.tab.sent">
     What would be sent
   </message>
+  <!-- P14-T4 (P14-CLOSE C-1): identity chrome. The SR strings are each tab's
+       accessible description (announced on tab focus); the pill is a button
+       named by idchrome.pill. ui/identity-chrome/states.json references these
+       ids and tools/identity_chrome_check.py fails if one is missing. -->
+<message name="IDS_XR_IDCHROME_SR_STANDARD" desc="Screen-reader description of a tab, announced on tab focus: the tab belongs to the identity NAME" xr-id="idchrome.sr.standard">
+    Identity: <ph name="NAME">{NAME}<ex>Work</ex></ph>
+  </message>
+<message name="IDS_XR_IDCHROME_SR_DISPOSABLE" desc="Screen-reader description of a tab in a disposable identity, announced on tab focus; NAME is the identity's name" xr-id="idchrome.sr.disposable">
+    Disposable identity: <ph name="NAME">{NAME}<ex>Disposable</ex></ph>
+  </message>
+<message name="IDS_XR_IDCHROME_SR_TOR_UNBOUND" desc="Screen-reader description of a tab in the Tor template identity while no Tor route is bound (the route manager lands later); NAME is the identity's name" xr-id="idchrome.sr.tor-unbound">
+    Tor identity: <ph name="NAME">{NAME}<ex>Tor</ex></ph>. The Tor route is not connected.
+  </message>
+<message name="IDS_XR_IDCHROME_PILL" desc="Accessible name of the toolbar identity pill button, which opens the identity menu; NAME is the identity, ROUTE the route summary" xr-id="idchrome.pill">
+    Identity menu: <ph name="NAME">{NAME}<ex>Work</ex></ph>, <ph name="ROUTE">{ROUTE}<ex>direct connection</ex></ph>
+  </message>
+<message name="IDS_XR_IDCHROME_ROUTE_DIRECT" desc="Route summary in the identity pill: traffic goes out directly (no proxy or Tor route bound)" xr-id="idchrome.route.direct">
+    direct connection
+  </message>
+<message name="IDS_XR_IDCHROME_ROUTE_TOR_UNBOUND" desc="Route summary in the identity pill for the Tor template while no Tor route is bound" xr-id="idchrome.route.tor-unbound">
+    Tor route not connected
+  </message>
 </grit-part>
