@@ -4,7 +4,8 @@
 #
 # permissions/tests/Makefile — P15 permission firewall C++ suite (ADR-0051).
 #   make build  — compile the permissions core, policy core (for the cross-core
-#                 conformance test), the suites, and the bench
+#                 conformance test), the suites, the bench and the clock-owning
+#                 host (permissions_host, P15-CLOSE C2)
 #   make test   — build + run every suite; exits non-zero on any failure
 #   make bench  — build + run the microbenchmark (writes bench-results.json)
 #   make clean
@@ -24,12 +25,13 @@ POLICY_OBJS := $(BUILD)/pol_effective_policy.o $(BUILD)/pol_resolve.o $(BUILD)/p
 LIB := $(PERM_OBJS) $(COMMON_OBJS)
 
 TESTS := test_store test_ops test_expiry test_isolation test_merge test_present \
-         test_envelope test_audit test_cross_core
+         test_envelope test_audit test_cross_core test_kill9
 BENCH := bench_main
+HOST := permissions_host
 
 .PHONY: build test bench clean
 
-build: $(TESTS:%=$(BUILD)/%) $(BUILD)/$(BENCH)
+build: $(TESTS:%=$(BUILD)/%) $(BUILD)/$(BENCH) $(BUILD)/$(HOST)
 
 $(BUILD)/.dir:
 	mkdir -p $(BUILD) && touch $@
@@ -54,6 +56,15 @@ $(BUILD)/pol_resolve_io.o: ../../policy/core/resolve_io.cc | $(BUILD)/.dir
 
 $(BUILD)/test_cross_core: test_cross_core.cc $(LIB) $(POLICY_OBJS)
 	$(CXX) $(CXXFLAGS) $< $(LIB) $(POLICY_OBJS) -o $@ -pthread
+
+# The clock-owning host (P15-CLOSE C2): the only clock read under permissions/.
+$(BUILD)/permissions_host: ../host/permissions_host.cc $(LIB)
+	$(CXX) $(CXXFLAGS) $< $(LIB) -o $@
+
+# The real kill -9 drill (T3): forks the BUILT host and SIGKILLs it mid-sweep.
+$(BUILD)/test_kill9: test_kill9.cc $(BUILD)/permissions_host $(LIB)
+	$(CXX) $(CXXFLAGS) -DXR_PERMISSIONS_HOST_PATH='"$(abspath $(BUILD))/permissions_host"' \
+	  $< $(LIB) -o $@ -pthread
 
 $(BUILD)/test_%: test_%.cc $(LIB)
 	$(CXX) $(CXXFLAGS) $< $(LIB) -o $@ -pthread

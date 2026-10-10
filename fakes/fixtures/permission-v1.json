@@ -1,0 +1,109 @@
+{
+ "contract": "permission-host",
+ "contract_version": 1,
+ "as_of": 1790000000000,
+ "note": "permissions-host-protocol v1 fixture (P15-CLOSE C2): replayed BYTE-IDENTICALLY by fakes/permissions.py and permissions/host/permissions_host at --as-of (xr-browser tools/tests/test_p15c_permissions_host.py)",
+ "cases": [
+  {
+   "name": "view-empty-store",
+   "method": "view",
+   "args": {}
+  },
+  {
+   "name": "grant-7d",
+   "method": "grant",
+   "args": {
+    "identity": "xr:00000000-0000-4000-8000-0000000000a1",
+    "domain": "example.com",
+    "capability": "geolocation",
+    "scope": "7d"
+   }
+  },
+  {
+   "name": "grant-once",
+   "method": "grant",
+   "args": {
+    "identity": "xr:00000000-0000-4000-8000-0000000000a1",
+    "domain": "example.com",
+    "capability": "camera",
+    "scope": "once"
+   }
+  },
+  {
+   "name": "set-default-ask",
+   "method": "set-default",
+   "args": {
+    "identity": "xr:00000000-0000-4000-8000-0000000000a1",
+    "capability": "notifications",
+    "state": "kAsk"
+   }
+  },
+  {
+   "name": "set-denied",
+   "method": "set-denied",
+   "args": {
+    "identity": "xr:00000000-0000-4000-8000-0000000000a1",
+    "denied": true
+   }
+  },
+  {
+   "name": "sweep-empty",
+   "method": "sweep",
+   "args": {
+    "session_id": "s1"
+   }
+  },
+  {
+   "name": "revoke-all-absent",
+   "method": "revoke-all",
+   "args": {
+    "identity": "xr:00000000-0000-4000-8000-0000000000a1"
+   }
+  },
+  {
+   "name": "url-is-not-a-domain",
+   "method": "grant",
+   "args": {
+    "identity": "xr:00000000-0000-4000-8000-0000000000a1",
+    "domain": "https://example.com",
+    "capability": "camera",
+    "scope": "once"
+   },
+   "expect_error": "kRefused",
+   "expect_detail": "bad-domain"
+  },
+  {
+   "name": "extra-capability-has-no-slot",
+   "method": "set-default",
+   "args": {
+    "identity": "xr:00000000-0000-4000-8000-0000000000a1",
+    "capability": "sensors",
+    "state": "kAllow"
+   },
+   "expect_error": "kRefused",
+   "expect_detail": "bad-capability"
+  },
+  {
+   "name": "corrupt-store-is-fully-denying",
+   "method": "view",
+   "args": {
+    "store": "{\"contract\":\"permission-store\",\"corrupt\":true}"
+   }
+  },
+  {
+   "name": "consume-unknown",
+   "method": "consume-once",
+   "args": {
+    "grant_id": "g1"
+   },
+   "expect_error": "kRefused",
+   "expect_detail": "unknown-grant"
+  },
+  {
+   "name": "unknown-method",
+   "method": "GrantPermission",
+   "args": {},
+   "expect_error": "kUnknownMethod"
+  }
+ ]
+}

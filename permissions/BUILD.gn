@@ -1,0 +1,45 @@
+# Copyright 2026 RRRTX Labs
+# Use of this source code is governed by the MPL-2.0 license that can be
+# found in the LICENSE file.
+#
+# Intent: S0 — the permissions subsystem's build graph (P15-CLOSE C2): the
+# std-only, clock-free C++20 core (ADR-0051 DRAFT) as a source_set for the
+# browser build, plus the clock-owning host as an executable, mirroring the
+# identity/ and policy/ BUILD.gn shape. The lane that actually BUILDS AND TESTS
+# this core in CI is the depth-general suite discovery (every
+# xr-core/*/tests/Makefile); this file is the gn-side wiring for the browser
+# target, exercised where gn/ninja exist (NOT-RUN here — method:
+# docs/qa/browser-harness.md, the rig lane).
+
+import("//build/config/python.gni")  # guard: keep the shape of siblings
+
+source_set("permissions_core") {
+  sources = [
+    "core/audit.cc",
+    "core/envelope.cc",
+    "core/merge.cc",
+    "core/ops.cc",
+    "core/present.cc",
+    "core/store.cc",
+    "core/types.cc",
+  ]
+
+  public_deps = [ "//xr-core/common:core" ]
+
+  public_headers = [
+    "core/audit.h",
+    "core/envelope.h",
+    "core/json.h",
+    "core/merge.h",
+    "core/ops.h",
+    "core/present.h",
+    "core/store.h",
+    "core/types.h",
+  ]
+}
+
+# The clock-owning sweep: the only target under permissions/ that reads a clock.
+executable("permissions_host") {
+  sources = [ "host/permissions_host.cc" ]
+  deps = [ ":permissions_core" ]
+}
