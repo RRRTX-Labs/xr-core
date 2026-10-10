@@ -19,10 +19,9 @@ namespace {
 // (version nibble 4, variant 10xx) — the same bits the fixture table
 // carries (...-4000-8000-...), so entropy- and fixture-minted domains are
 // indistinguishable in shape and opacity.
-std::string FormatUuid(const std::array<uint8_t, 32>& digest) {
+std::string FormatUuid(const std::array<uint8_t, 16>& bytes) {
   const char* hex = "0123456789abcdef";
-  std::array<uint8_t, 16> b{};
-  for (size_t i = 0; i < 16; ++i) b[i] = digest[i];
+  std::array<uint8_t, 16> b = bytes;
   b[6] = static_cast<uint8_t>((b[6] & 0x0f) | 0x40);  // version 4
   b[8] = static_cast<uint8_t>((b[8] & 0x3f) | 0x80);  // variant 10xx
   std::string s(kDomainPrefix);
@@ -34,31 +33,53 @@ std::string FormatUuid(const std::array<uint8_t, 32>& digest) {
   return s;
 }
 
+// One lowercase hex digit. Anything else (uppercase included: the shared
+// sha256 emits lowercase only) is refused.
+bool HexNibble(char c, uint8_t* v) {
+  if (c >= '0' && c <= '9') {
+    *v = static_cast<uint8_t>(c - '0');
+    return true;
+  }
+  if (c >= 'a' && c <= 'f') {
+    *v = static_cast<uint8_t>(c - 'a' + 10);
+    return true;
+  }
+  return false;
+}
+
 }  // namespace
+
+bool DecodeDigestHex(std::string_view hex, std::array<uint8_t, 16>* out) {
+  if (out == nullptr || hex.size() < 2 * out->size()) {
+    return false;
+  }
+  std::array<uint8_t, 16> bytes{};
+  for (size_t i = 0; i < bytes.size(); ++i) {
+    uint8_t hi = 0;
+    uint8_t lo = 0;
+    if (!HexNibble(hex[2 * i], &hi) || !HexNibble(hex[2 * i + 1], &lo)) {
+      return false;  // leaves `out` untouched
+    }
+    bytes.at(i) = static_cast<uint8_t>(hi * 16 + lo);
+  }
+  *out = bytes;
+  return true;
+}
 
 bool MintDomain(std::string_view entropy, std::string* out) {
   if (entropy.empty() || out == nullptr) {
     return false;  // fail-closed: no mint from nothing
   }
-  const std::string digest = Sha256Hex(std::string(entropy));
-  if (digest.size() != 64) {
-    return false;  // impossible; still fail-closed, never guess
+  // The first 32 hex chars (16 bytes) of sha256(entropy) become the UUID
+  // body; byte 6 carries the version nibble, byte 8 the variant (forced in
+  // FormatUuid). The shared sha256 always yields 64 lowercase hex chars; if
+  // it ever did not, `domain` stays empty and the shape check below fails
+  // closed (no guessed domain).
+  std::array<uint8_t, 16> bytes{};
+  std::string domain;
+  if (DecodeDigestHex(Sha256Hex(std::string(entropy)), &bytes)) {
+    domain = FormatUuid(bytes);
   }
-  // The first 32 hex chars (16 bytes) become the UUID body; byte 6 carries
-  // the version nibble, byte 8 the variant (forced in FormatUuid).
-  std::array<uint8_t, 32> bytes{};
-  auto nib = [](char c) -> int {
-    if (c >= '0' && c <= '9') return c - '0';
-    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-    return -1;
-  };
-  for (size_t i = 0; i < 16; ++i) {
-    const int hi = nib(digest[2 * i]);
-    const int lo = nib(digest[2 * i + 1]);
-    if (hi < 0 || lo < 0) return false;  // not hex — impossible; fail-closed
-    bytes[i] = static_cast<uint8_t>(hi * 16 + lo);
-  }
-  std::string domain = FormatUuid(bytes);
   if (domain.size() != kDomainLength) return false;
   *out = domain;
   return true;

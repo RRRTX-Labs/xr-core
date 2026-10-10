@@ -144,6 +144,12 @@ int main() {
     IdentityRecord rec;
     XR_EXPECT(m.Create(req, &rec).ok);
     store.PlantResidual(rec.domain, {"cookies", 512});  // the forgotten jar
+    // A kind the live surface never carries, so only the residual map can
+    // list it: ResidualKinds must read the stray bytes, not just the surface.
+    store.PlantResidual(rec.domain, {"stray-planted-jar", 1});
+    bool listed = false;
+    for (const auto& k : store.ResidualKinds(rec.domain)) listed |= (k == "stray-planted-jar");
+    XR_EXPECT_MSG(listed, "the planted leftover is listed among the residual kinds");
     bool verified = true;
     CallResult r = m.Destroy(rec.domain, &verified);
     XR_EXPECT_MSG(!r.ok, "destroy FAILS when bytes remain");

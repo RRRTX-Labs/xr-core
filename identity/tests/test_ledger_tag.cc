@@ -119,6 +119,29 @@ void TestHistoryOracleZeroDelta() {
   XR_EXPECT(why == "upstream-row-unknown-field:identity_id");
 }
 
+void TestShapeRefusalsAreRefusals() {
+  // Every shape refusal must RETURN false, not merely set a reason: a
+  // refusal that reported success would hand the caller an unset answer.
+  const std::string a = std::string("{\"identity_id\":\"") + kA + "\"";
+  JsonValue out;
+  std::string why;
+  XR_EXPECT(!xr::identity::FilterOmnibox(J(a + "}"), &out, &why));
+  XR_EXPECT(why == "rows-not-array");
+  why.clear();
+  XR_EXPECT(!xr::identity::FilterOmnibox(J(a + ",\"rows\":{}}"), &out, &why));
+  XR_EXPECT(why == "rows-not-array");
+  why.clear();
+  XR_EXPECT(!xr::identity::HistoryOracle(
+      J("{\"identity_id\":\"work\",\"upstream_rows\":[]}"), &out, &why));
+  XR_EXPECT(why == "identity-id-malformed");
+  why.clear();
+  XR_EXPECT(!xr::identity::HistoryOracle(J(a + "}"), &out, &why));
+  XR_EXPECT(why == "upstream-rows-not-array");
+  why.clear();
+  XR_EXPECT(!xr::identity::HistoryOracle(J(a + ",\"upstream_rows\":[1]}"), &out, &why));
+  XR_EXPECT(why == "upstream-row-not-object");
+}
+
 }  // namespace
 
 int main() {
@@ -126,5 +149,6 @@ int main() {
   TestRefusals();
   TestOmniboxCannotSeeAcrossIdentities();
   TestHistoryOracleZeroDelta();
+  TestShapeRefusalsAreRefusals();
   return xrtest::Report("identity/ledger_tag");
 }

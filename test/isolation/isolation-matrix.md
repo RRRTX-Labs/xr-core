@@ -46,11 +46,11 @@ Cells: 175 total — EXCEPTION=20, NOT-RUN=110, PASS=45
 | identity-derivation-probe | standard/ephemeral | fake | PASS | 6 derivation probes (name/URL/title/log/vid): no embed, opaque shape |
 | identity-derivation-probe | shield/fortress | fake | PASS | 6 derivation probes (name/URL/title/log/vid): no embed, opaque shape |
 | identity-derivation-probe | shield/ephemeral | fake | PASS | 6 derivation probes (name/URL/title/log/vid): no embed, opaque shape |
-| session-restore-no-bleed | standard/shield | fake | PASS | identity/session+chaos: identity/session+chaos: 345 checks, 0 failures |
-| session-restore-no-bleed | standard/fortress | fake | PASS | identity/session+chaos: identity/session+chaos: 345 checks, 0 failures |
-| session-restore-no-bleed | standard/ephemeral | fake | PASS | identity/session+chaos: identity/session+chaos: 345 checks, 0 failures |
-| session-restore-no-bleed | shield/fortress | fake | PASS | identity/session+chaos: identity/session+chaos: 345 checks, 0 failures |
-| session-restore-no-bleed | shield/ephemeral | fake | PASS | identity/session+chaos: identity/session+chaos: 345 checks, 0 failures |
+| session-restore-no-bleed | standard/shield | fake | PASS | identity/session+chaos: identity/session+chaos: 360 checks, 0 failures |
+| session-restore-no-bleed | standard/fortress | fake | PASS | identity/session+chaos: identity/session+chaos: 360 checks, 0 failures |
+| session-restore-no-bleed | standard/ephemeral | fake | PASS | identity/session+chaos: identity/session+chaos: 360 checks, 0 failures |
+| session-restore-no-bleed | shield/fortress | fake | PASS | identity/session+chaos: identity/session+chaos: 360 checks, 0 failures |
+| session-restore-no-bleed | shield/ephemeral | fake | PASS | identity/session+chaos: identity/session+chaos: 360 checks, 0 failures |
 | cookies-1p | standard/shield | browser | NOT-RUN | 1P cookies partitioned per identity |
 | cookies-1p | standard/fortress | browser | NOT-RUN | 1P cookies partitioned per identity |
 | cookies-1p | standard/ephemeral | browser | NOT-RUN | 1P cookies partitioned per identity |

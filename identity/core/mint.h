@@ -45,6 +45,12 @@ inline constexpr size_t kChanceProbeMin = 8;
 // returns false and leaves `out` untouched (fail-closed).
 bool MintDomain(std::string_view entropy, std::string* out);
 
+// The mint's digest decoding, exposed so its refusals are tested rather than
+// unreachable: the first 16 bytes of a lowercase hex string. Returns false and
+// leaves `out` untouched on a short input, a non-hex (or uppercase) digit, or
+// a null `out`.
+bool DecodeDigestHex(std::string_view hex, std::array<uint8_t, 16>* out);
+
 // The fixture mint table (index 0 -> ...0001, 1 -> ...0002, ...), for
 // replayable vectors only — same shape, same opacity laws. `sequence` is the
 // number of prior mints; returns false when the table is exhausted

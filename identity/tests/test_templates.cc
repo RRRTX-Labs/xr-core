@@ -58,6 +58,29 @@ int main() {
   }
   XR_EXPECT_STREQ(FindTemplate("tor")->color.c_str(), "#78288c");  // violet
 
+  // 1b. Posture flags are per template, not defaults that happen to hold:
+  // ONLY "disposable" is an in-memory partition, ONLY "tor" names a route,
+  // and no route is bound before the route manager exists.
+  for (const auto& t : all) {
+    XR_EXPECT_MSG(t.disposable == (t.id == "disposable"), "disposable flag: " + t.id);
+    XR_EXPECT_MSG(!t.route_bound, "no route bound yet: " + t.id);
+    XR_EXPECT_MSG((t.route == "tor") == (t.id == "tor"), "route: " + t.id);
+  }
+
+  // 1c. Apply writes prefs and policy rows into the prefs map and NEVER the
+  // visual rows (those come back through color/glyph).
+  {
+    std::map<std::string, std::string> prefs;
+    std::string c, g;
+    XR_EXPECT(ApplyTemplate("personal", &prefs, &c, &g));
+    XR_EXPECT_MSG(prefs.count("browser.startup.homepage") == 1, "a prefs row is applied");
+    XR_EXPECT_MSG(prefs.count("shield.trust_level") == 1, "a policy row is applied");
+    XR_EXPECT_MSG(prefs.count("tab.color_bar") == 0 && prefs.count("tab.glyph") == 0,
+                  "visual rows never land in prefs");
+    XR_EXPECT_STREQ(c.c_str(), "#4285f4");
+    XR_EXPECT_STREQ(g.c_str(), "P");
+  }
+
   // 2. The ceremony inventory is COMPLETE for every template (§3.9).
   for (const auto& t : all) {
     std::map<std::string, std::string> prefs;

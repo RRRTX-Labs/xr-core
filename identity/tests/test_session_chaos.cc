@@ -59,6 +59,38 @@ int main() {
     XR_EXPECT_STREQ(res.doc.tabs[0].domain.c_str(), ra.domain.c_str());
   }
 
+  // 1b. The wire round-trips EVERY field: window names and every durable
+  // domain survive byte-for-byte (a parser that skipped or shifted a
+  // character would still restore "a" session, just not this one).
+  {
+    IdentityStore store;
+    Manager m(&store);
+    CreateRequest a; a.entropy = "rt-a"; IdentityRecord ra;
+    XR_EXPECT(m.Create(a, &ra).ok);
+    CreateRequest b; b.entropy = "rt-b"; IdentityRecord rb;
+    XR_EXPECT(m.Create(b, &rb).ok);
+    BindingModel bind;
+    XR_EXPECT(bind.SetWindowDefault("win-main", ra.domain).ok);
+    XR_EXPECT(bind.SetWindowDefault("win-2", rb.domain).ok);
+    XR_EXPECT(bind.OpenTab("win-main", 3, "").ok);
+    XR_EXPECT(bind.OpenTab("win-2", 4, "").ok);
+    std::vector<uint64_t> dropped;
+    SessionDoc doc = Snapshot(store, bind, &dropped);
+    XR_EXPECT_EQ(doc.durable_domains.size(), size_t(2));
+    XR_EXPECT_EQ(doc.tabs.size(), size_t(2));
+    // The core leaves `window` for the host to fill; fill it as the host does.
+    for (auto& t : doc.tabs) t.window = t.tab_id == 3 ? "win-main" : "win-2";
+    auto res = RestoreSession(SerializeSession(doc), store, bind);
+    XR_EXPECT_MSG(res.ok, res.error.c_str());
+    XR_EXPECT_MSG(res.doc.durable_domains == doc.durable_domains,
+                  "every durable domain round-trips exactly");
+    XR_EXPECT_EQ(res.doc.tabs.size(), size_t(2));
+    for (size_t i = 0; i < res.doc.tabs.size() && i < doc.tabs.size(); ++i) {
+      XR_EXPECT_STREQ(res.doc.tabs[i].window.c_str(), doc.tabs[i].window.c_str());
+      XR_EXPECT_STREQ(res.doc.tabs[i].domain.c_str(), doc.tabs[i].domain.c_str());
+    }
+  }
+
   // 2. RESTORE NEVER BLEEDS: a session naming a NON-LIVE identity is
   //    refused with the tab named — never a fallback to the default
   //    partition, never a re-create (the C-14 failure mode).

@@ -57,6 +57,9 @@ int main() {
   // confirmed action) and is audited with the user-confirmed cause.
   XR_EXPECT_MSG(b.MoveTab(kA, kB, 105, false, {}).ok, "pre-nav move ok");
   XR_EXPECT_STREQ(b.TabIdentity(105)->c_str(), kB);
+  XR_EXPECT_MSG(!b.changes().empty() && b.changes().back().tab_id == 105 &&
+                    b.changes().back().from == kA && b.changes().back().to == kB,
+                "the audit row records where the tab came FROM, not just where it went");
   bool saw_confirmed = false;
   for (const auto& ch : b.changes()) {
     saw_confirmed |= ch.tab_id == 105 && ch.cause == ChangeCause::kUserConfirmedMove;

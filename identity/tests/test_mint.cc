@@ -8,6 +8,8 @@
 // the probe corpus (partition name / title / log line / site) is rejected
 // by LooksOpaque. This is the model half of security req 2 — the brute-
 // force derivation probe, planted here so it can never silently pass.
+#include <array>
+#include <cstdint>
 #include <string>
 
 #include "harness.h"
@@ -102,6 +104,44 @@ int main() {
   std::string a2;
   XR_EXPECT(MintDomain("replay-me", &a2));
   XR_EXPECT_STREQ(a.c_str(), a2.c_str());
+
+  // 7. Known answers (computed independently: Python hashlib, first 16
+  // bytes of sha256, version/variant forced). Pins the byte derivation, not
+  // just its shape: a mint that read the wrong digest offsets would still
+  // look like a UUID.
+  std::string kat;
+  XR_EXPECT(MintDomain("abc", &kat));
+  XR_EXPECT_STREQ(kat.c_str(), "xr:ba7816bf-8f01-4fea-8141-40de5dae2223");
+  XR_EXPECT(MintDomain("entropy-one", &kat));
+  XR_EXPECT_STREQ(kat.c_str(), "xr:7a43ffae-3a4f-4c6e-8938-e5f47f15687a");
+
+  // 8. The digest decoding refuses rather than guesses, and a refusal
+  // leaves the output untouched.
+  std::array<uint8_t, 16> bytes{};
+  XR_EXPECT_MSG(xr::identity::DecodeDigestHex("0123456789abcdef0f1e2d3c4b5a6978", &bytes),
+                "exactly 32 lowercase hex digits decode");
+  const std::array<uint8_t, 16> want = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef,
+                                        0x0f, 0x1e, 0x2d, 0x3c, 0x4b, 0x5a, 0x69, 0x78};
+  XR_EXPECT_MSG(bytes == want, "every digit 0-9a-f decodes to its value, in order");
+  std::array<uint8_t, 16> keep = want;
+  XR_EXPECT(!xr::identity::DecodeDigestHex("0123456789abcdef0f1e2d3c4b5a697", &keep));
+  XR_EXPECT(!xr::identity::DecodeDigestHex("0123456789abcdef0f1e2d3c4b5a697g", &keep));
+  XR_EXPECT(!xr::identity::DecodeDigestHex("g123456789abcdef0f1e2d3c4b5a6978", &keep));
+  XR_EXPECT(!xr::identity::DecodeDigestHex("0123456789ABCDEF0f1e2d3c4b5a6978", &keep));
+  XR_EXPECT(!xr::identity::DecodeDigestHex("01234567/9abcdef0f1e2d3c4b5a6978", &keep));
+  XR_EXPECT(!xr::identity::DecodeDigestHex("01234567:9abcdef0f1e2d3c4b5a6978", &keep));
+  XR_EXPECT(!xr::identity::DecodeDigestHex("0123456789abcdef0f1e2d3c4b5a6978", nullptr));
+  XR_EXPECT_MSG(keep == want, "a refused decode leaves the output untouched");
+
+  // 9. LooksOpaque edges: no probe judges the shape alone; a short probe of
+  // '-' is chance (every domain has dashes); a short probe with a non-hex
+  // character is judged, and "xr" is in every domain's prefix.
+  const std::string dom = "xr:7a43ffae-3a4f-4c6e-8938-e5f47f15687a";
+  XR_EXPECT_MSG(LooksOpaque(dom, ""), "an empty probe judges only the shape");
+  XR_EXPECT_MSG(LooksOpaque(dom, "-"), "a lone dash is chance, not an embed");
+  XR_EXPECT_MSG(LooksOpaque(dom, "a-3"), "a short hex-and-dash probe is chance");
+  XR_EXPECT_MSG(!LooksOpaque(dom, "xr"), "a short non-hex probe is still judged");
+  XR_EXPECT_MSG(!LooksOpaque(dom, "XR:7"), "judging is case-insensitive");
 
   return xrtest::Report("identity/mint");
 }
