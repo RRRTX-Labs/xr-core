@@ -569,6 +569,26 @@ int RunLiving(const std::string& cmd, const JsonValue& args) {
                               {Str(&op, "kind", "cookies"),
                                static_cast<size_t>(Int(&op, "bytes", 1))});
         st["ok"] = JsonValue(true);
+      } else if (name == "plant-fs-leftover") {
+        // TEST HOOK (P14-CLOSE C-4, T6): writes ONE real file, relative to
+        // the host's cwd, so the FS-diff around a disposable cycle has a
+        // planted leftover to catch. The core itself never touches the
+        // filesystem (disposables are in-memory); this op is the only
+        // writer and it refuses any path that could leave the cwd.
+        const std::string rel = Str(&op, "path", "leftover.bin");
+        const bool safe = !rel.empty() && rel.find('/') == std::string::npos &&
+                          rel.find("..") == std::string::npos;
+        bool wrote = false;
+        if (safe) {
+          if (std::FILE* f = std::fopen(rel.c_str(), "wb")) {
+            const std::string bytes(static_cast<size_t>(Int(&op, "bytes", 1)), 'x');
+            wrote = std::fwrite(bytes.data(), 1, bytes.size(), f) == bytes.size();
+            wrote = (std::fclose(f) == 0) && wrote;
+          }
+        }
+        st["ok"] = JsonValue(wrote);
+        st["test_hook"] = JsonValue("plant-fs-leftover");
+        if (!wrote) st["error"] = JsonValue(safe ? "kInternal" : "kRejected");
       } else if (name == "suggest") {
         auto res = s.binding.RecordSuggestion(Str(&op, "site"),
                                               Str(&op, "domain"));
