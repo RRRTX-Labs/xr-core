@@ -82,6 +82,18 @@ int main() {
   XR_EXPECT_MSG(LooksOpaque("xr:00000000-0000-4000-8000-00000000000ef", "name"),
                 "frozen 40-char fixture entry is shape-valid (frozen quirk)");
 
+  // 5b. P14-CLOSE C-4: short all-hex display names are chance, not embedding
+  // (a user may name an identity "B"), but a long all-hex embed and any probe
+  // with a non-hex character are still refused.
+  XR_EXPECT_MSG(LooksOpaque("xr:b0000000-0000-4000-8000-000000000001", "B"),
+                "a one-letter name inside the hex is chance, not an embed");
+  XR_EXPECT_MSG(LooksOpaque("xr:cafe0000-0000-4000-8000-000000000001", "Cafe"),
+                "a 4-char all-hex name is chance, not an embed");
+  XR_EXPECT_MSG(!LooksOpaque("xr:deadbeef-0000-4000-8000-000000000001", "deadbeef"),
+                "an 8-char all-hex embed is still refused");
+  XR_EXPECT_MSG(!LooksOpaque("xr:00000000-0000-4000-8000-000000000001", "0000-4000"),
+                "a 9-char all-hex embed (with '-') is still refused");
+
   // 6. The mint is a PURE function: no global state, calling order does not
   // change outputs (no hidden counter — the P4 census's RNG/counter ban).
   std::string a, b;

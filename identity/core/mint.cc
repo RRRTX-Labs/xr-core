@@ -99,6 +99,25 @@ bool DomainShapeOk(std::string_view domain) {
 bool LooksOpaque(std::string_view domain, std::string_view probe) {
   if (!DomainShapeOk(domain)) return false;
   if (probe.empty()) return true;
+  // P14-CLOSE C-4 finding (2026-10-10): a probe made ONLY of characters a
+  // minted domain contains by chance (hex digits and '-') and shorter than
+  // kChanceProbeMin is not evidence of embedding. It is a coincidence with
+  // probability ~1 for one character: "B" sits inside ~87% of random domains,
+  // so Create refused a user who named an identity "B" (or "A", "Dad",
+  // "Cafe" ...) with kNotPermitted (domain not opaque). Such probes are not
+  // judged. Every probe with a non-hex character, and every all-hex probe of
+  // 8+ characters, is still judged exactly as before.
+  if (probe.size() < kChanceProbeMin) {
+    bool chance_alphabet = true;
+    for (char c : probe) {
+      const char l = static_cast<char>(c >= 'A' && c <= 'Z' ? c - 'A' + 'a' : c);
+      if (!((l >= '0' && l <= '9') || (l >= 'a' && l <= 'f') || l == '-')) {
+        chance_alphabet = false;
+        break;
+      }
+    }
+    if (chance_alphabet) return true;
+  }
   // case-insensitive containment: an opaque domain never embeds the probe
   std::string d(domain), p(probe);
   for (char& c : d) c = static_cast<char>(c >= 'A' && c <= 'Z' ? c - 'A' + 'a' : c);

@@ -38,6 +38,8 @@ namespace xr::identity {
 inline constexpr std::string_view kDomainPrefix = "xr:";
 inline constexpr size_t kDomainLength = 39;
 inline constexpr size_t kDomainLengthFrozenMax = 40;
+// LooksOpaque: all-hex probes shorter than this are chance, not embedding.
+inline constexpr size_t kChanceProbeMin = 8;
 
 // Derive the opaque domain from caller entropy. Deterministic; empty entropy
 // returns false and leaves `out` untouched (fail-closed).
