@@ -10,7 +10,13 @@
 //  * a permission prompt is anchored (T3) and never stacked;
 //  * T3 is capped at three per hour; overflow is demoted one tier and LOGGED,
 //    never dropped; a second prompt while one is pending is demoted, logged.
+//  * P15-CLOSE C6: every row of xr-browser's
+//    docs/qa/keyboard-tasks-permissions.yaml (buttons, focus_first, sensitive,
+//    scope_copy_key) equals this core, and every capability has exactly one row.
 #include <cstdint>
+#include <cstdlib>
+#include <fstream>
+#include <map>
 #include <set>
 #include <string>
 
@@ -20,6 +26,50 @@
 using namespace xr::permissions;
 
 namespace {
+
+std::string TasksPath() {
+  const char* env = std::getenv("XR_BROWSER_ROOT");
+  std::string root = (env != nullptr && *env) ? env : "../../../xr-browser";
+  return root + "/docs/qa/keyboard-tasks-permissions.yaml";
+}
+
+std::string Trim(const std::string& s) {
+  size_t a = s.find_first_not_of(" \t");
+  size_t b = s.find_last_not_of(" \t\r");
+  return a == std::string::npos ? "" : s.substr(a, b - a + 1);
+}
+
+// The data file is a flat list of `- id:` rows with `key: value` lines; this
+// reads exactly the keys the law needs (the python checker owns the schema).
+std::vector<std::map<std::string, std::string>> ReadTasks(bool* readable) {
+  std::vector<std::map<std::string, std::string>> rows;
+  std::ifstream in(TasksPath());
+  *readable = in.good();
+  std::string line;
+  while (std::getline(in, line)) {
+    std::string t = Trim(line);
+    if (t.empty() || t[0] == '#') continue;
+    if (t.rfind("- id:", 0) == 0) {
+      rows.emplace_back();
+      rows.back()["id"] = Trim(t.substr(5));
+      continue;
+    }
+    if (rows.empty()) continue;
+    size_t colon = t.find(':');
+    if (colon == std::string::npos) continue;
+    rows.back()[Trim(t.substr(0, colon))] = Trim(t.substr(colon + 1));
+  }
+  return rows;
+}
+
+std::string ButtonsText(const std::vector<Button>& order) {
+  std::string out = "[";
+  for (size_t i = 0; i < order.size(); ++i) {
+    if (i) out += ", ";
+    out += ButtonName(order[i]);
+  }
+  return out + "]";
+}
 
 bool IsPermutationOfAll(const std::vector<Button>& order) {
   std::set<int> seen;
@@ -53,6 +103,36 @@ int main() {
     XR_EXPECT_MSG(m.scope_copy_key == "perm.scope.only_in_identity", "identity-scoped prompt carries the scope copy");
     XR_EXPECT_MSG(BuildPrompt(Capability::kCamera, false).scope_copy_key.empty(), "no identity scope, no scope copy");
     XR_EXPECT_MSG(m.buttons == ButtonOrder(Capability::kCamera), "the model's buttons are the order table");
+  }
+
+  // --- P15-CLOSE C6: the keyboard-task data equals the core -------------------
+  {
+    bool readable = false;
+    const auto rows = ReadTasks(&readable);
+    XR_EXPECT_MSG(readable, "keyboard-tasks-permissions.yaml readable (XR_BROWSER_ROOT set?)");
+    std::map<std::string, int> per_cap;
+    for (const auto& r : rows) {
+      const std::string id = r.count("id") ? r.at("id") : "?";
+      Capability c{};
+      const bool known = r.count("capability") && ParseCapability(r.at("capability"), &c);
+      XR_EXPECT_MSG(known, id + ": capability is a core capability");
+      if (!known) continue;
+      ++per_cap[r.at("capability")];
+      const PromptModel m = BuildPrompt(c, true);
+      XR_EXPECT_MSG(r.count("buttons") && r.at("buttons") == ButtonsText(m.buttons),
+                    id + ": buttons equal ButtonOrder");
+      XR_EXPECT_MSG(r.count("focus_first") && r.at("focus_first") == ButtonName(m.buttons[0]),
+                    id + ": focus lands on the core's first button");
+      XR_EXPECT_MSG(r.count("sensitive") && r.at("sensitive") == (IsSensitive(c) ? "true" : "false"),
+                    id + ": sensitive equals IsSensitive");
+      XR_EXPECT_MSG(r.count("scope_copy_key") && r.at("scope_copy_key") == std::string(m.scope_copy_key),
+                    id + ": scope copy key equals BuildPrompt's");
+    }
+    for (Capability c : {Capability::kGeolocation, Capability::kCamera, Capability::kMicrophone,
+                         Capability::kNotifications}) {
+      XR_EXPECT_MSG(per_cap[CapabilityName(c)] == 1,
+                    std::string("exactly one keyboard task for ") + CapabilityName(c));
+    }
   }
 
   // --- attention ceiling -----------------------------------------------------
