@@ -317,22 +317,25 @@ int main() {
                       untouched == "keep",
                   "an unparsable day refuses and writes no cutoff");
   }
-  // Retention boundary: the cutoff day itself survives Save; older days drop.
+  // Retention boundary, with the day passed in: the cutoff day itself
+  // survives Save and the day before it is dropped. An unparsable day
+  // refuses to write anything.
   {
     Sys("mkdir -p \"" + c11 + "/retain\"");
-    std::string cut;
-    XR_EXPECT(CounterStore::RetentionCutoff(CounterStore::UtcToday(), &cut));
     CounterStore cs(c11 + "/retain");
     write_file(cs.Path(),
-               "{\"days\":{\"2000-01-01\":{\"queries\":1},\"" + cut +
-                   "\":{\"queries\":2}},\"schema\":\"xr-settings-counters\","
-                   "\"schema_version\":1}\n");
+               "{\"days\":{\"2026-07-12\":{\"queries\":1},\"2026-07-13\":{\"queries\":2}},"
+               "\"schema\":\"xr-settings-counters\",\"schema_version\":1}\n");
     XR_EXPECT(cs.Load().ok);
     std::string err;
-    XR_EXPECT_MSG(cs.Save(&err), err);
+    XR_EXPECT_MSG(!cs.SaveAt("not-a-day", &err) &&
+                      err == "cannot compute retention cutoff",
+                  "an unparsable day refuses Save: " + err);
+    err.clear();
+    XR_EXPECT_MSG(cs.SaveAt("2026-10-11", &err), err);
     CounterStore back(c11 + "/retain");
     XR_EXPECT(back.Load().ok);
-    XR_EXPECT_MSG(back.TotalQueries() == 2, "cutoff day kept, 2000-01-01 dropped");
+    XR_EXPECT_MSG(back.TotalQueries() == 2, "2026-07-13 kept, 2026-07-12 dropped");
   }
   // A failed flush (tmp ledger on /dev/full) fails Save and keeps no ledger.
   {

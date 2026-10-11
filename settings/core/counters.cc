@@ -150,6 +150,10 @@ void CounterStore::SettingChanged(const std::string& key) {
 }
 
 bool CounterStore::Save(std::string* error) const {
+  return SaveAt(UtcToday(), error);
+}
+
+bool CounterStore::SaveAt(const std::string& today, std::string* error) const {
   if (dir_.empty()) return true;  // disposable: nothing is ever written
   if (load_failed_) {
     // deny-preserve: a ledger we could not read is never silently rewritten
@@ -170,7 +174,7 @@ bool CounterStore::Save(std::string* error) const {
   }
   // Rolling retention enforced at persist time (C++20 chrono date math).
   std::string cutbuf;
-  if (!RetentionCutoff(UtcToday(), &cutbuf)) {
+  if (!RetentionCutoff(today, &cutbuf)) {
     if (error) *error = "cannot compute retention cutoff";
     return false;
   }

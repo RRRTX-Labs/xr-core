@@ -61,6 +61,9 @@ class CounterStore {
   // failed to load is PRESERVED: Save refuses to overwrite it (deny-preserve
   // — never silently rewrite or drop a file the loader could not read).
   bool Save(std::string* error) const;
+  // Save with the day passed in (Save() passes UtcToday()). The retention
+  // cutoff is computed from `today`; an unparsable day refuses to write.
+  bool SaveAt(const std::string& today, std::string* error) const;
 
   // Canonical JSON dump of the whole ledger (counters-dump / xrctl).
   JsonValue Dump() const;
