@@ -64,6 +64,27 @@ mechanisms:
   - id: session-restore-no-bleed
     mode: fake
     question: "session restore re-binds each tab to its recorded identity, never another, never the default (C-14)?"
+  # ---- P15 permission-overlay cells (P15-CLOSE C8): the overlay fake
+  # (fakes/permissions.py, byte-identical to permissions_host on the
+  # deterministic surface). Keyed by identity value, not trust tier: the
+  # standard/shield pair shares one vid, so "shared" is the expected answer
+  # there and "nothing crosses" everywhere else (tools/permission_iso_cells.py).
+  - id: permissions-grant-scope
+    mode: fake
+    phase: "P15"
+    question: "a grant made in identity A is visible in B only when A and B are the same identity?"
+  - id: permissions-revoke-scope
+    mode: fake
+    phase: "P15"
+    question: "revoke-all in identity A leaves B's grants standing?"
+  - id: permissions-deny-list
+    mode: fake
+    phase: "P15"
+    question: "putting identity A on the deny list never denies B?"
+  - id: permissions-audit-attribution
+    mode: fake
+    phase: "P15"
+    question: "every audit row an op in identity A emits names A, never B?"
 
   # ---- browser-only (not-run here; HG-31 farm) ----
   - id: cookies-1p
@@ -126,6 +147,17 @@ mechanisms:
   - id: drag-across-identity
     mode: browser
     question: "tab-join (drag) between identities refused"
+  # P15-CLOSE C8: permission cells that need a rendered browser.
+  - id: permissions-revoke-live-tab
+    mode: browser
+    phase: "P15"
+    method: "docs/qa/browser-harness.md#p15-t5-revoke-propagation"
+    question: "a revoke in identity A reaches A's open tabs and no tab of B"
+  - id: permissions-activity-rows
+    mode: browser
+    phase: "P15"
+    method: "docs/qa/browser-harness.md#p15-activity-rows"
+    question: "kPermission activity rows render only on the identity that produced them"
 
   # ---- documented exceptions (§1.13 rows, owner + expiry) ----
   - id: dns-cache-observable

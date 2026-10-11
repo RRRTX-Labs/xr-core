@@ -2,7 +2,7 @@
 
 Generated with `--as-of 2026-09-10` (frozen-clock law). Do not hand-edit; regenerate with `tools/isolation_matrix.py`.
 
-Cells: 175 total — EXCEPTION=20, NOT-RUN=110, PASS=45
+Cells: 205 total — EXCEPTION=20, NOT-RUN=120, PASS=65
 
 | mechanism | pair | mode | verdict | detail |
 |---|---|---|---|---|
@@ -51,6 +51,26 @@ Cells: 175 total — EXCEPTION=20, NOT-RUN=110, PASS=45
 | session-restore-no-bleed | standard/ephemeral | fake | PASS | identity/session+chaos: identity/session+chaos: 360 checks, 0 failures |
 | session-restore-no-bleed | shield/fortress | fake | PASS | identity/session+chaos: identity/session+chaos: 360 checks, 0 failures |
 | session-restore-no-bleed | shield/ephemeral | fake | PASS | identity/session+chaos: identity/session+chaos: 360 checks, 0 failures |
+| permissions-grant-scope | standard/shield | fake | PASS | standard/shield: grant in A visible in B: True (expected True, same identity) |
+| permissions-grant-scope | standard/fortress | fake | PASS | standard/fortress: grant in A visible in B: False (expected False) |
+| permissions-grant-scope | standard/ephemeral | fake | PASS | standard/ephemeral: grant in A visible in B: False (expected False) |
+| permissions-grant-scope | shield/fortress | fake | PASS | shield/fortress: grant in A visible in B: False (expected False) |
+| permissions-grant-scope | shield/ephemeral | fake | PASS | shield/ephemeral: grant in A visible in B: False (expected False) |
+| permissions-revoke-scope | standard/shield | fake | PASS | standard/shield: B grants after revoke-all in A: 0 (expected 0) |
+| permissions-revoke-scope | standard/fortress | fake | PASS | standard/fortress: B grants after revoke-all in A: 1 (expected 1) |
+| permissions-revoke-scope | standard/ephemeral | fake | PASS | standard/ephemeral: B grants after revoke-all in A: 1 (expected 1) |
+| permissions-revoke-scope | shield/fortress | fake | PASS | shield/fortress: B grants after revoke-all in A: 1 (expected 1) |
+| permissions-revoke-scope | shield/ephemeral | fake | PASS | shield/ephemeral: B grants after revoke-all in A: 1 (expected 1) |
+| permissions-deny-list | standard/shield | fake | PASS | standard/shield: B on the deny list after denying A: True (expected True) |
+| permissions-deny-list | standard/fortress | fake | PASS | standard/fortress: B on the deny list after denying A: False (expected False) |
+| permissions-deny-list | standard/ephemeral | fake | PASS | standard/ephemeral: B on the deny list after denying A: False (expected False) |
+| permissions-deny-list | shield/fortress | fake | PASS | shield/fortress: B on the deny list after denying A: False (expected False) |
+| permissions-deny-list | shield/ephemeral | fake | PASS | shield/ephemeral: B on the deny list after denying A: False (expected False) |
+| permissions-audit-attribution | standard/shield | fake | PASS | standard/shield: 3 audit row(s) from A's ops; 0 name another identity |
+| permissions-audit-attribution | standard/fortress | fake | PASS | standard/fortress: 3 audit row(s) from A's ops; 0 name another identity |
+| permissions-audit-attribution | standard/ephemeral | fake | PASS | standard/ephemeral: 3 audit row(s) from A's ops; 0 name another identity |
+| permissions-audit-attribution | shield/fortress | fake | PASS | shield/fortress: 3 audit row(s) from A's ops; 0 name another identity |
+| permissions-audit-attribution | shield/ephemeral | fake | PASS | shield/ephemeral: 3 audit row(s) from A's ops; 0 name another identity |
 | cookies-1p | standard/shield | browser | NOT-RUN | 1P cookies partitioned per identity |
 | cookies-1p | standard/fortress | browser | NOT-RUN | 1P cookies partitioned per identity |
 | cookies-1p | standard/ephemeral | browser | NOT-RUN | 1P cookies partitioned per identity |
@@ -151,6 +171,16 @@ Cells: 175 total — EXCEPTION=20, NOT-RUN=110, PASS=45
 | drag-across-identity | standard/ephemeral | browser | NOT-RUN | tab-join (drag) between identities refused |
 | drag-across-identity | shield/fortress | browser | NOT-RUN | tab-join (drag) between identities refused |
 | drag-across-identity | shield/ephemeral | browser | NOT-RUN | tab-join (drag) between identities refused |
+| permissions-revoke-live-tab | standard/shield | browser | NOT-RUN | a revoke in identity A reaches A's open tabs and no tab of B (owner phase P15; method: docs/qa/browser-harness.md#p15-t5-revoke-propagation) |
+| permissions-revoke-live-tab | standard/fortress | browser | NOT-RUN | a revoke in identity A reaches A's open tabs and no tab of B (owner phase P15; method: docs/qa/browser-harness.md#p15-t5-revoke-propagation) |
+| permissions-revoke-live-tab | standard/ephemeral | browser | NOT-RUN | a revoke in identity A reaches A's open tabs and no tab of B (owner phase P15; method: docs/qa/browser-harness.md#p15-t5-revoke-propagation) |
+| permissions-revoke-live-tab | shield/fortress | browser | NOT-RUN | a revoke in identity A reaches A's open tabs and no tab of B (owner phase P15; method: docs/qa/browser-harness.md#p15-t5-revoke-propagation) |
+| permissions-revoke-live-tab | shield/ephemeral | browser | NOT-RUN | a revoke in identity A reaches A's open tabs and no tab of B (owner phase P15; method: docs/qa/browser-harness.md#p15-t5-revoke-propagation) |
+| permissions-activity-rows | standard/shield | browser | NOT-RUN | kPermission activity rows render only on the identity that produced them (owner phase P15; method: docs/qa/browser-harness.md#p15-activity-rows) |
+| permissions-activity-rows | standard/fortress | browser | NOT-RUN | kPermission activity rows render only on the identity that produced them (owner phase P15; method: docs/qa/browser-harness.md#p15-activity-rows) |
+| permissions-activity-rows | standard/ephemeral | browser | NOT-RUN | kPermission activity rows render only on the identity that produced them (owner phase P15; method: docs/qa/browser-harness.md#p15-activity-rows) |
+| permissions-activity-rows | shield/fortress | browser | NOT-RUN | kPermission activity rows render only on the identity that produced them (owner phase P15; method: docs/qa/browser-harness.md#p15-activity-rows) |
+| permissions-activity-rows | shield/ephemeral | browser | NOT-RUN | kPermission activity rows render only on the identity that produced them (owner phase P15; method: docs/qa/browser-harness.md#p15-activity-rows) |
 | dns-cache-observable | standard/shield | exception | EXCEPTION | per-context host cache is partition-local but the OS resolver cache is shared |
 | dns-cache-observable | standard/fortress | exception | EXCEPTION | per-context host cache is partition-local but the OS resolver cache is shared |
 | dns-cache-observable | standard/ephemeral | exception | EXCEPTION | per-context host cache is partition-local but the OS resolver cache is shared |

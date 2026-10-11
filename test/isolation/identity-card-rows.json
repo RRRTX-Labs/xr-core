@@ -68,6 +68,34 @@
    "state": "holds"
   },
   {
+   "measured": 5,
+   "method": "xr-core/test/isolation/isolation-matrix.json",
+   "pairs": 5,
+   "prop": "permissions-grant-scope",
+   "state": "holds"
+  },
+  {
+   "measured": 5,
+   "method": "xr-core/test/isolation/isolation-matrix.json",
+   "pairs": 5,
+   "prop": "permissions-revoke-scope",
+   "state": "holds"
+  },
+  {
+   "measured": 5,
+   "method": "xr-core/test/isolation/isolation-matrix.json",
+   "pairs": 5,
+   "prop": "permissions-deny-list",
+   "state": "holds"
+  },
+  {
+   "measured": 5,
+   "method": "xr-core/test/isolation/isolation-matrix.json",
+   "pairs": 5,
+   "prop": "permissions-audit-attribution",
+   "state": "holds"
+  },
+  {
    "measured": 0,
    "method": "docs/qa/browser-harness.md",
    "pairs": 5,
@@ -205,6 +233,20 @@
    "method": "docs/qa/browser-harness.md",
    "pairs": 5,
    "prop": "drag-across-identity",
+   "state": "not-run"
+  },
+  {
+   "measured": 0,
+   "method": "docs/qa/browser-harness.md#p15-t5-revoke-propagation",
+   "pairs": 5,
+   "prop": "permissions-revoke-live-tab",
+   "state": "not-run"
+  },
+  {
+   "measured": 0,
+   "method": "docs/qa/browser-harness.md#p15-activity-rows",
+   "pairs": 5,
+   "prop": "permissions-activity-rows",
    "state": "not-run"
   },
   {
