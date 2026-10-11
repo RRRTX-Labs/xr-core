@@ -133,5 +133,15 @@ int main() {
                   "unrelated unknown section has no suggestions");
   }
 
+  // P15-CLOSE C11: kills for the full-matrix survivors on router.cc.
+  {
+    // A key that is exactly "<section>." has no suffix to drop: it stays whole.
+    XR_EXPECT_STREQ(Router::AnchorSuffix("network", "network."), "network.");
+    XR_EXPECT_STREQ(Router::AnchorSuffix("network", "network.adblock"), "adblock");
+    const ResolveResult deep = router.Resolve("xr://settings/network/adblock/extra");
+    XR_EXPECT(deep.kind == ResolveKind::kUnknown);
+    XR_EXPECT_STREQ(deep.error, "anchor path too deep (xr://settings/<section>[/<setting>])");
+  }
+
   return xrtest::Report("test_router");
 }

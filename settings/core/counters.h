@@ -69,6 +69,12 @@ class CounterStore {
   // bucket keys only — no finer timestamp is ever stored).
   static std::string UtcToday();
 
+  // The retention cutoff for `today` ("YYYY-MM-DD"): the day kRetentionDays
+  // earlier, same format. Days >= the cutoff survive Save. false when `today`
+  // does not parse, and Save then refuses (P15-CLOSE C11: split out of Save
+  // so this refusal is reachable from a test).
+  static bool RetentionCutoff(const std::string& today, std::string* cutoff);
+
   size_t TotalQueries() const;   // all days (diagnostics)
   bool in_memory() const { return dir_.empty(); }
   std::string Path() const { return dir_.empty() ? "" : dir_ + "/settings-counters.json"; }

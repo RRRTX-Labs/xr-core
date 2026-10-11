@@ -229,5 +229,135 @@ int main() {
     XR_EXPECT_MSG(!cs.Save(&err) && !err.empty(), "unwritable tmp ledger fails Save");
   }
 
+  // P15-CLOSE C11: kills for the full-matrix survivors on counters.cc
+  // (xr-core c9c51d8, seed 20260911). Each block names the behaviour it pins.
+  const std::string c11 = std::string(kStore) + "/c11";
+  auto write_file = [](const std::string& path, const std::string& text) {
+    std::ofstream o(path, std::ios::binary);
+    o << text;
+  };
+  auto day_count = [](const CounterStore& cs, const std::string& key,
+                      const std::string& sub) -> long long {
+    const JsonValue dump = cs.Dump();
+    const JsonValue* days = dump.find("days");
+    if (days == nullptr || !days->is_object()) return -1;
+    const JsonValue* day = days->find(CounterStore::UtcToday());
+    if (day == nullptr) return 0;
+    const JsonValue* map = day->find(key);
+    if (map == nullptr || !map->is_object()) return 0;
+    const JsonValue* n = map->find(sub);
+    return (n != nullptr && n->is_int()) ? n->as_int() : 0;
+  };
+  auto day_total = [](const CounterStore& cs) -> size_t {
+    const JsonValue dump = cs.Dump();
+    const JsonValue* days = dump.find("days");
+    return (days != nullptr && days->is_object()) ? days->as_object().size() : 99;
+  };
+  // Counts accumulate: two opens of one section read 2, one change reads 1.
+  {
+    CounterStore cs;
+    cs.Load();
+    cs.OpenSection("network");
+    cs.OpenSection("network");
+    cs.SettingChanged("network.adblock");
+    XR_EXPECT_EQ(day_count(cs, "opened", "network"), 2);
+    XR_EXPECT_EQ(day_count(cs, "changed", "network.adblock"), 1);
+  }
+  // No-op on nothing: empty names, and any event before Load, record nothing.
+  {
+    CounterStore before;
+    before.OpenSection("network");
+    before.SettingChanged("network.adblock");
+    XR_EXPECT_MSG(day_total(before) == 0, "events before Load record nothing");
+    CounterStore empty_names;
+    empty_names.Load();
+    empty_names.OpenSection("");
+    empty_names.SettingChanged("");
+    XR_EXPECT_MSG(day_total(empty_names) == 0, "empty section/key records nothing");
+  }
+  // A valid on-disk ledger loads clean and Save may overwrite it.
+  {
+    Sys("rm -rf \"" + c11 + "\" && mkdir -p \"" + c11 + "/valid\"");
+    CounterStore cs(c11 + "/valid");
+    write_file(cs.Path(),
+               "{\"days\":{},\"schema\":\"xr-settings-counters\",\"schema_version\":1}\n");
+    const auto lr = cs.Load();
+    XR_EXPECT(lr.ok && !lr.preserved);
+    XR_EXPECT(cs.Dump().find("load_error") == nullptr);
+    cs.AcceptQuery();
+    std::string err;
+    XR_EXPECT_MSG(cs.Save(&err), "a cleanly loaded ledger saves: " + err);
+  }
+  // A corrupt ledger that has since been removed no longer blocks Save.
+  {
+    Sys("mkdir -p \"" + c11 + "/gone\"");
+    CounterStore cs(c11 + "/gone");
+    write_file(cs.Path(), "{truncated");
+    XR_EXPECT(cs.Load().preserved);
+    std::remove(cs.Path().c_str());
+    std::string err;
+    XR_EXPECT_MSG(cs.Save(&err), "nothing left to preserve, so Save writes: " + err);
+  }
+  // A store dir that cannot be created fails Save.
+  {
+    write_file(c11 + "/plain-file", "x");
+    CounterStore cs(c11 + "/plain-file/sub");
+    cs.Load();
+    std::string err;
+    XR_EXPECT_MSG(!cs.Save(&err) && err.find("cannot create store dir") == 0,
+                  "uncreatable store dir fails Save");
+  }
+  // The cutoff helper: 90 days back, and a refusal on an unparsable day.
+  {
+    std::string cut;
+    XR_EXPECT(CounterStore::RetentionCutoff("2026-10-11", &cut));
+    XR_EXPECT_STREQ(cut, "2026-07-13");
+    std::string untouched = "keep";
+    XR_EXPECT_MSG(!CounterStore::RetentionCutoff("not-a-day", &untouched) &&
+                      untouched == "keep",
+                  "an unparsable day refuses and writes no cutoff");
+  }
+  // Retention boundary: the cutoff day itself survives Save; older days drop.
+  {
+    Sys("mkdir -p \"" + c11 + "/retain\"");
+    std::string cut;
+    XR_EXPECT(CounterStore::RetentionCutoff(CounterStore::UtcToday(), &cut));
+    CounterStore cs(c11 + "/retain");
+    write_file(cs.Path(),
+               "{\"days\":{\"2000-01-01\":{\"queries\":1},\"" + cut +
+                   "\":{\"queries\":2}},\"schema\":\"xr-settings-counters\","
+                   "\"schema_version\":1}\n");
+    XR_EXPECT(cs.Load().ok);
+    std::string err;
+    XR_EXPECT_MSG(cs.Save(&err), err);
+    CounterStore back(c11 + "/retain");
+    XR_EXPECT(back.Load().ok);
+    XR_EXPECT_MSG(back.TotalQueries() == 2, "cutoff day kept, 2000-01-01 dropped");
+  }
+  // A failed flush (tmp ledger on /dev/full) fails Save and keeps no ledger.
+  {
+    Sys("mkdir -p \"" + c11 + "/full\"");
+    CounterStore cs(c11 + "/full");
+    cs.Load();
+    cs.AcceptQuery();
+    Sys("ln -sf /dev/full \"" + cs.Path() + ".tmp\"");
+    std::string err;
+    XR_EXPECT_MSG(!cs.Save(&err) && err == "write/fsync failed",
+                  "ENOSPC on flush fails Save: " + err);
+    std::FILE* f = std::fopen(cs.Path().c_str(), "rb");
+    XR_EXPECT_MSG(f == nullptr, "no ledger left behind after a failed flush");
+    if (f) std::fclose(f);
+  }
+  // A rename that cannot land (a directory holds the ledger path) fails Save.
+  {
+    Sys("mkdir -p \"" + c11 + "/blocked\"");
+    CounterStore cs(c11 + "/blocked");
+    cs.Load();
+    Sys("mkdir -p \"" + cs.Path() + "/occupied\"");
+    std::string err;
+    XR_EXPECT_MSG(!cs.Save(&err) && err == "rename failed", "rename failure fails Save: " + err);
+  }
+  Sys("rm -rf \"" + c11 + "\"");
+
   return xrtest::Report("test_counters");
 }

@@ -152,5 +152,14 @@ int main() {
                   "wrong state-doc version refused with the expected version named");
   }
 
+  // P15-CLOSE C11: Load resets the identity flag; a doc without a context
+  // after one with an active identity reads as no identity.
+  {
+    PolicyState st;
+    XR_EXPECT(st.Load(StateDoc(true)).ok && st.identity_active());
+    XR_EXPECT(st.Load("{\"schema\":\"xr-settings-state\",\"schema_version\":1,\"values\":{}}").ok);
+    XR_EXPECT_MSG(!st.identity_active(), "identity flag cleared by the next Load");
+  }
+
   return xrtest::Report("test_sections");
 }

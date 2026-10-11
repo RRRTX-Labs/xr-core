@@ -190,5 +190,54 @@ int main() {
                   "exact match outranks an earlier prefix match");
   }
 
+  // P15-CLOSE C11: kills for the full-matrix survivors on search.cc
+  // (xr-core c9c51d8, seed 20260911).
+  {
+    XR_EXPECT_EQ(WordTokenScore("", ""), 0);       // empty never scores
+    XR_EXPECT_EQ(WordTokenScore("dar", "dark"), 2);  // prefix tier is 2
+    XR_EXPECT_EQ(WordTokenScore("dark", "dark"), 3);
+  }
+  {
+    // The index: schema order starts at 0, and each field splits into whole
+    // space-separated tokens (first and last characters kept).
+    const SettingsSchema schema = LoadSchema();
+    const std::vector<IndexEntry> idx = BuildIndex(schema);
+    XR_EXPECT(!idx.empty());
+    if (!idx.empty()) {
+      XR_EXPECT_EQ(idx[0].order, 0u);
+      XR_EXPECT(!idx[0].parsed.empty() && idx[0].parsed[0].tokens.size() == 1 &&
+                idx[0].parsed[0].tokens[0] == idx[0].key);
+    }
+    bool saw_multiword = false;
+    for (const IndexEntry& e : idx) {
+      for (size_t i = 0; i < e.fields.size() && i < e.parsed.size(); ++i) {
+        if (e.fields[i] != "site permissions") continue;
+        saw_multiword = true;
+        XR_EXPECT(e.parsed[i].tokens == (std::vector<std::string>{"site", "permissions"}));
+        XR_EXPECT_STREQ(e.parsed[i].joined, "sitepermissions");
+      }
+    }
+    XR_EXPECT_MSG(saw_multiword, "the permissions alias 'site permissions' is indexed");
+    // A query with no matching word and no phrase returns nothing.
+    XR_EXPECT_MSG(MatchQuery("zzqq xxjj", idx).empty(), "a no-match query has no results");
+    // Exact phrase plus two exact words: 3*3 + 3*3 + 300.
+    const auto ranked = MatchQuery("site permissions", idx);
+    XR_EXPECT(!ranked.empty() && ranked[0].key == "permissions" && ranked[0].score == 318);
+  }
+  {
+    // Score arithmetic on a hand-built entry: one exact word (3*3), one
+    // word with no match (0), no phrase. Exactly 9.
+    IndexEntry e;
+    e.key = "solo";
+    e.order = 0;
+    e.fields = {"alpha"};
+    IndexEntry::ParsedField pf;
+    pf.tokens = {"alpha"};
+    pf.joined = "alpha";
+    e.parsed = {pf};
+    const auto ranked = MatchQuery("alpha zzz", {e});
+    XR_EXPECT(ranked.size() == 1 && ranked[0].score == 9);
+  }
+
   return xrtest::Report("test_settings_search");
 }

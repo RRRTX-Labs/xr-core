@@ -217,5 +217,107 @@ int main() {
                   "writable_in_v0 entry must name a known key");
   }
 
+  // P15-CLOSE C11: kills for the full-matrix survivors on settings_schema.cc
+  // (xr-core c9c51d8, seed 20260911). Variants edit the parsed v1 document.
+  {
+    auto load_variant = [](auto edit, SettingsSchema* out) -> SchemaLoadResult {
+      std::string err;
+      JsonParseResult pr = ParseJson(ReadSchema(&err));
+      JsonValue::Object obj = pr.value.as_object();
+      edit(obj);
+      return out->Load(JsonValue(obj).Canonical());
+    };
+    auto edit_row0 = [](JsonValue::Object& o, auto set) {
+      JsonValue::Array rows = o.at("settings").as_array();
+      JsonValue::Object row = rows[0].as_object();
+      set(row);
+      rows[0] = JsonValue(row);
+      o["settings"] = JsonValue(rows);
+    };
+    // A string-typed setting: a string default loads, a bool default does not.
+    SettingsSchema str_ok;
+    const SchemaLoadResult s_ok = load_variant([&](JsonValue::Object& o) {
+      edit_row0(o, [](JsonValue::Object& row) {
+        row["type"] = JsonValue(std::string("string"));
+        row["default"] = JsonValue(std::string("x"));
+      });
+    }, &str_ok);
+    XR_EXPECT_MSG(s_ok.ok, "string setting with a string default loads: " + s_ok.error);
+    if (s_ok.ok) {
+      JsonValue::Object good_doc;
+      good_doc["network.adblock"] = JsonValue(std::string("y"));
+      XR_EXPECT(str_ok.ValidateDoc(JsonValue(good_doc)).ok);
+      JsonValue::Object bad_doc;
+      bad_doc["network.adblock"] = JsonValue(true);
+      const DocValidateResult bad = str_ok.ValidateDoc(JsonValue(bad_doc));
+      XR_EXPECT_MSG(!bad.ok && bad.error.find("expected string") != std::string::npos,
+                    "a bool value for a string setting is refused");
+    }
+    SettingsSchema str_bad;
+    const SchemaLoadResult s_bad = load_variant([&](JsonValue::Object& o) {
+      edit_row0(o, [](JsonValue::Object& row) {
+        row["type"] = JsonValue(std::string("string"));
+        row["default"] = JsonValue(true);
+      });
+    }, &str_bad);
+    XR_EXPECT_MSG(!s_bad.ok && s_bad.error.find("expected string") != std::string::npos,
+                  "string setting with a bool default refused");
+    // A section row with an unknown field is refused, naming the field.
+    SettingsSchema sec_bad;
+    const SchemaLoadResult sec = load_variant([](JsonValue::Object& o) {
+      JsonValue::Array secs = o.at("sections").as_array();
+      JsonValue::Object s0 = secs[0].as_object();
+      s0["bogus"] = JsonValue(std::string("x"));
+      secs[0] = JsonValue(s0);
+      o["sections"] = JsonValue(secs);
+    }, &sec_bad);
+    XR_EXPECT_STREQ(sec.error, "section row: unknown field 'bogus'");
+    // desc_id is read when present, and a non-string desc_id is refused.
+    {
+      SettingsSchema v1;
+      std::string err;
+      XR_EXPECT(v1.Load(ReadSchema(&err)).ok);
+      const SettingDef* d = v1.FindSetting("network.adblock");
+      XR_EXPECT(d != nullptr && !d->desc_id.empty());
+    }
+    SettingsSchema desc_bad;
+    const SchemaLoadResult desc = load_variant([&](JsonValue::Object& o) {
+      edit_row0(o, [](JsonValue::Object& row) { row["desc_id"] = JsonValue(int64_t{5}); });
+    }, &desc_bad);
+    XR_EXPECT_MSG(!desc.ok, "a non-string desc_id is refused");
+    // A section that lists another section's setting: the exact error.
+    SettingsSchema owner_bad;
+    const SchemaLoadResult owner = load_variant([](JsonValue::Object& o) {
+      JsonValue::Array secs = o.at("sections").as_array();
+      for (size_t i = 0; i < secs.size(); ++i) {
+        JsonValue::Object s = secs[i].as_object();
+        if (s.at("id").as_string() != "privacy") continue;
+        JsonValue::Array list = s.at("settings").as_array();
+        list.push_back(JsonValue(std::string("network.adblock")));
+        s["settings"] = JsonValue(list);
+        secs[i] = JsonValue(s);
+      }
+      o["sections"] = JsonValue(secs);
+    }, &owner_bad);
+    XR_EXPECT_STREQ(owner.error,
+                    "setting 'network.adblock' section 'network' != owning section 'privacy'");
+    // A settings doc that is not an object: the exact error.
+    {
+      SettingsSchema v1;
+      std::string err;
+      XR_EXPECT(v1.Load(ReadSchema(&err)).ok);
+      XR_EXPECT_STREQ(v1.ValidateDoc(JsonValue(int64_t{5})).error,
+                      "settings doc must be an object (key -> value)");
+    }
+    // writable_in_v0 answers only for the keys it lists.
+    SettingsSchema writable;
+    const SchemaLoadResult w = load_variant([](JsonValue::Object& o) {
+      o["writable_in_v0"] = JsonValue(JsonValue::Array{JsonValue(std::string("network.adblock"))});
+    }, &writable);
+    XR_EXPECT_MSG(w.ok, w.error);
+    XR_EXPECT(writable.WritableInV0("network.adblock"));
+    XR_EXPECT(!writable.WritableInV0("network.route"));
+  }
+
   return xrtest::Report("test_settings_schema");
 }

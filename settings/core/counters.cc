@@ -78,6 +78,23 @@ std::string CounterStore::UtcToday() {
   return buf;
 }
 
+bool CounterStore::RetentionCutoff(const std::string& today,
+                                   std::string* cutoff) {
+  int y = 0, m = 0, d = 0;
+  if (std::sscanf(today.c_str(), "%04d-%02d-%02d", &y, &m, &d) != 3) {
+    return false;
+  }
+  using namespace std::chrono;
+  const sys_days today_d = sys_days{year(y) / month(m) / day(d)};
+  const year_month_day cut(today_d - days(kRetentionDays));
+  char cutbuf[64];
+  std::snprintf(cutbuf, sizeof(cutbuf), "%04d-%02d-%02d",
+                static_cast<int>(cut.year()), static_cast<unsigned>(cut.month()),
+                static_cast<unsigned>(cut.day()));
+  *cutoff = cutbuf;
+  return true;
+}
+
 CounterStore::LoadResult CounterStore::Load() {
   LoadResult r;
   days_.clear();
@@ -152,20 +169,11 @@ bool CounterStore::Save(std::string* error) const {
     return false;
   }
   // Rolling retention enforced at persist time (C++20 chrono date math).
-  const std::string today = UtcToday();
-  int y = 0, m = 0, d = 0;
-  if (std::sscanf(today.c_str(), "%04d-%02d-%02d", &y, &m, &d) != 3) {
+  std::string cutbuf;
+  if (!RetentionCutoff(UtcToday(), &cutbuf)) {
     if (error) *error = "cannot compute retention cutoff";
     return false;
   }
-  using namespace std::chrono;
-  const sys_days today_d = sys_days{year(y) / month(m) / day(d)};
-  const sys_days cutoff = today_d - days(kRetentionDays);
-  const year_month_day cut(cutoff);
-  char cutbuf[64];
-  std::snprintf(cutbuf, sizeof(cutbuf), "%04d-%02d-%02d",
-                static_cast<int>(cut.year()), static_cast<unsigned>(cut.month()),
-                static_cast<unsigned>(cut.day()));
   JsonValue::Object days;
   for (const auto& [day_str, row] : days_) {
     if (day_str >= cutbuf) days[day_str] = row;  // older: dropped
