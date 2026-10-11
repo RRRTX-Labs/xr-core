@@ -57,11 +57,12 @@ int main() {
   std::string err;
   XR_EXPECT_MSG(Load(&ctx, &err), "LoadContext: " + err);
 
-  // Seeded roster: 27 commands (P10-T8 +update.about/-check-now/
+  // Seeded roster: 28 commands (P10-T8 +update.about/-check-now/
   // -manual-download; P11-T6 +shield.add-rule/-remove-rule/.page and the
-  // destubbed shield.toggle; P14-T7 +identities.page), 7 tier1, tor.open +
+  // destubbed shield.toggle; P14-T7 +identities.page; P15-CLOSE C5
+  // +settings.permissions), 7 tier1, tor.open +
   // shield.page + identities.page disabled-by-predicate.
-  XR_EXPECT_EQ(ctx.registry.Size(), 27);
+  XR_EXPECT_EQ(ctx.registry.Size(), 28);
   XR_EXPECT_EQ(ctx.registry.Tier1Count(), 7);
 
   // flag-status.
@@ -72,7 +73,7 @@ int main() {
   // list (all + by group).
   {
     std::string r = HandleMethod("list", Req("{}"), ctx);
-    XR_EXPECT_EQ(OkCount(r), 27);
+    XR_EXPECT_EQ(OkCount(r), 28);
     std::string rg = HandleMethod("list", Req("{\"group\":\"Trust\"}"), ctx);
     XR_EXPECT_EQ(OkCount(rg), 7);  // 4 dial + toggle/add-rule/remove-rule
   }
